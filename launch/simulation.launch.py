@@ -62,10 +62,15 @@ def generate_launch_description():
         ),
         launch_arguments={'world': world}.items()
     )
+
     gzclient_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_gazebo_ros, 'launch', 'gzclient.launch.py')
-        )
+        ),
+        launch_arguments={
+            'gzclient_args': '--render-fps 15',
+            'extra_gzclient_env': 'LIBGL_ALWAYS_SOFTWARE=1'
+        }.items()
     )
 
     spawn_entity = Node(
