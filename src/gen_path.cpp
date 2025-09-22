@@ -27,7 +27,7 @@ namespace path {
                 this->mapResolution_ = 0.01;
                 this->mapWidth_ = 182;
                 this->mapHeight_ = 232;
-                this->mapDir_ = "src/inrof2025_ros/map/";
+                this->mapDir_ = "src/yasarobo2025_26/map/";
 
                 readMap();
 

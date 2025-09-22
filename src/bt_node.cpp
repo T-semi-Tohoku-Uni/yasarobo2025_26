@@ -16,7 +16,7 @@ int main(int argc, char* argv[]) {
     factory.registerNodeType<VacumeOn>("vacume_on");
     factory.registerNodeType<BallDetact>("ball_detect");
 
-    std::string package_path = ament_index_cpp::get_package_share_directory("inrof2025_ros");
+    std::string package_path = ament_index_cpp::get_package_share_directory("yasarobo2025_26");
     factory.registerBehaviorTreeFromFile(package_path + "/config/main_bt.xml");
 
     BT::Tree tree = factory.createTree("MainBT");

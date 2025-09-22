@@ -2,8 +2,8 @@
 <robot name="robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
   <!-- インクルード -->
-  <xacro:include filename="$(find inrof2025_ros)/urdf/materials.xacro" />
-  <xacro:include filename="$(find inrof2025_ros)/urdf/robot.trans" />
+  <xacro:include filename="$(find yasarobo2025_26)/urdf/materials.xacro" />
+  <xacro:include filename="$(find yasarobo2025_26)/urdf/robot.trans" />
 
   <!-- base_footprint（地面接触用、摩擦のみ設定） -->
   <link name="base_footprint">
@@ -36,14 +36,14 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="file://$(find inrof2025_ros)/meshes/base_link.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="file://$(find yasarobo2025_26)/meshes/base_link.stl" scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="aluminum_satin"/>
     </visual>
     <collision name="base_link_collision">
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="file://$(find inrof2025_ros)/meshes/base_link.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="file://$(find yasarobo2025_26)/meshes/base_link.stl" scale="0.001 0.001 0.001"/>
       </geometry>
     </collision>
     <gazebo reference="base_link_collision">
@@ -80,7 +80,7 @@
     <visual>
       <origin xyz="-0.005 0.013 -0.0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="file://$(find inrof2025_ros)/meshes/LD19_with_mounter_v4_1.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="file://$(find yasarobo2025_26)/meshes/LD19_with_mounter_v4_1.stl" scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="steel_satin"/>
     </visual>
@@ -145,14 +145,14 @@
     <visual>
       <origin xyz="-0.0 0.045 0.005" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="file://$(find inrof2025_ros)/meshes/chassis_unit_v12_1.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="file://$(find yasarobo2025_26)/meshes/chassis_unit_v12_1.stl" scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="silicone_white"/>
     </visual>
     <collision name="chassis_unit_v12_1_collision">
       <origin xyz="-0.0 0.045 0.005" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="file://$(find inrof2025_ros)/meshes/chassis_unit_v12_1.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="file://$(find yasarobo2025_26)/meshes/chassis_unit_v12_1.stl" scale="0.001 0.001 0.001"/>
       </geometry>
     </collision>
     <gazebo reference="chassis_unit_v12_1_collision">
@@ -183,14 +183,14 @@
     <visual>
       <origin xyz="-0.0 -0.06 0.005" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="file://$(find inrof2025_ros)/meshes/chassis_unit_v12_2.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="file://$(find yasarobo2025_26)/meshes/chassis_unit_v12_2.stl" scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="silicone_white"/>
     </visual>
     <collision name="chassis_unit_v12_2_collision">
       <origin xyz="-0.0 -0.06 0.005" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="file://$(find inrof2025_ros)/meshes/chassis_unit_v12_2.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="file://$(find yasarobo2025_26)/meshes/chassis_unit_v12_2.stl" scale="0.001 0.001 0.001"/>
       </geometry>
     </collision>
     <gazebo reference="chassis_unit_v12_2_collision">
@@ -221,14 +221,14 @@
     <visual>
       <origin xyz="0.051962 0.09 0.005" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="file://$(find inrof2025_ros)/meshes/alm_1_v3_1.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="file://$(find yasarobo2025_26)/meshes/alm_1_v3_1.stl" scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="aluminum_satin"/>
     </visual>
     <collision name="alm_1_v3_1_collision">
       <origin xyz="0.051962 0.09 0.005" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="file://$(find inrof2025_ros)/meshes/alm_1_v3_1.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="file://$(find yasarobo2025_26)/meshes/alm_1_v3_1.stl" scale="0.001 0.001 0.001"/>
       </geometry>
     </collision>
     <gazebo reference="alm_1_v3_1_collision">
@@ -259,14 +259,14 @@
     <visual>
       <origin xyz="0.142894 -0.0375 0.005" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="file://$(find inrof2025_ros)/meshes/chassis_unit_v12_3.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="file://$(find yasarobo2025_26)/meshes/chassis_unit_v12_3.stl" scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="silicone_white"/>
     </visual>
     <collision name="chassis_unit_v12_3_collision">
       <origin xyz="0.142894 -0.0375 0.005" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="file://$(find inrof2025_ros)/meshes/chassis_unit_v12_3.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="file://$(find yasarobo2025_26)/meshes/chassis_unit_v12_3.stl" scale="0.001 0.001 0.001"/>
       </geometry>
     </collision>
     <gazebo reference="chassis_unit_v12_3_collision">
@@ -297,14 +297,14 @@
     <visual>
       <origin xyz="0.051962 -0.09 0.005" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="file://$(find inrof2025_ros)/meshes/alm_1_v3_2.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="file://$(find yasarobo2025_26)/meshes/alm_1_v3_2.stl" scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="aluminum_satin"/>
     </visual>
     <collision name="alm_1_v3_2_collision">
       <origin xyz="0.051962 -0.09 0.005" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="file://$(find inrof2025_ros)/meshes/alm_1_v3_2.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="file://$(find yasarobo2025_26)/meshes/alm_1_v3_2.stl" scale="0.001 0.001 0.001"/>
       </geometry>
     </collision>
     <gazebo reference="alm_1_v3_2_collision">

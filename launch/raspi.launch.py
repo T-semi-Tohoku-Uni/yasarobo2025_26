@@ -21,7 +21,7 @@ def generate_launch_description():
     z = 0.30
     theata = math.pi / 2
 
-    package_dir = get_package_share_directory("inrof2025_ros")
+    package_dir = get_package_share_directory("yasarobo2025_26")
 
     # load robot urdf file
     xacro_file = os.path.join(package_dir, "urdf", "robot.xacro")
@@ -66,7 +66,7 @@ def generate_launch_description():
 
     # #ldlidar
     ldlidar_params = PathJoinSubstitution(
-        [FindPackageShare("inrof2025_ros"), "config", "ldlidar_settings.yaml"]
+        [FindPackageShare("yasarobo2025_26"), "config", "ldlidar_settings.yaml"]
     )
 
     ldlidar_node = IncludeLaunchDescription(
@@ -119,7 +119,7 @@ def generate_launch_description():
 # )
 
     mcl_node = Node(
-        package="inrof2025_ros",
+        package="yasarobo2025_26",
         executable="mcl_node",
         output="screen",
         parameters=[{
@@ -141,26 +141,26 @@ def generate_launch_description():
     )
 
     joy2Vel_node = Node(
-        package="inrof2025_ros",
+        package="yasarobo2025_26",
         executable="joy2vel",
         name="joy2vel",
         output="screen"
     )
 
     vel_feedback_node = Node(
-        package="inrof2025_ros",
+        package="yasarobo2025_26",
         executable="vel_feedback_uart",
         output="screen"
     )
 
     vacume_node = Node(
-        package="inrof2025_ros",
+        package="yasarobo2025_26",
         executable="vacume_uart",
         output="screen"
     )
 
     gen_path = Node(
-        package="inrof2025_ros",
+        package="yasarobo2025_26",
         executable="gen_path",
         output="screen",
         parameters=[{
@@ -171,7 +171,7 @@ def generate_launch_description():
     )
 
     follow_node = Node(
-        package="inrof2025_ros",
+        package="yasarobo2025_26",
         executable="follow_node",
         output="screen",
         parameters=[{
@@ -182,13 +182,13 @@ def generate_launch_description():
     )
 
     rotate_node = Node(
-        package="inrof2025_ros",
+        package="yasarobo2025_26",
         executable="rotate_node",
         output="screen",
     )
 
     bt_node = Node (
-        package="inrof2025_ros",
+        package="yasarobo2025_26",
         executable="bt_node",
         output="screen"
     )

@@ -20,10 +20,10 @@ def generate_launch_description():
     theata = math.pi / 2
 
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
-    package_dir = get_package_share_directory("inrof2025_ros")
+    package_dir = get_package_share_directory("yasarobo2025_26")
     pkg_gazebo_ros = get_package_share_directory("gazebo_ros")
     world = os.path.join(
-        get_package_share_directory("inrof2025_ros"), "worlds", "field.world"
+        get_package_share_directory("yasarobo2025_26"), "worlds", "field.world"
     )
     map_server_config_path = os.path.join(
         package_dir,
@@ -120,7 +120,7 @@ def generate_launch_description():
     )
 
     mcl_node = Node(
-        package="inrof2025_ros",
+        package="yasarobo2025_26",
         executable="mcl_node",
         parameters=[{
             "initial_x": x,
@@ -140,20 +140,20 @@ def generate_launch_description():
     )
 
     joy2Vel_node = Node(
-        package="inrof2025_ros",
+        package="yasarobo2025_26",
         executable="joy2vel",
         name="joy2vel",
         output="screen"
     )
 
     vel_feedback_node = Node(
-        package="inrof2025_ros",
+        package="yasarobo2025_26",
         executable="vel_feedback_node",
         output="screen"
     )
 
     gen_path = Node(
-        package="inrof2025_ros",
+        package="yasarobo2025_26",
         executable="gen_path",
         output="screen",
         parameters=[{
@@ -165,7 +165,7 @@ def generate_launch_description():
     )
 
     follow_node = Node(
-        package="inrof2025_ros",
+        package="yasarobo2025_26",
         executable="follow_node",
         output="screen",
         parameters=[{
@@ -177,19 +177,19 @@ def generate_launch_description():
     )
 
     bt_node = Node (
-        package="inrof2025_ros",
+        package="yasarobo2025_26",
         executable="bt_node",
         output="screen"
     )
 
     rotate_node = Node(
-        package="inrof2025_ros",
+        package="yasarobo2025_26",
         executable="rotate_node",
         output="screen",
     )
 
     vacume_node = Node(
-        package="inrof2025_ros",
+        package="yasarobo2025_26",
         executable="dummy_vacume_uart",
         output="screen"
     )
