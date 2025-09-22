@@ -128,10 +128,10 @@ echo 'export ROS_IP=192.168.0.180' >> ~/.bashrc
 ```bash
 cd 
 cd ros_ws
-colcon build --packages-select yasarobo2925_26
+colcon build --packages-select yasarobo2025_26
 ```
 実行
 ```bash
 source install/setup.bash
-ros2 launch yasarobo2925_26 simulation.launch.py
+ros2 launch yasarobo2025_26 simulation.launch.py
 ```

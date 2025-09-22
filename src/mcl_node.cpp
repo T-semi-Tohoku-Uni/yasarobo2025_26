@@ -112,7 +112,7 @@ namespace mcl {
                 this->mapResolution_ = 0.01;
                 this->mapWidth_ = 182;
                 this->mapHeight_ = 232;
-                this->mapDir_ = "src/inrof2025_ros/map/";
+                this->mapDir_ = "src/yasarobo2025_26/map/";
                 this->scanStep_ = 50;
                 this->lfmSigma_ = 0.03;
                 this->zHit_ = 1.0;
