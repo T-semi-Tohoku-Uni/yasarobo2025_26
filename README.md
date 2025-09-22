@@ -1,4 +1,4 @@
-# inrof2025_ros
+# T-semi 二郎部 やさろぼ
 
 # Hardware
 ![robot](images/robot.jpg)
