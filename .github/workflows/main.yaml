@@ -11,6 +11,10 @@ jobs:
     runs-on: ubuntu-22.04
     container: ros:humble-ros-base
 
+    defaults:
+      run:
+        shell: bash
+
     env:
       GAZEBO_MODEL_PATH: ${GITHUB_WORKSPACE}/ros_ws/install/yasarobo2925_26/share/yasarobo2925_26/models:${GAZEBO_MODEL_PATH}
       WITH_SIM: 1
