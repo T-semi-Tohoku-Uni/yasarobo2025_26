@@ -11,7 +11,7 @@ on:
       - '*'
 
 jobs:
-  build_container:
+  test:
     name: build_container
 
     runs-on: ubuntu-22.04
@@ -56,7 +56,7 @@ jobs:
 
       - name: Install Lidar package
         run: |
-          docker exec ros2_test_container bash -c "source /ros_ws/setup_env.sh"
+          docker exec ros2_test_container bash -c "source /ros_ws/.github/setup_env.sh"
 
       - name: Stop container
         run: |
