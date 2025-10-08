@@ -1,0 +1,15 @@
+name: cleanup-cache
+on:
+  pull_request:
+    types:
+      - closed
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Clean cache for the branch name
+        uses: opengrabeso/clean-cache@v1.1.0
