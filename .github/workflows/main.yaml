@@ -1,0 +1,92 @@
+name: ROS2 build test
+
+on:
+  push:
+    branches:
+      - '*'
+
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-22.04
+    container: ros:humble-ros-base
+
+    defaults:
+      run:
+        shell: bash
+
+    env:
+      GAZEBO_MODEL_PATH: ${GITHUB_WORKSPACE}/ros_ws/install/yasarobo2925_26/share/yasarobo2925_26/models:${GAZEBO_MODEL_PATH}
+      WITH_SIM: 1
+
+    steps:
+      - name: Setup directories
+        run: mkdir -p ros_ws/src
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+            path: ros_ws/src/yasarobo2025_26
+
+      - name: Install apt repository
+        run: |
+            sudo apt-get update
+            sudo apt-get install -y libzmq3-dev libboost-dev qtbase5-dev libqt5svg5-dev libzmq3-dev libdw-dev libopencv-dev libudev-dev
+
+      - name: Behaivor Tree cache restore
+        id: cache-behaivor-tree
+        uses: actions/cache@v4
+        with:
+            path: ./BehaviorTree.CPP
+            key: ${{ runner.os }}-build-behaivor-tree-${{ hashFiles('**/package-lock.json')}}
+            restore-keys:
+                ${{ runner.os }}-build-behaivor-tree-
+
+      - if: ${{ steps.cache-behaivor-tree.outputs.cache-hit != 'true' }}
+        name: Build Behaivor Tree
+        run: |
+            git clone https://github.com/BehaviorTree/BehaviorTree.CPP.git
+            cd BehaviorTree.CPP
+            git checkout tags/4.7.0
+            mkdir build
+            cd build
+            cmake ..
+            make -j8
+
+      - name: Install behaivor tree
+        run: |
+            cd BehaviorTree.CPP/build
+            sudo make install
+      
+      - name: Install lidar repository
+        run: |
+            cd ros_ws/src
+            git clone https://github.com/keigo1216/ldrobot-lidar-ros2
+            cd ldrobot-lidar-ros2
+            git checkout humble 
+            cd scripts
+            ./create_udev_rules.sh
+
+      - name: Install type repository
+        run: |
+            cd ros_ws/src
+            git clone https://github.com/keigo1216/inrof2025_ros_type.git
+
+      - name: Check env var
+        run: |
+            echo $PWD
+            echo $GITHUB_WORKSPACE
+            echo $GAZEBO_MODEL_PATH
+            echo $WITH_SIM
+
+      - name: rosdep
+        run: |
+            cd ros_ws
+            rosdep update
+            rosdep install --from-paths src -y --ignore-src
+            
+      - name: Build
+        run: |
+            source /opt/ros/humble/setup.bash
+            cd ros_ws
+            colcon build
