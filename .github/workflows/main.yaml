@@ -33,7 +33,8 @@ jobs:
       
       - name: Build Behaivor tree
         run: |
-            sudo apt install libzmq3-dev libboost-dev qtbase5-dev libqt5svg5-dev libzmq3-dev libdw-dev
+            sudo apt update
+            sudo apt install -y libzmq3-dev libboost-dev qtbase5-dev libqt5svg5-dev libzmq3-dev libdw-dev
             cd
             mkdir dev
             cd dev
