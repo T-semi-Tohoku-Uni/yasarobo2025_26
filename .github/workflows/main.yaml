@@ -77,6 +77,10 @@ jobs:
             sudo apt install ros-humble-gazebo-*
             . /usr/share/gazebo/setup.sh
 
+      - name: Install libary for lidar
+        run: |
+            sudo apt install libudev-dev
+            sudo apt install libopencv-dev
     #   - name: Install lidar packages
     #     run: |
     #         sudo apt install libudev-dev
