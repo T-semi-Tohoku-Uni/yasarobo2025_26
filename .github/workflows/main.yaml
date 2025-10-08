@@ -28,7 +28,7 @@ jobs:
       - name: Install apt repository
         run: |
             sudo apt-get update
-            sudo apt-get install -y libzmq3-dev libboost-dev qtbase5-dev libqt5svg5-dev libzmq3-dev libdw-dev
+            sudo apt-get install -y libzmq3-dev libboost-dev qtbase5-dev libqt5svg5-dev libzmq3-dev libdw-dev libopencv-dev libudev-dev
 
       - name: Behaivor Tree cache restore
         id: cache-behaivor-tree
@@ -51,6 +51,15 @@ jobs:
             make -j8
 
       - name: Install behaivor tree
-        run:  |
+        run: |
             cd BehaviorTree.CPP/build
             sudo make install
+      
+      - name: Install lidar repository
+        run: |
+           cd ros_ws/src
+            git clone https://github.com/keigo1216/ldrobot-lidar-ros2
+            cd ldrobot-lidar-ros2
+            git checkout humble 
+            cd scripts
+            ./create_udev_rules.sh
