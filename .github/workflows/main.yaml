@@ -12,52 +12,15 @@ on:
 
 jobs:
   test:
-    name: build_container
-
+    name: test
     runs-on: ubuntu-22.04
 
+    container: ros:humble-ros-base
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Create image tag
-        id: imagetag
+      - name: Install apt repository
         run: |
-          HASH_IMAGE=${{ hashFiles('./.github/Dockerfile') }}
-          VARIANT=$(TZ=UTC-9 date '+%Y%m')${HASH_IMAGE:0:7}
-          NAME_IMAGE=ros2_test_image
-          TAG="${NAME_IMAGE}:${VARIANT}"
-          NAME_TAR="${NAME_IMAGE}.${VARIANT}.tar"
-          PATH_TAR=${{ env.PATH_CACHE }}"/${NAME_TAR}"
-          echo "::set-output name=TAG::${TAG}"
-          echo "::set-output name=PATH_TAR::${PATH_TAR}"
-    
-      - name: Enable cache
-        id: cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.PATH_CACHE }}
-          key: ${{ steps.imagetag.outputs.TAG }}
-
-      - name: Load Docker image if exists
-        if: steps.cache.outputs.cache-hit == 'true'
-        run: docker load --input ${{ steps.imagetag.outputs.PATH_TAR }}
-
-      - name: Build Docker image and save
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p ${{ env.PATH_CACHE }}
-          docker build -f './.github/Dockerfile' -t ${{ steps.imagetag.outputs.TAG }} .
-          docker save --output ${{ steps.imagetag.outputs.PATH_TAR }} ${{ steps.imagetag.outputs.TAG }}
-
-      - name: Run container
-        run: |
-          docker run --name ros2_test_container --detach -u root -v $(pwd):/ros_ws/src/yasarobo2025_26 -w /ros_ws ${{ steps.imagetag.outputs.TAG }}
-
-      - name: Install Lidar package
-        run: |
-          docker exec ros2_test_container bash -c "source /ros_ws/src/yasarobo2025_26/.github/set_env.sh"
-
-      - name: Stop container
-        run: |
-            docker rm -f ${{ steps.imagetag.outputs.TAG }}
+            apt-get update
+            apt-get install -y libzmq3-dev libboost-dev qtbase5-dev libqt5svg5-dev libzmq3-dev libdw-dev
