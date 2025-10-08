@@ -75,7 +75,10 @@ jobs:
             echo $GAZEBO_MODEL_PATH
             echo $WITH_SIM
       - name: rosdep
-        run: rosdep install --from-paths src -y --ignore-src
+        run: |
+            sudo rosdep init
+            rosdep update
+            rosdep install --from-paths src -y --ignore-src
             
       - name: Build
         run: |
