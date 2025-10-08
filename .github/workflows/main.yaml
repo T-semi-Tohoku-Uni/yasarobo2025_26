@@ -50,9 +50,9 @@ jobs:
           docker build -f './.github/Dockerfile' -t ${{ steps.imagetag.outputs.TAG }} .
           docker save --output ${{ steps.imagetag.outputs.PATH_TAR }} ${{ steps.imagetag.outputs.TAG }}
 
-      - name: Run tests for both Go and Shell Script
+      - name: Run container
         run: |
-          docker run -u root -v $(pwd):/ros_ws/src/ -w ros_ws ${{ steps.imagetag.outputs.TAG }} sleep infinity
+          docker run -u root -v $(pwd):/ros_ws/src/ -w /ros_ws ${{ steps.imagetag.outputs.TAG }} sleep infinity
 
       - name: Stop container
         run: |
