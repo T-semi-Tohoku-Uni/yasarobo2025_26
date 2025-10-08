@@ -1,5 +1,10 @@
 name: ROS2 build test
 
+env:
+  # cache directory for docker image
+  PATH_CACHE: /tmp/docker-img-arch
+  PATH_MOUNT: /workspaces/docker-mount
+
 on:
   push:
     branches:
@@ -9,54 +14,40 @@ jobs:
   test:
     name: package test
 
-    strategy:
-      matrix:
-        os:
-          - ubuntu-22.04
-        rosdistro:
-          - humble
-
     runs-on: ubuntu-22.04
-    
-    # TODO: cache container
-    container:
-      image: ros:${{ matrix.rosdistro }}-ros-base
 
     steps:
-      - name: Setup directories
-        run: mkdir -p ros2_ws/src
-
       - name: Check out repository
         uses: actions/checkout@v4
         with:
           path: ros2_ws/src/yasarobo2025_26
-      
-      - name: Build Behaivor tree
+
+      - name: Create image tag
+        id: imagetag
         run: |
-            sudo apt update
-            sudo apt install -y libzmq3-dev libboost-dev qtbase5-dev libqt5svg5-dev libzmq3-dev libdw-dev
-            cd
-            mkdir dev
-            cd dev
-            git clone https://github.com/BehaviorTree/BehaviorTree.CPP.git
-            cd BehaviorTree.CPP
-            git checkout tags/4.7.0
-            mkdir build
-            cd build
-            cmake ..
-            make -j8
-            sudo make install
-      
-    #   - name: Cache Behaivor tree exe
-    #     uses: actions/cache@v4
-    #     with: 
-    #       path: |
-    #         /usr/local/include/behaviortree_cpp
-    #         /usr/local/lib/libbehaviortree_cpp*
-    #       key: ${{ runner.os }}-${{ github.ref_name }}-btcpp-4.7.0
+          HASH_IMAGE=${{ hashFiles('./.github/Dockerfile') }}
+          VARIANT=$(TZ=UTC-9 date '+%Y%m')${HASH_IMAGE:0:7}
+          NAME_IMAGE=myTestImage
+          TAG="${NAME_IMAGE}:${VARIANT}"
+          NAME_TAR="${NAME_IMAGE}.${VARIANT}.tar"
+          PATH_TAR=${{ env.PATH_CACHE }}"/${NAME_TAR}"
+          echo "::set-output name=TAG::${TAG}"
+          echo "::set-output name=PATH_TAR::${PATH_TAR}"
+    
+      - name: Enable cache
+        id: cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.PATH_CACHE }}
+          key: ${{ steps.imagetag.outputs.TAG }}
 
+      - name: Load Docker image if exists
+        if: steps.cache.outputs.cache-hit == 'true'
+        run: docker load --input ${{ steps.imagetag.outputs.PATH_TAR }}
 
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with: 
-            path: ros_ws/src
+      - name: Build Docker image and save
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ${{ env.PATH_CACHE }}
+          docker build -f './.github/Dockerfile' -t ${{ steps.imagetag.outputs.TAG }} .
+          docker save --output ${{ steps.imagetag.outputs.PATH_TAR }} ${{ steps.imagetag.outputs.TAG }}
