@@ -74,7 +74,9 @@ jobs:
             echo $GITHUB_WORKSPACE
             echo $GAZEBO_MODEL_PATH
             echo $WITH_SIM
-
+      - name: rosdep
+        run: rosdep install --from-paths src -y --ignore-src
+            
       - name: Build
         run: |
             cd ros_ws
