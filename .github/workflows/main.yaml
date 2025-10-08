@@ -28,6 +28,8 @@ jobs:
           path: |
             /usr/local/include/behaviortree_cpp
             /usr/local/lib/libbehaviortree_cpp*
+          key: ${{ runner.os }}-${{ github.ref_name }}-btcpp-4.7.0
+
 
       - name: Checkout code
         uses: actions/checkout@v4
