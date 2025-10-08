@@ -77,20 +77,20 @@ jobs:
             sudo apt install ros-humble-gazebo-*
             . /usr/share/gazebo/setup.sh
 
-      - name: Install lidar packages
-        run: |
-            sudo apt install libudev-dev
-            sudo apt install libopencv-dev
-            cd ros_ws/src
-            git clone git@github.com:keigo1216/ldrobot-lidar-ros2.git
-            cd ldrobot-lidar-ros2
-            git checkout humble
-            cd scripts
-            ./create_udev_rules.sh
+    #   - name: Install lidar packages
+    #     run: |
+    #         sudo apt install libudev-dev
+    #         sudo apt install libopencv-dev
+    #         cd ros_ws/src
+    #         git clone git@github.com:keigo1216/ldrobot-lidar-ros2.git
+    #         cd ldrobot-lidar-ros2
+    #         git checkout humble
+    #         cd scripts
+    #         ./create_udev_rules.sh
 
-      - name: Install inrof2025_ros_type
-        run: |
-            cd ros_ws/src
-            git clone git@github.com:keigo1216/inrof2025_ros_type.git
-            cd inrof2025_ros_type
-            colcon build --packages-select inrof2025_ros_type
+    #   - name: Install inrof2025_ros_type
+    #     run: |
+    #         cd ros_ws/src
+    #         git clone git@github.com:keigo1216/inrof2025_ros_type.git
+    #         cd inrof2025_ros_type
+    #         colcon build --packages-select inrof2025_ros_type
