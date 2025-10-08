@@ -42,49 +42,50 @@ jobs:
         with: 
             path: ros_ws/src
     
-      - name: ROS2 Humble setup
-        run: |
-            sudo apt install software-properties-common
-            sudo add-apt-repository universe
-            sudo apt update && sudo apt install curl -y
-            export ROS_APT_SOURCE_VERSION=$(curl -s https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest | grep -F "tag_name" | awk -F\" '{print $4}')
-            curl -L -o /tmp/ros2-apt-source.deb "https://github.com/ros-infrastructure/ros-apt-source/releases/download/${ROS_APT_SOURCE_VERSION}/ros2-apt-source_${ROS_APT_SOURCE_VERSION}.$(. /etc/os-release && echo ${UBUNTU_CODENAME:-${VERSION_CODENAME}})_all.deb"
-            sudo dpkg -i /tmp/ros2-apt-source.deb
-            sudo apt update
-            sudo apt upgrade
-            sudo apt install ros-humble-desktop
-            source /opt/ros/humble/setup.bash
+    #   - name: ROS2 Humble setup
+    #     run: |
+    #         sudo apt install software-properties-common
+    #         sudo add-apt-repository universe
+    #         sudo apt update && sudo apt install curl -y
+    #         export ROS_APT_SOURCE_VERSION=$(curl -s https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest | grep -F "tag_name" | awk -F\" '{print $4}')
+    #         curl -L -o /tmp/ros2-apt-source.deb "https://github.com/ros-infrastructure/ros-apt-source/releases/download/${ROS_APT_SOURCE_VERSION}/ros2-apt-source_${ROS_APT_SOURCE_VERSION}.$(. /etc/os-release && echo ${UBUNTU_CODENAME:-${VERSION_CODENAME}})_all.deb"
+    #         sudo dpkg -i /tmp/ros2-apt-source.deb
+    #         sudo apt update
+    #         sudo apt upgrade
+    #         sudo apt install ros-humble-desktop
+    #         source /opt/ros/humble/setup.bash
 
-      - name: rosdep setup
-        run: |
-            sudo apt-get install python3-rosdep
-            sudo rosdep init
-            rosdep update
+    #   - name: rosdep setup
+    #     run: |
+    #         sudo apt-get install python3-rosdep
+    #         sudo rosdep init
+    #         rosdep update
 
-      - name: Install colcon
-        run: |
-            sudo apt install -y python3-colcon-common-extensions
+    #   - name: Install colcon
+    #     run: |
+    #         sudo apt install -y python3-colcon-common-extensions
 
-      - name: Install BaheaivorTree
-        run: |
-            sudo apt install libzmq3-dev libboost-dev qtbase5-dev libqt5svg5-dev libzmq3-dev libdw-dev
-            git clone https://github.com/BehaviorTree/BehaviorTree.CPP.git
-            cd BehaviorTree.CPP
-            git checkout tags/4.7.0
-            mkdir build
-            cd build
-            cmake ..
-            make -j8
-            sudo make install
+    #   - name: Install BaheaivorTree
+    #     run: |
+    #         sudo apt install libzmq3-dev libboost-dev qtbase5-dev libqt5svg5-dev libzmq3-dev libdw-dev
+    #         git clone https://github.com/BehaviorTree/BehaviorTree.CPP.git
+    #         cd BehaviorTree.CPP
+    #         git checkout tags/4.7.0
+    #         mkdir build
+    #         cd build
+    #         cmake ..
+    #         make -j8
+    #         sudo make install
 
-      - name: Install gazebo
-        run: |
-            sudo apt -y install gazebo
-            sudo apt install ros-humble-gazebo-*
-            . /usr/share/gazebo/setup.sh
+    #   - name: Install gazebo
+    #     run: |
+    #         sudo apt -y install gazebo
+    #         sudo apt install ros-humble-gazebo-*
+    #         . /usr/share/gazebo/setup.sh
 
       - name: Install libary for lidar
         run: |
+            sudo apt update && sudo apt install curl -y
             sudo apt install libudev-dev
             sudo apt install libopencv-dev
     #   - name: Install lidar packages
