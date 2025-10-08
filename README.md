@@ -68,7 +68,7 @@ Lidarのパッケージと、プロセス間通信の型についてのパッケ
 ```bash
 cd
 cd ros_ws/src
-git clone https://github.com/keigo1216/ldrobot-lidar-ros2
+git clone git@github.com:keigo1216/ldrobot-lidar-ros2.git
 cd ldrobot-lidar-ros2
 git checkout humble
 ```
@@ -87,7 +87,7 @@ cd ~/ros_ws/src/ldrobot-lidar-ros2/scripts/
 ```bash
 cd
 cd ros_ws/src
-git clone https://github.com/keigo1216/inrof2025_ros_type.git
+git clone git@github.com:keigo1216/inrof2025_ros_type.git
 cd inrof2025_ros_type
 colcon build --packages-select inrof2025_ros_type
 ```
@@ -97,7 +97,7 @@ colcon build --packages-select inrof2025_ros_type
 ```bash
 cd
 cd ros_ws/src
-git clone https://github.com/T-semi-Tohoku-Uni/yasarobo2025_26
+git clone git@github.com:T-semi-Tohoku-Uni/yasarobo2025_26.git
 ```
 
 ## 環境設定
