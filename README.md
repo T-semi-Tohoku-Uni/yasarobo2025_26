@@ -39,6 +39,7 @@ sudo apt install libzmq3-dev libboost-dev qtbase5-dev libqt5svg5-dev libzmq3-dev
 cd
 git clone https://github.com/BehaviorTree/BehaviorTree.CPP.git
 cd BehaviorTree.CPP
+git checkout tags/4.7.0
 mkdir build
 cd build
 cmake ..
@@ -121,6 +122,11 @@ ros2 daemon start
 `192.168.0.180`は、その機器のipアドレスに設定。（`ifconfig`を打てばわかる）
 ```bash
 echo 'export ROS_IP=192.168.0.180' >> ~/.bashrc
+```
+
+## 依存する外部ライブラリのインストール
+```bash
+rosdep install --from-paths src -y --ignore-src
 ```
 
 ## 実行方法
