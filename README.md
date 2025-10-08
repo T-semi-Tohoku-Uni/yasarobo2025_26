@@ -104,7 +104,7 @@ git clone git@github.com:T-semi-Tohoku-Uni/yasarobo2025_26.git
 ### シミュレーションで実行する場合
 gazeboに表示するモデルのパスを設定
 ```bash
-echo 'export GAZEBO_MODEL_PATH=$HOME/ros_ws/install/yasarobo2925_26/share/yasarobo2925_26/models/:${GAZEBO_MODEL_PATH}' >> ~/.bashrc
+echo 'export GAZEBO_MODEL_PATH=$HOME/ros_ws/install/yasarobo2025_26/share/yasarobo2025_26/models/:${GAZEBO_MODEL_PATH}' >> ~/.bashrc
 ```
 `WITH_SIM`環境変数を`1`に設定（`0`にすると実機バージョンでビルドされるので注意）
 ```bash
