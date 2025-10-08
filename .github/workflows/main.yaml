@@ -17,8 +17,13 @@ jobs:
 
     container: ros:humble-ros-base
     steps:
+      - name: Setup directories
+        run: mkdir -p ros_ws/src
+
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+            path: ros_ws/src/yasarobo2025_26
 
       - name: Install apt repository
         run: |
@@ -47,5 +52,5 @@ jobs:
 
       - name: Install behaivor tree
         run:  |
-            cd BehaviorTree.CPP
+            cd BehaviorTree.CPP/build
             sudo make install
