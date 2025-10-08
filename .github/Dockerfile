@@ -1,4 +1,4 @@
-FROM ros:humble-ros-base:65e1667
+FROM ros:humble-ros-base
 
 
 RUN apt-get update \
