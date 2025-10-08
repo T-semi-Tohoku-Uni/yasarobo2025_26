@@ -17,19 +17,34 @@ jobs:
           - humble
 
     runs-on: ubuntu-22.04
-
+    
+    # TODO: cache container
     container:
       image: ros:${{ matrix.rosdistro }}-ros-base
 
     steps:
       - name: Setup directories
         run: mkdir -p ros2_ws/src
-      
 
       - name: Check out repository
         uses: actions/checkout@v4
         with:
           path: ros2_ws/src/yasarobo2025_26
+      
+      - name: Build Behaivor tree
+        run: |
+            cd
+            mkdir dev
+            cd dev
+            git clone https://github.com/BehaviorTree/BehaviorTree.CPP.git
+            cd BehaviorTree.CPP
+            git checkout tags/4.7.0
+            mkdir build
+            cd build
+            cmake ..
+            make -j8
+            sudo make install
+      
     #   - name: Cache Behaivor tree exe
     #     uses: actions/cache@v4
     #     with: 
