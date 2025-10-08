@@ -1,10 +1,5 @@
 name: ROS2 build test
 
-env:
-  # cache directory for docker image
-  PATH_CACHE: /tmp/docker-img-arch
-  PATH_MOUNT: /workspaces/docker-mount
-
 on:
   push:
     branches:
@@ -14,8 +9,12 @@ jobs:
   test:
     name: test
     runs-on: ubuntu-22.04
-
     container: ros:humble-ros-base
+
+    env:
+      GAZEBO_MODEL_PATH: /ros_ws/install/yasarobo2925_26/share/yasarobo2925_26/models:${GAZEBO_MODEL_PATH}
+      WITH_SIM: 1
+
     steps:
       - name: Setup directories
         run: mkdir -p ros_ws/src
@@ -23,7 +22,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
         with:
-            path: ros_ws/src/yasarobo2025_26
+            path: /ros_ws/src/yasarobo2025_26
 
       - name: Install apt repository
         run: |
@@ -57,9 +56,14 @@ jobs:
       
       - name: Install lidar repository
         run: |
-           cd ros_ws/src
+            cd /ros_ws/src
             git clone https://github.com/keigo1216/ldrobot-lidar-ros2
             cd ldrobot-lidar-ros2
             git checkout humble 
             cd scripts
             ./create_udev_rules.sh
+
+      - name: Install type repository
+        run: |
+            cd /ros_ws/src
+            git clone https://github.com/keigo1216/inrof2025_ros_type.git
