@@ -12,7 +12,7 @@ jobs:
     container: ros:humble-ros-base
 
     env:
-      GAZEBO_MODEL_PATH: /ros_ws/install/yasarobo2925_26/share/yasarobo2925_26/models:${GAZEBO_MODEL_PATH}
+      GAZEBO_MODEL_PATH: ${GITHUB_WORKSPACE}/ros_ws/install/yasarobo2925_26/share/yasarobo2925_26/models:${GAZEBO_MODEL_PATH}
       WITH_SIM: 1
 
     steps:
@@ -22,7 +22,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
         with:
-            path: /ros_ws/src/yasarobo2025_26
+            path: ros_ws/src/yasarobo2025_26
 
       - name: Install apt repository
         run: |
@@ -56,7 +56,7 @@ jobs:
       
       - name: Install lidar repository
         run: |
-            cd /ros_ws/src
+            cd ros_ws/src
             git clone https://github.com/keigo1216/ldrobot-lidar-ros2
             cd ldrobot-lidar-ros2
             git checkout humble 
@@ -65,5 +65,10 @@ jobs:
 
       - name: Install type repository
         run: |
-            cd /ros_ws/src
+            cd ros_ws/src
             git clone https://github.com/keigo1216/inrof2025_ros_type.git
+
+      - name: Check env var
+        run: |
+            echo $GAZEBO_MODEL_PATH
+            echo $WITH_SIM
