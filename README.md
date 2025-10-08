@@ -141,3 +141,14 @@ colcon build --packages-select yasarobo2025_26
 source install/setup.bash
 ros2 launch yasarobo2025_26 simulation.launch.py
 ```
+
+## 実行時のエラー対応
+### gazeboがクラッシュする
+`simulation.launch.py`を実行した場合に、gazeboが真っ暗になって落ちる（rvizは動ていいる）場合は、gazeboの設定ファイルを再読み込みします。
+```bash
+[gzclient-3] gzclient: /usr/include/boost/smart_ptr/shared_ptr.hpp:728: typename boost::detail::sp_member_access<T>::type boost::shared_ptr<T>::operator->() const [with T = gazebo::rendering::Camera; typename boost::detail::sp_member_access<T>::type = gazebo::rendering::Camera*]: Assertion `px != 0' failed.
+[ERROR] [gzclient-3]: process has died [pid 7519, exit code -6, cmd 'gzclient --gui-client-plugin=libgazebo_ros_eol_gui.so'].
+```
+```bash
+source /usr/share/gazebo/setup.sh
+```
