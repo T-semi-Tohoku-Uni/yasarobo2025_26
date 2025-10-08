@@ -22,5 +22,30 @@ jobs:
 
       - name: Install apt repository
         run: |
-            apt-get update
-            apt-get install -y libzmq3-dev libboost-dev qtbase5-dev libqt5svg5-dev libzmq3-dev libdw-dev
+            sudo apt-get update
+            sudo apt-get install -y libzmq3-dev libboost-dev qtbase5-dev libqt5svg5-dev libzmq3-dev libdw-dev
+
+      - name: Behaivor Tree cache restore
+        id: cache-behaivor-tree
+        uses: actions/cache@v4
+        with:
+            path: ./BehaviorTree.CPP
+            key: ${{ runner.os }}-build-behaivor-tree-${{ hashFiles('**/package-lock.json')}}
+            restore-keys:
+                ${{ runner.os }}-build-behaivor-tree-
+
+      - if: ${{ steps.cache-behaivor-tree.outputs.cache-hit != 'true' }}
+        name: Build Behaivor Tree
+        run: |
+            git clone https://github.com/BehaviorTree/BehaviorTree.CPP.git
+            cd BehaviorTree.CPP
+            git checkout tags/4.7.0
+            mkdir build
+            cd build
+            cmake ..
+            make -j8
+
+      - name: Install behaivor tree
+        run:  |
+            cd BehaviorTree.CPP
+            sudo make install
