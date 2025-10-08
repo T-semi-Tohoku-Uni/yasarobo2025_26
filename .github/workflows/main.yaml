@@ -70,5 +70,12 @@ jobs:
 
       - name: Check env var
         run: |
+            echo $PWD
+            echo $GITHUB_WORKSPACE
             echo $GAZEBO_MODEL_PATH
             echo $WITH_SIM
+
+      - name: Build
+        run: |
+            cd ros_ws
+            colcon build
