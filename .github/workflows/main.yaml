@@ -11,10 +11,13 @@ on:
       - '*'
 
 jobs:
-  test:
-    name: package test
+  build_container:
+    name: build_container
 
     runs-on: ubuntu-22.04
+
+    outputs:
+      tag: ${{ steps.imagetag.outputs.TAG }}
 
     steps:
       - name: Check out repository
@@ -50,10 +53,31 @@ jobs:
           docker build -f './.github/Dockerfile' -t ${{ steps.imagetag.outputs.TAG }} .
           docker save --output ${{ steps.imagetag.outputs.PATH_TAR }} ${{ steps.imagetag.outputs.TAG }}
 
-      - name: Run container
-        run: |
-          docker run --detach -u root -v $(pwd):/ros_ws/src/ -w /ros_ws ${{ steps.imagetag.outputs.TAG }}
+    #   - name: Run container
+    #     run: |
+    #       docker run --detach -u root -v $(pwd):/ros_ws/src/ -w /ros_ws ${{ steps.imagetag.outputs.TAG }}
 
-      - name: Stop container
-        run: |
-            docker rm -f ${{ steps.imagetag.outputs.TAG }}
+    #   - name: Install Lidar package
+    #     run: |
+    #       docker exec ${{ steps.imagetag.outputs.TAG }} bash -c "cd src && go test ./..."
+
+    #   - name: Stop container
+    #     run: |
+    #         docker rm -f ${{ steps.imagetag.outputs.TAG }}
+  run_test:
+    name: run_test
+    runs-on: ubuntu-22.04
+    needs: build_container
+    container:
+      image: ${{ needs.build_container.outputs.tag }}
+      options: --user root
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
+    
+    steps:
+      - name: Setup directories
+        run: mkdir -p ros2_ws/src
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+    
