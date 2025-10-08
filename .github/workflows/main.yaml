@@ -20,7 +20,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
         with:
-          path: ros2_ws/src/yasarobo2025_26
+          path: yasarobo2025_26
 
       - name: Create image tag
         id: imagetag
@@ -49,7 +49,5 @@ jobs:
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
           mkdir -p ${{ env.PATH_CACHE }}
-          echo $PWD
-          ls
           docker build -f './.github/Dockerfile' -t ${{ steps.imagetag.outputs.TAG }} .
           docker save --output ${{ steps.imagetag.outputs.PATH_TAR }} ${{ steps.imagetag.outputs.TAG }}
