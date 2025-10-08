@@ -52,7 +52,7 @@ jobs:
 
       - name: Run container
         run: |
-          docker run -u root -v $(pwd):/ros_ws/src/ -w /ros_ws ${{ steps.imagetag.outputs.TAG }} detach
+          docker run --detach -u root -v $(pwd):/ros_ws/src/ -w /ros_ws ${{ steps.imagetag.outputs.TAG }}
 
       - name: Stop container
         run: |
