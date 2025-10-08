@@ -27,7 +27,7 @@ jobs:
         run: |
           HASH_IMAGE=${{ hashFiles('./.github/Dockerfile') }}
           VARIANT=$(TZ=UTC-9 date '+%Y%m')${HASH_IMAGE:0:7}
-          NAME_IMAGE=myTestImage
+          NAME_IMAGE=ros2_test_image
           TAG="${NAME_IMAGE}:${VARIANT}"
           NAME_TAR="${NAME_IMAGE}.${VARIANT}.tar"
           PATH_TAR=${{ env.PATH_CACHE }}"/${NAME_TAR}"
