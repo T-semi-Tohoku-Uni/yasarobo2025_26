@@ -52,11 +52,11 @@ jobs:
 
       - name: Run container
         run: |
-          docker run --name ros2_test_container --detach -u root -v $(pwd):/ros_ws/src/ -w /ros_ws ${{ steps.imagetag.outputs.TAG }}
+          docker run --name ros2_test_container --detach -u root -v $(pwd):/ros_ws/src/yasarobo2025_26 -w /ros_ws ${{ steps.imagetag.outputs.TAG }}
 
       - name: Install Lidar package
         run: |
-          docker exec ros2_test_container bash -c "cd /ros_ws/src/ && ls"
+          docker exec ros2_test_container bash -c "source /ros_ws/src/yasarobo2025_26/.github/set_env.sh"
 
       - name: Stop container
         run: |
