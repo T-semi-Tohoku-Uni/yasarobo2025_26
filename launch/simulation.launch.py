@@ -198,8 +198,6 @@ def generate_launch_description():
     return LaunchDescription([
         SetEnvironmentVariable(name='RCUTILS_COLORIZED_OUTPUT', value='1'),
         node_robot_state_publisher,
-        gzserver_cmd,
-        gzclient_cmd,
         spawn_entity,
         rviz_node,
         map_server_cmd,
@@ -215,7 +213,7 @@ def generate_launch_description():
         bt_node,
         vacume_node,
         TimerAction(
-            period=3.0,
+            period=2.0,
             actions=[gzserver_cmd, gzclient_cmd]
         )
     ])
