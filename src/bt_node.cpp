@@ -7,14 +7,39 @@ using namespace BT;
 int main(int argc, char* argv[]) {
     rclcpp::init(argc, argv);
 
-    ros_node = std::make_shared<BTNode>();
+    std::shared_ptr<BTNode> ros_node = std::make_shared<BTNode>();
 
     BehaviorTreeFactory factory;
-    factory.registerNodeType<GenerateRoute>("generate_route");
-    factory.registerNodeType<FollowRoute>("follow_route");
-    factory.registerNodeType<Rotate>("rotate");
-    factory.registerNodeType<VacumeOn>("vacume_on");
-    factory.registerNodeType<BallDetact>("ball_detect");
+
+    BT::NodeBuilder builder_vacume_on = 
+        [ros_node](const std::string& name, const NodeConfiguration& config) {
+            return std::make_unique<VacumeOn>(name, config, ros_node);
+        };
+    factory.registerBuilder<VacumeOn>("vacume_on", builder_vacume_on);
+
+    BT::NodeBuilder builder_generate_route = 
+        [ros_node](const std::string& name, const NodeConfiguration& config) {
+            return std::make_unique<GenerateRoute>(name, config, ros_node);
+        };
+    factory.registerBuilder<GenerateRoute>("generate_route", builder_generate_route);
+
+    BT::NodeBuilder builder_rotate =
+        [ros_node](const std::string& name, const NodeConfiguration& config) {
+            return std::make_unique<Rotate>(name, config, ros_node);
+        };
+    factory.registerBuilder<Rotate>("rotate", builder_rotate);
+
+    BT::NodeBuilder builder_follow_route = 
+        [ros_node](const std::string& name, const NodeConfiguration& config) {
+            return std::make_unique<FollowRoute>(name, config, ros_node);
+        };
+    factory.registerBuilder<FollowRoute>("follow_route", builder_follow_route);
+
+    BT::NodeBuilder builder_ball_detect = 
+        [ros_node](const std::string& name, const NodeConfiguration& config) {
+            return std::make_unique<BallDetact>(name, config, ros_node);
+        };
+    factory.registerBuilder<BallDetact>("ball_detect", builder_ball_detect);
 
     std::string package_path = ament_index_cpp::get_package_share_directory("yasarobo2025_26");
     factory.registerBehaviorTreeFromFile(package_path + "/config/main_bt.xml");

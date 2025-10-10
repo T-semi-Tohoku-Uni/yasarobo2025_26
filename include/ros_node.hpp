@@ -180,5 +180,3 @@ class BTNode: public rclcpp::Node {
         bool isRun_{false};
         bool isRotateRun_{false};
 };
-
-std::shared_ptr<BTNode> ros_node;
