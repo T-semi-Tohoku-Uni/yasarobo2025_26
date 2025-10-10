@@ -7,7 +7,7 @@ import xacro
 
 from ament_index_python.packages import get_package_share_directory
 import launch
-from launch.actions import IncludeLaunchDescription
+from launch.actions import IncludeLaunchDescription, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 import launch_testing.actions
@@ -46,7 +46,7 @@ def generate_test_description():
         PythonLaunchDescriptionSource(
             os.path.join(pkg_gazebo_ros, 'launch', 'gzserver.launch.py')
         ),
-        # launch_arguments={'world': world}.items()
+        launch_arguments={'world': world, 'verbose': 'true'}.items()
     )
 
     spawn_entity = Node(
@@ -173,8 +173,11 @@ def generate_test_description():
 
     return (
         launch.LaunchDescription([
+            TimerAction(
+                period=2.0,
+                actions=[gzserver_cmd]
+            ),
             node_robot_state_publisher,
-            gzserver_cmd,
             spawn_entity,
             map_server_cmd,
             start_lifecycle_manager_cmd,
@@ -188,7 +191,7 @@ def generate_test_description():
             rotate_node,
             bt_node,
             vacume_node,
-            launch.actions.TimerAction(
+            TimerAction(
                 period=10.0, actions=[launch_testing.actions.ReadyToTest()]
             ),
         ]),{}
