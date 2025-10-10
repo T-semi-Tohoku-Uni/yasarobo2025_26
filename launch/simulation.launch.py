@@ -2,7 +2,7 @@ from ament_index_python.packages import get_package_share_directory
 
 
 from launch import LaunchDescription
-from launch.actions import ExecuteProcess, IncludeLaunchDescription, RegisterEventHandler, SetEnvironmentVariable
+from launch.actions import ExecuteProcess, IncludeLaunchDescription, RegisterEventHandler, SetEnvironmentVariable, TimerAction
 from launch.event_handlers import OnProcessExit, OnProcessStart
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
@@ -197,18 +197,6 @@ def generate_launch_description():
 
     return LaunchDescription([
         SetEnvironmentVariable(name='RCUTILS_COLORIZED_OUTPUT', value='1'),
-        # RegisterEventHandler(
-        #     event_handler=OnProcessExit(
-        #         target_action=spawn_entity,
-        #         on_exit=[load_joint_state_broadcaster],
-        #     )
-        # ),
-        # RegisterEventHandler(
-        #     event_handler=OnProcessExit(
-        #         target_action=load_joint_state_broadcaster,
-        #         on_exit=[load_diff_drive_base_controller],
-        #     )
-        # ),
         node_robot_state_publisher,
         gzserver_cmd,
         gzclient_cmd,
@@ -225,5 +213,9 @@ def generate_launch_description():
         follow_node,
         rotate_node,
         bt_node,
-        vacume_node
+        vacume_node,
+        TimerAction(
+            period=3.0,
+            actions=[gzserver_cmd, gzclient_cmd]
+        )
     ])
