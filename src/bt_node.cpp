@@ -14,43 +14,12 @@
 #include "../include/bt_vacume_on.hpp"
 #include "../include/bt_ball_detect.hpp"
 #include "../include/bt_generate_route.hpp"
+#include "../include/bt_follow_route.hpp"
 
 using namespace std::chrono_literals;
 using namespace BT;
 
 namespace ActionNodes {
-    class FollowRoute: public StatefulActionNode {
-        public:
-            FollowRoute(const std::string& name, const NodeConfiguration& config, std::shared_ptr<BTNode> ros_node) :
-                StatefulActionNode(name, config),
-                ros_node_(ros_node){}
-
-            NodeStatus onStart() override {
-                this->ros_node_->send_start_follow();
-                return NodeStatus::RUNNING;
-            }
-
-            NodeStatus onRunning() override {
-                
-                if (this->ros_node_->isRuning()) {
-                    return NodeStatus::RUNNING;
-                } else {
-                    return NodeStatus::SUCCESS;
-                }
-            }
-
-            void onHalted() override {
-                // TODO
-                std::cout << "interrupt SampleNode" << std::endl;
-            }
-
-            ~FollowRoute() {
-                this->ros_node_.reset();
-            }
-        private:
-            std::shared_ptr<BTNode> ros_node_;
-    };
-
     class Rotate : public StatefulActionNode {
         public:
             Rotate(const std::string& name, const NodeConfig& config, std::shared_ptr<BTNode> ros_node) :
