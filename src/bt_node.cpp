@@ -12,42 +12,12 @@
 #include <behaviortree_cpp/bt_factory.h>
 #include "../include/bt_node.hpp"
 #include "../include/bt_vacume_on.hpp"
+#include "../include/bt_ball_detect.hpp"
 
 using namespace std::chrono_literals;
 using namespace BT;
 
 namespace ActionNodes {
-    class BallDetact: public SyncActionNode {
-        public:
-            BallDetact(const std::string& name, const NodeConfig& config, std::shared_ptr<BTNode> ros_node):
-                SyncActionNode(name, config),
-                ros_node_(ros_node) {};
-
-            // port info
-            static PortsList providedPorts() {
-                return {
-                    OutputPort<double>("x"),
-                    OutputPort<double>("y")
-                };
-            }
-
-            NodeStatus tick() override {
-                double x, y;
-                this->ros_node_->ball_detect(&x, &y);
-
-                setOutput("x", x);
-                setOutput("y", y);
-
-                return NodeStatus::SUCCESS;
-            }
-
-            ~BallDetact() override {
-                this->ros_node_.reset();
-            }
-        private:
-            std::shared_ptr<BTNode> ros_node_;
-    };
-
     class GenerateRoute: public SyncActionNode {
         public:
             GenerateRoute(const std::string& name, const NodeConfig& config, std::shared_ptr<BTNode> ros_node): 
@@ -342,9 +312,9 @@ int main(int argc, char* argv[]) {
 
     BT::NodeBuilder builder_ball_detect = 
         [ros_node](const std::string& name, const NodeConfiguration& config) {
-            return std::make_unique<ActionNodes::BallDetact>(name, config, ros_node);
+            return std::make_unique<ActionNodes::BallDetect>(name, config, ros_node);
         };
-    factory.registerBuilder<ActionNodes::BallDetact>("ball_detect", builder_ball_detect);
+    factory.registerBuilder<ActionNodes::BallDetect>("ball_detect", builder_ball_detect);
 
     std::string package_path = ament_index_cpp::get_package_share_directory("yasarobo2025_26");
     factory.registerBehaviorTreeFromFile(package_path + "/config/main_bt.xml");
