@@ -1,3 +1,4 @@
+#pragma once
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <inrof2025_ros_type/srv/gen_route.hpp>

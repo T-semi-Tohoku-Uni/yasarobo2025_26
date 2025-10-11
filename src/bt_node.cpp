@@ -11,48 +11,12 @@
 #include <behaviortree_cpp/behavior_tree.h>
 #include <behaviortree_cpp/bt_factory.h>
 #include "../include/bt_node.hpp"
+#include "../include/bt_vacume_on.hpp"
 
 using namespace std::chrono_literals;
 using namespace BT;
 
 namespace ActionNodes {
-    class VacumeOn: public SyncActionNode {
-        public:
-            VacumeOn(const std::string& name, const NodeConfig& config, std::shared_ptr<BTNode> ros_node): 
-                SyncActionNode(name, config),
-                ros_node_(ros_node) {};
-
-            // port info
-            static PortsList providedPorts() {
-                return {
-                    InputPort<bool> ("on")
-                };
-            }
-
-            NodeStatus tick() override {
-                std::cout << "call generate route" << std::endl;
-
-                Expected<bool> tmp_on = getInput<bool>("on");
-                if (!tmp_on) {
-                    throw BT::RuntimeError("missing required input x: ", tmp_on.error() );
-                }
-
-                double on = tmp_on.value();
-                
-                if (this->ros_node_ == nullptr) std::cerr << "null ptr" << std::endl;
-
-                this->ros_node_->send_vacume_on(on);
-
-                return NodeStatus::SUCCESS;
-            }
-
-            ~VacumeOn() {
-                this->ros_node_.reset();
-            }
-        private:
-            std::shared_ptr<BTNode> ros_node_;
-    };
-
     class BallDetact: public SyncActionNode {
         public:
             BallDetact(const std::string& name, const NodeConfig& config, std::shared_ptr<BTNode> ros_node):
