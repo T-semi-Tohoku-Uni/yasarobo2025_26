@@ -73,6 +73,7 @@ add_library(bt_lib SHARED
   bt/bt_vacume_on.cpp
   bt/bt_ball_detect.cpp
   bt/bt_generate_route.cpp
+  bt/bt_follow_route.cpp
   # add bt/bt_..._.cpp
 )
 target_include_directories(bt_lib
