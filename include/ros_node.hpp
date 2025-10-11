@@ -16,57 +16,20 @@ class BTNode: public rclcpp::Node {
         explicit BTNode(const rclcpp::NodeOptions & options = rclcpp::NodeOptions()): Node("bt_node", options) {
             // create service client
             srvGenRoute_ = this->create_client<inrof2025_ros_type::srv::GenRoute>("generate_route");
-            while (!srvGenRoute_->wait_for_service(1s))
-            {
-                if (!rclcpp::ok()) {
-                    break;
-                }
-                std::cout << "srvGenRoute not available" << std::endl;
-            }
-            std::cout << "srvGenRoute service available" << std::endl;
-
             srvVacume_ = this->create_client<inrof2025_ros_type::srv::Vacume>("/srv/vacume");
-            while (!srvVacume_->wait_for_service(1s))
-            {
-                if (!rclcpp::ok()) {
-                    break;
-                }
-                std::cout << "srvVacume not available" << std::endl;
-            }
-            std::cout << "srvVacume service available" << std::endl;
-
             srvBall_ = this->create_client<inrof2025_ros_type::srv::BallPose> ("ball_pose");
-            while(!srvBall_->wait_for_service(1s)) {
-                if (!rclcpp::ok()) {
-                    break;
-                }
-                std::cout << "srvBall_ not available" << std::endl;
-            }
-            std::cout << "srvBall_ service available" << std::endl;
-
             actFollow_ = rclcpp_action::create_client<inrof2025_ros_type::action::Follow> (this, "follow");
-            while (!actFollow_->wait_for_action_server(1s))
-            {
-                if (!rclcpp::ok()) {
-                    break;
-                }
-                std::cout << "actFollow_ not available" << std::endl;
-            }
-            std::cout << "actFollow_ service available" << std::endl;
-
             actRotate_ = rclcpp_action::create_client<inrof2025_ros_type::action::Rotate> (this, "rotate");
-            while(!actRotate_->wait_for_action_server(1s)) {
-                if (!rclcpp::ok()) {
-                    break;
-                }
-                std::cout << "actRotate_ not available" << std::endl;
-            }
-            std::cout << "actRotate_ service available" << std::endl;
         }
 
         void send_pose(double x, double y) {
-            // std::shared_ptr<::srv::GenerateRoute::Request> request(
-            //     new bt_sample::srv::GenerateRoute::Request());
+            // check action server available
+            while (!srvGenRoute_->wait_for_service(1s))
+            {
+                if (!rclcpp::ok()) break;
+                RCLCPP_WARN(this->get_logger(), "srvGenRoute not available");
+            }
+
             auto request = std::make_shared<inrof2025_ros_type::srv::GenRoute::Request>();
             request->x = x;
             request->y = y;
@@ -79,6 +42,11 @@ class BTNode: public rclcpp::Node {
         }
 
         void ball_detect(double *x, double *y) {
+            while(!srvBall_->wait_for_service(1s)) {
+                if (!rclcpp::ok()) break;
+                RCLCPP_WARN(this->get_logger(), "srvBall_ not available");
+            }
+
             auto request = std::make_shared<inrof2025_ros_type::srv::BallPose::Request>();
             auto result_future = srvBall_->async_send_request(request);
 
@@ -97,6 +65,12 @@ class BTNode: public rclcpp::Node {
         }
 
         void send_vacume_on(bool on) {
+            while (!srvVacume_->wait_for_service(1s)){
+                if (!rclcpp::ok()) break;
+                RCLCPP_WARN(this->get_logger(), "srvVacume not available");
+            }
+            std::cout << "srvVacume service available" << std::endl;
+
             auto request = std::make_shared<inrof2025_ros_type::srv::Vacume::Request>();
             request->on = on;
 
@@ -104,13 +78,17 @@ class BTNode: public rclcpp::Node {
         }
 
         void send_start_follow() {
+            while (!actFollow_->wait_for_action_server(1s)){
+                if (!rclcpp::ok()) break;
+                RCLCPP_WARN(this->get_logger(), "actFollow_ not available");
+            }
+
             auto goal_msg = inrof2025_ros_type::action::Follow::Goal();
             auto send_goal_options = rclcpp_action::Client<inrof2025_ros_type::action::Follow>::SendGoalOptions();
             send_goal_options.goal_response_callback = std::bind(&BTNode::goalResponseCallback, this, std::placeholders::_1);
             send_goal_options.feedback_callback = std::bind(&BTNode::feedbackCallback, this, std::placeholders::_1, std::placeholders::_2);
             send_goal_options.result_callback = std::bind(&BTNode::resultCallback, this, std::placeholders::_1);
 
-            RCLCPP_INFO(this->get_logger(), "send goal");
             actFollow_->async_send_goal(goal_msg, send_goal_options);
             this->isRun_ = true;
         }
@@ -135,7 +113,11 @@ class BTNode: public rclcpp::Node {
 
         // rotate
         void send_rotate_position(double theta) {
-            RCLCPP_INFO(this->get_logger(), "fikaerpfojrweioghvowaeirge");
+            while(!actRotate_->wait_for_action_server(1s)) {
+                if (!rclcpp::ok()) break;
+                RCLCPP_WARN(this->get_logger(), "actRotate_ not available");
+            }
+
             auto goal_msg = inrof2025_ros_type::action::Rotate::Goal();
             auto send_goal_options = rclcpp_action::Client<inrof2025_ros_type::action::Rotate>::SendGoalOptions();
             send_goal_options.goal_response_callback = std::bind(&BTNode::rotateGoalResponseCallback, this, std::placeholders::_1);

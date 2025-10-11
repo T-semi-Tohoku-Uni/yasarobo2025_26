@@ -37,6 +37,10 @@ namespace ActionNodes {
 
                 return NodeStatus::SUCCESS;
             }
+
+            ~VacumeOn() {
+                this->ros_node_.reset();
+            }
         private:
             std::shared_ptr<BTNode> ros_node_;
     };
@@ -63,6 +67,10 @@ namespace ActionNodes {
                 setOutput("y", y);
 
                 return NodeStatus::SUCCESS;
+            }
+
+            ~BallDetact() override {
+                this->ros_node_.reset();
             }
         private:
             std::shared_ptr<BTNode> ros_node_;
@@ -103,6 +111,10 @@ namespace ActionNodes {
 
                 return NodeStatus::SUCCESS;
             }
+
+            ~GenerateRoute() {
+                this->ros_node_.reset();
+            }
         private:
             std::shared_ptr<BTNode> ros_node_;
     }; 
@@ -130,6 +142,10 @@ namespace ActionNodes {
             void onHalted() override {
                 // TODO
                 std::cout << "interrupt SampleNode" << std::endl;
+            }
+
+            ~FollowRoute() {
+                this->ros_node_.reset();
             }
         private:
             std::shared_ptr<BTNode> ros_node_;
@@ -172,6 +188,11 @@ namespace ActionNodes {
             void onHalted() override {
                 std::cout << "interrupt SampleNode" << std::endl;
             }
+
+            ~Rotate() {
+                this->ros_node_.reset();
+            }
+            
         private:
             std::shared_ptr<BTNode> ros_node_;
     };

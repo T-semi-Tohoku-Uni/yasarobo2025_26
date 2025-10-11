@@ -55,6 +55,7 @@ int main(int argc, char* argv[]) {
         status = tree.tickOnce();
     }
 
+    tree.haltTree();
     rclcpp::shutdown();
 
     return 0;
