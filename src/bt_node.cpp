@@ -12,163 +12,15 @@
 #include <behaviortree_cpp/bt_factory.h>
 #include "../include/bt_node.hpp"
 #include "../include/bt_vacume_on.hpp"
+#include "../include/bt_ball_detect.hpp"
+#include "../include/bt_generate_route.hpp"
+#include "../include/bt_follow_route.hpp"
+#include "../include/bt_rotate.hpp"
 
 using namespace std::chrono_literals;
 using namespace BT;
 
 namespace ActionNodes {
-    class BallDetact: public SyncActionNode {
-        public:
-            BallDetact(const std::string& name, const NodeConfig& config, std::shared_ptr<BTNode> ros_node):
-                SyncActionNode(name, config),
-                ros_node_(ros_node) {};
-
-            // port info
-            static PortsList providedPorts() {
-                return {
-                    OutputPort<double>("x"),
-                    OutputPort<double>("y")
-                };
-            }
-
-            NodeStatus tick() override {
-                double x, y;
-                this->ros_node_->ball_detect(&x, &y);
-
-                setOutput("x", x);
-                setOutput("y", y);
-
-                return NodeStatus::SUCCESS;
-            }
-
-            ~BallDetact() override {
-                this->ros_node_.reset();
-            }
-        private:
-            std::shared_ptr<BTNode> ros_node_;
-    };
-
-    class GenerateRoute: public SyncActionNode {
-        public:
-            GenerateRoute(const std::string& name, const NodeConfig& config, std::shared_ptr<BTNode> ros_node): 
-                SyncActionNode(name, config),
-                ros_node_(ros_node) {};
-
-            // port info
-            static PortsList providedPorts() {
-                return {
-                    InputPort<double> ("x"),
-                    InputPort<double> ("y")
-                };
-            }
-
-            NodeStatus tick() override {
-                std::cout << "call generate route" << std::endl;
-
-                Expected<double> tmp_x = getInput<double>("x");
-                Expected<double> tmp_y = getInput<double>("y");
-                if (!tmp_x) {
-                    throw BT::RuntimeError("missing required input x: ", tmp_x.error() );
-                }
-                if (!tmp_y) {
-                    throw BT::RuntimeError("missing required input x: ", tmp_y.error() );
-                }
-
-                double x = tmp_x.value();
-                double y = tmp_y.value();
-                
-                if (this->ros_node_ == nullptr) std::cerr << "null ptr" << std::endl;
-
-                this->ros_node_->send_pose(x, y);
-
-                return NodeStatus::SUCCESS;
-            }
-
-            ~GenerateRoute() {
-                this->ros_node_.reset();
-            }
-        private:
-            std::shared_ptr<BTNode> ros_node_;
-    }; 
-
-    class FollowRoute: public StatefulActionNode {
-        public:
-            FollowRoute(const std::string& name, const NodeConfiguration& config, std::shared_ptr<BTNode> ros_node) :
-                StatefulActionNode(name, config),
-                ros_node_(ros_node){}
-
-            NodeStatus onStart() override {
-                this->ros_node_->send_start_follow();
-                return NodeStatus::RUNNING;
-            }
-
-            NodeStatus onRunning() override {
-                
-                if (this->ros_node_->isRuning()) {
-                    return NodeStatus::RUNNING;
-                } else {
-                    return NodeStatus::SUCCESS;
-                }
-            }
-
-            void onHalted() override {
-                // TODO
-                std::cout << "interrupt SampleNode" << std::endl;
-            }
-
-            ~FollowRoute() {
-                this->ros_node_.reset();
-            }
-        private:
-            std::shared_ptr<BTNode> ros_node_;
-    };
-
-    class Rotate : public StatefulActionNode {
-        public:
-            Rotate(const std::string& name, const NodeConfig& config, std::shared_ptr<BTNode> ros_node) :
-                StatefulActionNode(name, config),
-                ros_node_(ros_node){}
-
-            static PortsList providedPorts() {
-                return { InputPort<double>("theta") };
-            }
-
-            NodeStatus onStart() override {
-                std::cout << "call SampleNode" << std::endl;
-                
-                // InputPortの値を受け取る
-                Expected<double> msg = getInput<double>("theta");
-                if (!msg) { // Inputの値が適切でないときの処理
-                    throw BT::RuntimeError("missing required input [sample_input]: ", msg.error() );
-                }
-                double targetTheta = msg.value();
-                this->ros_node_->send_rotate_position(targetTheta);
-
-                return NodeStatus::RUNNING;
-            }
-
-            NodeStatus onRunning() override {
-            
-                if (this->ros_node_->isRotateRuning()) {
-                    return NodeStatus::RUNNING;
-                } else {
-                    return NodeStatus::SUCCESS;
-                }
-                return NodeStatus::SUCCESS;
-            }
-
-            void onHalted() override {
-                std::cout << "interrupt SampleNode" << std::endl;
-            }
-
-            ~Rotate() {
-                this->ros_node_.reset();
-            }
-            
-        private:
-            std::shared_ptr<BTNode> ros_node_;
-    };
-
     BTNode::BTNode(const rclcpp::NodeOptions & options): Node("bt_node", options) {
         // create service client
         srvGenRoute_ = this->create_client<inrof2025_ros_type::srv::GenRoute>("generate_route");
@@ -342,9 +194,9 @@ int main(int argc, char* argv[]) {
 
     BT::NodeBuilder builder_ball_detect = 
         [ros_node](const std::string& name, const NodeConfiguration& config) {
-            return std::make_unique<ActionNodes::BallDetact>(name, config, ros_node);
+            return std::make_unique<ActionNodes::BallDetect>(name, config, ros_node);
         };
-    factory.registerBuilder<ActionNodes::BallDetact>("ball_detect", builder_ball_detect);
+    factory.registerBuilder<ActionNodes::BallDetect>("ball_detect", builder_ball_detect);
 
     std::string package_path = ament_index_cpp::get_package_share_directory("yasarobo2025_26");
     factory.registerBehaviorTreeFromFile(package_path + "/config/main_bt.xml");
