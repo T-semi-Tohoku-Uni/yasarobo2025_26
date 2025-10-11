@@ -94,6 +94,8 @@ class RotateNode: public rclcpp::Node {
             velPub_->publish(cmd);
 
         }
+
+        std::shared_ptr<rclcpp_action::ServerGoalHandle<inrof2025_ros_type::action::Rotate>> goal_handle_;
     private:
         void odomCallback(geometry_msgs::msg::Pose2D msgs) {
             pose_.x = msgs.x;
@@ -108,7 +110,6 @@ class RotateNode: public rclcpp::Node {
         }
 
         rclcpp_action::Server<inrof2025_ros_type::action::Rotate>::SharedPtr action_server_;
-        std::shared_ptr<rclcpp_action::ServerGoalHandle<inrof2025_ros_type::action::Rotate>> goal_handle_;
         rclcpp::Subscription<geometry_msgs::msg::Pose2D>::SharedPtr poseSub_;
         rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr velPub_;
         geometry_msgs::msg::Pose2D pose_;
