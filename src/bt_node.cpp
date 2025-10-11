@@ -13,54 +13,12 @@
 #include "../include/bt_node.hpp"
 #include "../include/bt_vacume_on.hpp"
 #include "../include/bt_ball_detect.hpp"
+#include "../include/bt_generate_route.hpp"
 
 using namespace std::chrono_literals;
 using namespace BT;
 
 namespace ActionNodes {
-    class GenerateRoute: public SyncActionNode {
-        public:
-            GenerateRoute(const std::string& name, const NodeConfig& config, std::shared_ptr<BTNode> ros_node): 
-                SyncActionNode(name, config),
-                ros_node_(ros_node) {};
-
-            // port info
-            static PortsList providedPorts() {
-                return {
-                    InputPort<double> ("x"),
-                    InputPort<double> ("y")
-                };
-            }
-
-            NodeStatus tick() override {
-                std::cout << "call generate route" << std::endl;
-
-                Expected<double> tmp_x = getInput<double>("x");
-                Expected<double> tmp_y = getInput<double>("y");
-                if (!tmp_x) {
-                    throw BT::RuntimeError("missing required input x: ", tmp_x.error() );
-                }
-                if (!tmp_y) {
-                    throw BT::RuntimeError("missing required input x: ", tmp_y.error() );
-                }
-
-                double x = tmp_x.value();
-                double y = tmp_y.value();
-                
-                if (this->ros_node_ == nullptr) std::cerr << "null ptr" << std::endl;
-
-                this->ros_node_->send_pose(x, y);
-
-                return NodeStatus::SUCCESS;
-            }
-
-            ~GenerateRoute() {
-                this->ros_node_.reset();
-            }
-        private:
-            std::shared_ptr<BTNode> ros_node_;
-    }; 
-
     class FollowRoute: public StatefulActionNode {
         public:
             FollowRoute(const std::string& name, const NodeConfiguration& config, std::shared_ptr<BTNode> ros_node) :
