@@ -15,57 +15,12 @@
 #include "../include/bt_ball_detect.hpp"
 #include "../include/bt_generate_route.hpp"
 #include "../include/bt_follow_route.hpp"
+#include "../include/bt_rotate.hpp"
 
 using namespace std::chrono_literals;
 using namespace BT;
 
 namespace ActionNodes {
-    class Rotate : public StatefulActionNode {
-        public:
-            Rotate(const std::string& name, const NodeConfig& config, std::shared_ptr<BTNode> ros_node) :
-                StatefulActionNode(name, config),
-                ros_node_(ros_node){}
-
-            static PortsList providedPorts() {
-                return { InputPort<double>("theta") };
-            }
-
-            NodeStatus onStart() override {
-                std::cout << "call SampleNode" << std::endl;
-                
-                // InputPortの値を受け取る
-                Expected<double> msg = getInput<double>("theta");
-                if (!msg) { // Inputの値が適切でないときの処理
-                    throw BT::RuntimeError("missing required input [sample_input]: ", msg.error() );
-                }
-                double targetTheta = msg.value();
-                this->ros_node_->send_rotate_position(targetTheta);
-
-                return NodeStatus::RUNNING;
-            }
-
-            NodeStatus onRunning() override {
-            
-                if (this->ros_node_->isRotateRuning()) {
-                    return NodeStatus::RUNNING;
-                } else {
-                    return NodeStatus::SUCCESS;
-                }
-                return NodeStatus::SUCCESS;
-            }
-
-            void onHalted() override {
-                std::cout << "interrupt SampleNode" << std::endl;
-            }
-
-            ~Rotate() {
-                this->ros_node_.reset();
-            }
-            
-        private:
-            std::shared_ptr<BTNode> ros_node_;
-    };
-
     BTNode::BTNode(const rclcpp::NodeOptions & options): Node("bt_node", options) {
         // create service client
         srvGenRoute_ = this->create_client<inrof2025_ros_type::srv::GenRoute>("generate_route");
