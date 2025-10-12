@@ -1,49 +1,31 @@
-from ament_index_python.packages import get_package_share_directory
-
-
-from launch import LaunchDescription
-from launch.actions import ExecuteProcess, IncludeLaunchDescription, RegisterEventHandler, SetEnvironmentVariable, TimerAction
-from launch.event_handlers import OnProcessExit, OnProcessStart
-from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration
-
-from launch_ros.actions import Node
-
-import xacro
 import os
+import sys
+import time
+import unittest
 import math
+import xacro
 
-def generate_launch_description():
+from ament_index_python.packages import get_package_share_directory
+import launch
+from launch.actions import IncludeLaunchDescription, TimerAction
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch_ros.actions import Node
+import launch_testing.actions
+from launch.substitutions import LaunchConfiguration
+import rclpy
+
+def generate_test_description():
     x = 0.25
     y = 0.25
     z = 0.30
     theata = math.pi / 2
-
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
-    package_dir = get_package_share_directory("yasarobo2025_26")
-    pkg_gazebo_ros = get_package_share_directory("gazebo_ros")
-    world = os.path.join(
-        get_package_share_directory("yasarobo2025_26"), "worlds", "field.world"
-    )
-    map_server_config_path = os.path.join(
-        package_dir,
-        "map",
-        "map.yaml"
-    )
-    rviz_config_path = os.path.join(
-        package_dir,
-        "config",
-        "default.rviz"
-    )
-    print(map_server_config_path)
-    lifecycle_nodes = ['map_server']
 
-    # load robot urdf file
+    package_dir = get_package_share_directory("yasarobo2025_26")
     xacro_file = os.path.join(package_dir, "urdf", "robot.xacro")
     doc = xacro.parse(open(xacro_file))
     xacro.process_doc(doc)
     params = {'robot_description': doc.toxml()}
-
     node_robot_state_publisher = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
@@ -55,17 +37,16 @@ def generate_launch_description():
         ]
     ) 
 
-    # gazebo settings
+    # run gazebo server
+    pkg_gazebo_ros = get_package_share_directory("gazebo_ros")
+    world = os.path.join(
+        get_package_share_directory("yasarobo2025_26"), "worlds", "field.world"
+    )
     gzserver_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_gazebo_ros, 'launch', 'gzserver.launch.py')
         ),
-        launch_arguments={'world': world}.items()
-    )
-    gzclient_cmd = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(pkg_gazebo_ros, 'launch', 'gzclient.launch.py')
-        )
+        launch_arguments={'world': world, 'verbose': 'true'}.items()
     )
 
     spawn_entity = Node(
@@ -81,24 +62,7 @@ def generate_launch_description():
         emulate_tty=True,
     )
 
-    # rviz2 settings
-    rviz_node = Node(
-        package="rviz2",
-        executable="rviz2",
-        name="rviz2",
-        output="log",
-        emulate_tty=True,
-        parameters=[{"use_sim_time": use_sim_time}],
-        arguments=["-d", rviz_config_path]
-    )
-
-    # nav2 map_server
-    map_server_cmd = Node(
-        package="nav2_map_server",
-        executable="map_server",
-        output="screen",
-        parameters=[{'yaml_filename': map_server_config_path}]
-    )
+    lifecycle_nodes = ['map_server']
     start_lifecycle_manager_cmd = Node(
         package="nav2_lifecycle_manager",
         executable="lifecycle_manager",
@@ -108,6 +72,19 @@ def generate_launch_description():
         parameters=[{'use_sim_time': use_sim_time},
                     {'autostart': True},
                     {'node_names': lifecycle_nodes}]
+    )
+
+    # nav2 map_server
+    map_server_config_path = os.path.join(
+        package_dir,
+        "map",
+        "map.yaml"
+    )
+    map_server_cmd = Node(
+        package="nav2_map_server",
+        executable="map_server",
+        output="screen",
+        parameters=[{'yaml_filename': map_server_config_path}]
     )
 
     # tf transfromer
@@ -194,26 +171,50 @@ def generate_launch_description():
         output="screen"
     )
 
+    return (
+        launch.LaunchDescription([
+            TimerAction(
+                period=2.0,
+                actions=[gzserver_cmd]
+            ),
+            node_robot_state_publisher,
+            spawn_entity,
+            map_server_cmd,
+            start_lifecycle_manager_cmd,
+            static_from_map_to_odom,
+            mcl_node,
+            joy_node,
+            joy2Vel_node,
+            vel_feedback_node,
+            gen_path,
+            follow_node,
+            rotate_node,
+            bt_node,
+            vacume_node,
+            TimerAction(
+                period=10.0, actions=[launch_testing.actions.ReadyToTest()]
+            ),
+        ]),{}
+    )
 
-    return LaunchDescription([
-        SetEnvironmentVariable(name='RCUTILS_COLORIZED_OUTPUT', value='1'),
-        node_robot_state_publisher,
-        spawn_entity,
-        rviz_node,
-        map_server_cmd,
-        start_lifecycle_manager_cmd,
-        static_from_map_to_odom,
-        mcl_node,
-        joy_node,
-        joy2Vel_node,
-        vel_feedback_node,
-        gen_path,
-        follow_node,
-        rotate_node,
-        bt_node,
-        vacume_node,
-        TimerAction(
-            period=2.0,
-            actions=[gzserver_cmd, gzclient_cmd]
-        )
-    ])
+class TestIntegration(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        rclpy.init()
+
+    @classmethod
+    def tearDownClass(cls):
+        rclpy.shutdown()
+
+    def setUp(self):
+        self.node = rclpy.create_node('test_integration_node')
+
+    def tearDown(self):
+        self.node.destroy_node()
+
+# Post-shutdown tests
+@launch_testing.post_shutdown_test()
+class TestIntegrationShutdown(unittest.TestCase):
+    def test_exit_codes(self, proc_info):
+        """Check if the processes exited normally."""
+        launch_testing.asserts.assertExitCodes(proc_info, allowable_exit_codes=[0, -2])

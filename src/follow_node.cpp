@@ -42,6 +42,9 @@ class FollowNode: public rclcpp::Node {
                 std::bind(&FollowNode::handleAccepted, this, std::placeholders::_1)
             );
         }
+
+        std::shared_ptr<rclcpp_action::ServerGoalHandle<inrof2025_ros_type::action::Follow>> goal_handle_;
+
     private:
         // action server callback
         rclcpp_action::GoalResponse handleGoal(
@@ -49,7 +52,6 @@ class FollowNode: public rclcpp::Node {
             std::shared_ptr<const inrof2025_ros_type::action::Follow::Goal> goal
         ) {
             if (!goal_handle_) {
-                RCLCPP_INFO(this->get_logger(), "Catch!!!!");
                 return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
             } else {
                 return rclcpp_action::GoalResponse::REJECT;
@@ -174,6 +176,9 @@ class FollowNode: public rclcpp::Node {
             cmd_pub_->publish(cmd);
         }
 
+        // action server
+        rclcpp_action::Server<inrof2025_ros_type::action::Follow>::SharedPtr action_server_;
+
         double lookahead_distance_;
         double max_linear_speed_;
         double max_angular_speed_;
@@ -188,14 +193,6 @@ class FollowNode: public rclcpp::Node {
         std::mutex mutex_;
         geometry_msgs::msg::Pose2D pose_;
         int current_waypoint_index_;    
-
-        // action server
-        rclcpp_action::Server<inrof2025_ros_type::action::Follow>::SharedPtr action_server_;
-        std::shared_ptr<rclcpp_action::ServerGoalHandle<inrof2025_ros_type::action::Follow>> goal_handle_;
-
-        // rotate action server
-        rclcpp_action::Server<inrof2025_ros_type::action::Rotate>::SharedPtr action_rotate_server_;
-        std::shared_ptr<rclcpp_action::ServerGoalHandle<inrof2025_ros_type::action::Rotate>> goal_rotate_handle_;
 };
 
 int main(int argc, char *argv[]) {
