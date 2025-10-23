@@ -13,10 +13,10 @@ class FollowNode: public rclcpp::Node {
         explicit FollowNode(const rclcpp::NodeOptions & options = rclcpp::NodeOptions()): Node("follow_node", options) {
             this->declare_parameter<double>("lookahead_distance", 0.05);
             this->declare_parameter<double>("max_linear_speed", 0.2);
-            this->declare_parameter<double>("max_angular_speed", 2.0);
+            this->declare_parameter<double>("max_theta_speed", 2.0);
             this->get_parameter("lookahead_distance", lookahead_distance_);
             this->get_parameter("max_linear_speed", max_linear_speed_);
-            this->get_parameter("max_angular_speed", max_angular_speed_);
+            this->get_parameter("max_theta_speed", max_theta_speed_);
 
             rclcpp::QoS pathQos(rclcpp::KeepLast(5));
             path_sub_ = this->create_subscription<nav_msgs::msg::Path> (
@@ -51,7 +51,7 @@ class FollowNode: public rclcpp::Node {
             const rclcpp_action::GoalUUID &,
             std::shared_ptr<const inrof2025_ros_type::action::Follow::Goal> goal
         ) {
-            if (!goal_handle_) {
+            if (!goal_handle_){
                 return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
             } else {
                 return rclcpp_action::GoalResponse::REJECT;
@@ -84,88 +84,126 @@ class FollowNode: public rclcpp::Node {
             // RCLCPP_INFO(this->get_logger(), "%.4f %.4f", pose_.x, pose_.y);
         }
         void controlLoop() {
-            if (!goal_handle_) {
-                // publishZero();
+            //do nothing if if there is no goal or path
+            if (!goal_handle_){
                 return;
             }
-            // std::lock_guard<std::mutex> lock(mutex_);
-            if (path_.empty()) {
-                // publishZero();
+            if (path_.empty()){
                 return;
             }
 
-            size_t nearest_idx = 0;
-            double min_dist_sq = std::numeric_limits<double>::infinity();
-            for (size_t i = 0; i < path_.size(); ++i) {
-                double dx = path_[i].pose.position.x - pose_.x;
-                double dy = path_[i].pose.position.y - pose_.y;
-                double d2 = dx*dx + dy*dy;
-                if (d2 < min_dist_sq) {
-                    min_dist_sq = d2;
-                    nearest_idx = i;
+            //PID gains
+            double Kp_linear = 10.0;
+            double Ki_linear = 0.00;
+            double Kd_linear = 0.00;
+            double Kp_theta= 1.00;
+            double Ki_theta= 0.00;
+            double Kd_theta= 0.00;
+
+            //decide tolerance range
+            double max_linear_tolerance = 0.2;  //m
+            double max_reaching_distance = 0.05; //m
+            //double max_theta_tolerance = 0.05;  //rad
+
+            //error calculation
+            double dx = path_[current_waypoint_index_].pose.position.x - pose_.x;
+            double dy = path_[current_waypoint_index_].pose.position.y - pose_.y;
+            double d2 = dx*dx + dy*dy;
+            double linear_error = std::hypot(dx, dy);
+            double linear_goal_x = path_[path_.size() -1].pose.position.x - pose_.x;
+            double linear_goal_y = path_[path_.size() -1].pose.position.y - pose_.y;
+            double linear_goal_distance = std::hypot(linear_goal_x, linear_goal_y);
+            //double target_theta = atan2(dy, dx);
+            //double theta_error = target_theta - pose_.theta;
+            //normalize angle to [-pi, pi]
+            //while (theta_error > M_PI) theta_error -= 2*M_PI;
+            //while (theta_error < -M_PI) theta_error += 2*M_PI;
+
+        
+            if (max_linear_tolerance > linear_error){ //&& max_theta_tolerance > std::abs(theta_error)) {
+                if (current_waypoint_index_ < (int)path_.size() -1){ //&&  linear_error > max_reaching_distance) {
+                    //move to next waypoint
+                    current_waypoint_index_++;
+                } 
+
+                if (linear_goal_distance < max_reaching_distance) {
+                    //goal reached
+                    RCLCPP_INFO(this->get_logger(), "Goal reached.");
+                    publishZero();
+                    auto result_msg = std::make_shared<inrof2025_ros_type::action::Follow::Result>();
+                    result_msg->success = true;
+                    goal_handle_->succeed(result_msg);
+                    goal_handle_.reset();
                 }
-            }
 
-            size_t target_index = nearest_idx;
-            for (size_t i=nearest_idx; i<path_.size(); i++ ) {
-                double dx   = path_[i].pose.position.x - pose_.x;
-                double dy   = path_[i].pose.position.y - pose_.y;
-                double dist = std::hypot(dx, dy);
-                if (dist > lookahead_distance_) {
-                    target_index = i;
-                    break;
-                }
-            }
-
-            // RCLCPP_INFO(this->get_logger(), "%d %.4f %.4f", target_index, pose_.x, pose_.y);
-
-            double tx = path_[target_index].pose.position.x - pose_.x;
-            double ty = path_[target_index].pose.position.y - pose_.y;
-            double x_r = cos(pose_.theta) * tx + sin(pose_.theta) * ty;
-            double y_r = -sin(pose_.theta) * tx + cos(pose_.theta) * ty;
-            
-            double curvature = 0.0;
-            if (x_r != 0) {
-                curvature = (2.0 * y_r) / (lookahead_distance_ * lookahead_distance_);
-            }
-
-            double linear = max_linear_speed_;
-            double angular = linear * curvature;
-            if (angular > max_angular_speed_) angular = max_angular_speed_;
-            if (angular < -max_angular_speed_) angular = -max_angular_speed_;
-            // auto & goal_pose = path_.back().pose.position;
-            // RCLCPP_INFO(this->get_logger(), "%.4f", goal_pose.x);
-
-            double goal_dist = std::hypot(path_.back().pose.position.x - pose_.x, path_.back().pose.position.y - pose_.y);
-            // RCLCPP_INFO(this->get_logger(), "%.4f", goal_dist);
-            if (goal_dist < 0.1) {
-                publishZero();
-                auto result_msg = std::make_shared<inrof2025_ros_type::action::Follow::Result>();
-                result_msg->success = true;
-                goal_handle_->succeed(result_msg);
-                goal_handle_.reset();
             } else {
-                geometry_msgs::msg::Twist cmd;
-                cmd.linear.x  = linear;
-                cmd.angular.z = angular;
-                cmd_pub_->publish(cmd);
+                    double dt = 0.1;
 
-                // feedback
-                auto feedback_msg = std::make_shared<inrof2025_ros_type::action::Follow::Feedback>();
-                feedback_msg->x = pose_.x;
-                feedback_msg->y = pose_.y;
-                feedback_msg->theta = pose_.theta;
-                goal_handle_ -> publish_feedback(feedback_msg);
-            }
-            // geometry_msgs::msg::Twist cmd;
-            // cmd.linear.x  = linear;
-            // cmd.angular.z = angular;
-            // try {
-            //     cmd_pub_->publish(cmd);
-            // } catch (const std::exception& e) {
-            //     RCLCPP_ERROR(this->get_logger(), "%s", e.what());
-            // }
+                    //PID control for linear speed
+                    static double linear_error_prev = 0.0;
+                    static double linear_error_integral = 0.0;
+                    linear_error_integral += linear_error * dt;
+                    double linear_error_derivative = (linear_error - linear_error_prev) / dt;
+                    
+                    double linear_speed_cmd = Kp_linear * linear_error
+                                            + Ki_linear * linear_error_integral
+                                            + Kd_linear * linear_error_derivative;
+                    linear_error_prev = linear_error;
+
+                    RCLCPP_INFO(this->get_logger(), "linear_error: %.4f, linear_speed_cmd: %.4f", linear_error, linear_speed_cmd);
+
+
+                    //PID control for theta speed
+                    //static double theta_error_prev = 0.0;
+                    //static double theta_error_integral = 0.0;
+
+                    //double theta_error_derivative = (theta_error - theta_error_prev)/dt;
+                    //theta_error_integral += theta_error * dt;
+                    //double theta_speed_cmd = Kp_theta * theta_error 
+                    //                       + Ki_theta * theta_error_integral
+                    //                       + Kd_theta * theta_error_derivative; 
+                    //theta_error_prev = theta_error;
+
+                    //apply speed limits                    
+                    if (linear_speed_cmd > max_linear_speed_) linear_speed_cmd = max_linear_speed_;
+                    if (linear_speed_cmd < -max_linear_speed_) linear_speed_cmd = -max_linear_speed_;
+                    //if (theta_speed_cmd > max_theta_speed_) theta_speed_cmd = max_theta_speed_;
+                    //if (theta_speed_cmd < -max_theta_speed_) theta_speed_cmd = -max_theta_speed_;
+
+                    //日本語のやつはchatGPT
+                    // theta_error は [-pi, pi] に正規化済み
+                    double linear_speed_cmd_limited = linear_speed_cmd;
+
+                    // ロボットが後ろ向きの場合は線速度を反転
+                    //if (std::abs(theta_error) > M_PI_2) {  
+                    //    linear_speed_cmd_limited = -linear_speed_cmd;
+                        // 角度も補正（theta_error を π の範囲内にして回転方向を逆に）
+                    //    if (theta_error > 0) theta_error -= M_PI;
+                    //    else theta_error += M_PI;
+                    //}
+                    geometry_msgs::msg::Twist cmd;
+                    cmd.linear.x = linear_speed_cmd_limited;
+                    //cmd.angular.z = Kp_theta * theta_error + Ki_theta*theta_error_integral + Kd_theta*theta_error_derivative;
+
+
+                    //send cmd
+                    //geometry_msgs::msg::Twist cmd;
+                    //cmd.linear.x = linear_speed_cmd;
+                    //cmd.angular.z = theta_speed_cmd;
+                    cmd_pub_->publish(cmd);
+
+                    //publish feedback
+                    auto feedback_msg = std::make_shared<inrof2025_ros_type::action::Follow::Feedback>();
+                    feedback_msg->x = pose_.x;
+                    feedback_msg->y = pose_.y;
+                    feedback_msg->theta = pose_.theta;
+                    goal_handle_->publish_feedback(feedback_msg);
+                }
+
+           
+
         }
+         
 
         void publishZero()
         {
@@ -181,7 +219,7 @@ class FollowNode: public rclcpp::Node {
 
         double lookahead_distance_;
         double max_linear_speed_;
-        double max_angular_speed_;
+        double max_theta_speed_;
 
         // subscriber
         rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr path_sub_;
@@ -193,6 +231,15 @@ class FollowNode: public rclcpp::Node {
         std::mutex mutex_;
         geometry_msgs::msg::Pose2D pose_;
         int current_waypoint_index_;    
+
+        // action server
+        rclcpp_action::Server<inrof2025_ros_type::action::Follow>::SharedPtr action_server_;
+        std::shared_ptr<rclcpp_action::ServerGoalHandle<inrof2025_ros_type::action::Follow>> goal_handle_;
+
+        // rotate action server
+        rclcpp_action::Server<inrof2025_ros_type::action::Rotate>::SharedPtr action_rotate_server_;
+        std::shared_ptr<rclcpp_action::ServerGoalHandle<inrof2025_ros_type::action::Rotate>> goal_rotate_handle_;
+
 };
 
 int main(int argc, char *argv[]) {

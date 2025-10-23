@@ -7,8 +7,8 @@
       },
       "includePath": [
         "/opt/ros/humble/include/**",
-        "${env:HOME}/ros_ws/src/yasarobo2025_26/include/**",
-        "${env:HOME}/ros_ws/install/inrof2025_ros_type/include/**",
+        "/home/ros2/ros_ws/src/yasarobo2025_26/include/**",
+        "/home/yamat/ros_ws/install/inrof2025_ros_type/include/**",
         "/usr/include/**"
       ],
       "name": "ROS",
