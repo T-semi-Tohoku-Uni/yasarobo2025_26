@@ -94,15 +94,16 @@ class FollowNode: public rclcpp::Node {
 
             //PID gains
             double Kp_linear = 1.0;
-            double Ki_linear = 0.00;
+            double Ki_linear = 0.20;
             double Kd_linear = 0.00;
-            double Kp_theta= 1.00;
-            double Ki_theta= 0.00;
-            double Kd_theta= 0.00;
+            //double Kp_theta= 1.00;
+            //double Ki_theta= 0.00;
+            //double Kd_theta= 0.00;
 
             //decide tolerance range
-            double max_linear_tolerance = 0.2;  //m
+            double max_linear_tolerance = 0.08;  //m
             double max_reaching_distance = 0.05; //m
+            double lookahead_distance = 1.0; //m
             //double max_theta_tolerance = 0.05;  //rad
 
             //error calculation
@@ -121,7 +122,7 @@ class FollowNode: public rclcpp::Node {
 
         
             if (max_linear_tolerance > linear_error){ //&& max_theta_tolerance > std::abs(theta_error)) {
-                if (current_waypoint_index_ < (int)path_.size() -1){ //&&  linear_error > max_reaching_distance) {
+                if (current_waypoint_index_ < (int)path_.size() -1){ //&&  linear_error < lookahead_distance_ / 2.0 ) {
                     //move to next waypoint
                     current_waypoint_index_++;
                 } 
@@ -167,7 +168,7 @@ class FollowNode: public rclcpp::Node {
                     //RCLCPP_INFO(this->get_logger(), "pose:", "%.4f %.4f ", pose_.x, pose_.y);
                     //RCLCPP_INFO(this->get_logger(), "path:", "%.4f %.4f ", path_[current_waypoint_index_].pose.position.x, path_[current_waypoint_index_].pose.position.y);
                     //RCLCPP_INFO(this->get_logger(), "dx, dy:", "%.4f %.4f ", dx, dy);
-                    RCLCPP_INFO(this->get_logger(), "linear cmd: %.4f %.4f ", linear_speed_cmd_x, linear_speed_cmd_y);
+                    //RCLCPP_INFO(this->get_logger(), "linear cmd: %.4f %.4f ", linear_speed_cmd_x, linear_speed_cmd_y);
 
 
                     
