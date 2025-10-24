@@ -93,7 +93,7 @@ class FollowNode: public rclcpp::Node {
             }
 
             //PID gains
-            double Kp_linear = 10.0;
+            double Kp_linear = 1.0;
             double Ki_linear = 0.00;
             double Kd_linear = 0.00;
             double Kp_theta= 1.00;
@@ -140,17 +140,37 @@ class FollowNode: public rclcpp::Node {
                     double dt = 0.1;
 
                     //PID control for linear speed
-                    static double linear_error_prev = 0.0;
-                    static double linear_error_integral = 0.0;
-                    linear_error_integral += linear_error * dt;
-                    double linear_error_derivative = (linear_error - linear_error_prev) / dt;
+                    static double linear_error_prev_dx = 0.0;
+                    static double linear_error_integral_x = 0.0;
+                    linear_error_integral_x += dx * dt;
+                    double linear_error_derivative_x = (dx - linear_error_prev_dx) / dt;
                     
-                    double linear_speed_cmd = Kp_linear * linear_error
-                                            + Ki_linear * linear_error_integral
-                                            + Kd_linear * linear_error_derivative;
-                    linear_error_prev = linear_error;
+                    double linear_speed_cmd_x = Kp_linear * dx
+                                            + Ki_linear * linear_error_integral_x
+                                            + Kd_linear * linear_error_derivative_x;
+                    linear_error_prev_dx = dx;
 
-                    RCLCPP_INFO(this->get_logger(), "linear_error: %.4f, linear_speed_cmd: %.4f", linear_error, linear_speed_cmd);
+                    //RCLCPP_INFO(this->get_logger(), "dx: %.4f dy: %.4f", dx, dy);
+
+                    static double linear_error_prev_dy = 0.0;
+                    static double linear_error_integral_y = 0.0;
+                    linear_error_integral_y += dy * dt;
+                    double linear_error_derivative_y = (dy - linear_error_prev_dy) / dt;
+
+                    double linear_speed_cmd_y = Kp_linear * dy
+                                            + Ki_linear * linear_error_integral_y
+                                            + Kd_linear * linear_error_derivative_y;
+                    linear_error_prev_dy = dy;
+
+
+
+                    //RCLCPP_INFO(this->get_logger(), "pose:", "%.4f %.4f ", pose_.x, pose_.y);
+                    //RCLCPP_INFO(this->get_logger(), "path:", "%.4f %.4f ", path_[current_waypoint_index_].pose.position.x, path_[current_waypoint_index_].pose.position.y);
+                    //RCLCPP_INFO(this->get_logger(), "dx, dy:", "%.4f %.4f ", dx, dy);
+                    RCLCPP_INFO(this->get_logger(), "linear cmd: %.4f %.4f ", linear_speed_cmd_x, linear_speed_cmd_y);
+
+
+                    
 
 
                     //PID control for theta speed
@@ -165,14 +185,17 @@ class FollowNode: public rclcpp::Node {
                     //theta_error_prev = theta_error;
 
                     //apply speed limits                    
-                    if (linear_speed_cmd > max_linear_speed_) linear_speed_cmd = max_linear_speed_;
-                    if (linear_speed_cmd < -max_linear_speed_) linear_speed_cmd = -max_linear_speed_;
+                    if (linear_speed_cmd_x > max_linear_speed_) linear_speed_cmd_x = max_linear_speed_;
+                    if (linear_speed_cmd_x < -max_linear_speed_) linear_speed_cmd_x = -max_linear_speed_;
+                    if (linear_speed_cmd_y > max_linear_speed_) linear_speed_cmd_y = max_linear_speed_;
+                    if (linear_speed_cmd_y < -max_linear_speed_) linear_speed_cmd_y = -max_linear_speed_;
                     //if (theta_speed_cmd > max_theta_speed_) theta_speed_cmd = max_theta_speed_;
                     //if (theta_speed_cmd < -max_theta_speed_) theta_speed_cmd = -max_theta_speed_;
 
                     //日本語のやつはchatGPT
                     // theta_error は [-pi, pi] に正規化済み
-                    double linear_speed_cmd_limited = linear_speed_cmd;
+                    //double linear_speed_cmd_limited = linear_speed_cmd_x; 
+
 
                     // ロボットが後ろ向きの場合は線速度を反転
                     //if (std::abs(theta_error) > M_PI_2) {  
@@ -181,8 +204,16 @@ class FollowNode: public rclcpp::Node {
                     //    if (theta_error > 0) theta_error -= M_PI;
                     //    else theta_error += M_PI;
                     //}
+
+
+                    double linear_speed_cmd_x_1 = cos(pose_.theta) * linear_speed_cmd_x + sin(pose_.theta) * linear_speed_cmd_y;
+                    double linear_speed_cmd_y_1 = -sin(pose_.theta) * linear_speed_cmd_x + cos(pose_.theta) * linear_speed_cmd_y;
+
+
+
                     geometry_msgs::msg::Twist cmd;
-                    cmd.linear.x = linear_speed_cmd_limited;
+                    cmd.linear.x = linear_speed_cmd_x_1;
+                    cmd.linear.y = linear_speed_cmd_y_1;
                     //cmd.angular.z = Kp_theta * theta_error + Ki_theta*theta_error_integral + Kd_theta*theta_error_derivative;
 
 
