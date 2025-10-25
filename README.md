@@ -101,6 +101,12 @@ git clone git@github.com:T-semi-Tohoku-Uni/yasarobo2025_26.git
 ```
 
 ## 環境設定
+## 実機・シミュレーション共通の設定
+エラー，warningは色をつける
+```bash
+echo 'export RCUTILS_COLORIZED_OUTPUT=1' >> ~/.bashrc
+```
+
 ### シミュレーションで実行する場合
 gazeboに表示するモデルのパスを設定
 ```bash
@@ -122,6 +128,20 @@ ros2 daemon start
 `192.168.0.180`は、その機器のipアドレスに設定。（`ifconfig`を打てばわかる）
 ```bash
 echo 'export ROS_IP=192.168.0.180' >> ~/.bashrc
+```
+
+sudoなしで，usbデバイスにアクセス
+```bash
+sudo usermod -a -G dialout $USER
+```
+デバッグ用のコントローラスティック
+```bash
+sudo apt install ros-humble-joy*
+sudo usermod -a -G input $USER
+```
+ターミナルの再起動
+```
+exit
 ```
 
 ## 依存する外部ライブラリのインストール
