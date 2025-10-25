@@ -88,7 +88,7 @@ cd ~/ros_ws/src/ldrobot-lidar-ros2/scripts/
 cd
 cd ros_ws/src
 git clone git@github.com:keigo1216/inrof2025_ros_type.git
-cd inrof2025_ros_type
+cd ~ros_ws
 colcon build --packages-select inrof2025_ros_type
 ```
 
@@ -108,7 +108,7 @@ echo 'export GAZEBO_MODEL_PATH=$HOME/ros_ws/install/yasarobo2025_26/share/yasaro
 ```
 `WITH_SIM`環境変数を`1`に設定（`0`にすると実機バージョンでビルドされるので注意）
 ```bash
-echo `export WITH_SIM=1 >> ~/.bashrc`
+echo 'export WITH_SIM=1' >> ~/.bashrc
 ``` 
 
 ### 実機で実行する場合
