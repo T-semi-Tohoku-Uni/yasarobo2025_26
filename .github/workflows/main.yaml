@@ -90,3 +90,9 @@ jobs:
             source /opt/ros/humble/setup.bash
             cd ros_ws
             colcon build
+
+      - name: launch test
+        run: |
+            source /opt/ros/humble/setup.bash
+            cd ros_ws
+            launch_test src/yasarobo2025_26/test/test_integration.py
