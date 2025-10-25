@@ -95,5 +95,5 @@ jobs:
         run: |
             cd ros_ws
             source /opt/ros/humble/setup.bash
-            souece install/setup.bash
+            source install/setup.bash
             launch_test src/yasarobo2025_26/test/test_integration.py
