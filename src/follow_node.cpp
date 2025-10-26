@@ -101,7 +101,7 @@ class FollowNode: public rclcpp::Node {
             //double Kd_theta= 0.00;
 
             //decide tolerance range
-            double max_linear_tolerance = 0.08;  //m
+            double max_linear_tolerance = 0.06;  //m
             double max_reaching_distance = 0.05; //m
             double lookahead_distance = 1.0; //m
             //double max_theta_tolerance = 0.05;  //rad
