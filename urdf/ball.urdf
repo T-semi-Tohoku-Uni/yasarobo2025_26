@@ -1,0 +1,27 @@
+<robot name="sphere_robot">
+  <link name="ball_link">
+    <visual>
+      <geometry>
+        <sphere radius="0.065"/>
+      </geometry>
+      <material name="blue">
+        <color rgba="0.2 0.2 1 1"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <sphere radius="0.065"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.1"/>
+      <inertia
+        ixx="0.001"
+        iyy="0.001"
+        izz="0.001"
+        ixy="0.0"
+        ixz="0.0"
+        iyz="0.0"/>
+    </inertial>
+  </link>
+</robot>
