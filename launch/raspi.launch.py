@@ -182,6 +182,8 @@ def generate_launch_description():
             "Kp_linear": 1.00,
             "Ki_linear": 0.00,
             "Kd_linear": 0.00,
+            "max_linear_tolerance": 0.08,
+            "max_reaching_distance": 0.02,
         }]
     )
 

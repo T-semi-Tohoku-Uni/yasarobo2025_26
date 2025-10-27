@@ -17,13 +17,16 @@ class FollowNode: public rclcpp::Node {
             this->declare_parameter<double>("Kp_linear", 1.0);
             this->declare_parameter<double>("Ki_linear", 0.20);
             this->declare_parameter<double>("Kd_linear", 0.00);
+            this->declare_parameter<double>("max_linear_tolerance", 0.08);
+            this->declare_parameter<double>("max_reaching_distance", 0.02);
             this->get_parameter("lookahead_distance", lookahead_distance_);
             this->get_parameter("max_linear_speed", max_linear_speed_);
             this->get_parameter("max_theta_speed", max_theta_speed_);
             this->get_parameter("Kp_linear", Kp_linear);
             this->get_parameter("Ki_linear", Ki_linear);
             this->get_parameter("Kd_linear", Kd_linear);
-            
+            this->get_parameter("max_linear_tolerance", max_linear_tolerance);
+            this->get_parameter("max_reaching_distance", max_reaching_distance);
 
 
 
@@ -110,8 +113,6 @@ class FollowNode: public rclcpp::Node {
             //double Kd_theta= 0.00;
 
             //decide tolerance range
-            double max_linear_tolerance = 0.06;  //m
-            double max_reaching_distance = 0.05; //m
             double lookahead_distance = 1.0; //m
             //double max_theta_tolerance = 0.05;  //rad
 
@@ -277,6 +278,10 @@ class FollowNode: public rclcpp::Node {
         double Kp_linear;
         double Ki_linear;
         double Kd_linear;
+
+        //tolerance and reaching distance
+        double max_linear_tolerance;
+        double max_reaching_distance;
 
         // waypoint index
         int current_waypoint_index_;    
