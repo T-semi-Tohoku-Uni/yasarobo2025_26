@@ -14,9 +14,20 @@ class FollowNode: public rclcpp::Node {
             this->declare_parameter<double>("lookahead_distance", 0.05);
             this->declare_parameter<double>("max_linear_speed", 0.2);
             this->declare_parameter<double>("max_theta_speed", 2.0);
+            this->declare_parameter<double>("Kp_linear", 1.0);
+            this->declare_parameter<double>("Ki_linear", 0.20);
+            this->declare_parameter<double>("Kd_linear", 0.00);
             this->get_parameter("lookahead_distance", lookahead_distance_);
             this->get_parameter("max_linear_speed", max_linear_speed_);
             this->get_parameter("max_theta_speed", max_theta_speed_);
+            this->get_parameter("Kp_linear", Kp_linear);
+            this->get_parameter("Ki_linear", Ki_linear);
+            this->get_parameter("Kd_linear", Kd_linear);
+            
+
+
+
+
 
             rclcpp::QoS pathQos(rclcpp::KeepLast(5));
             path_sub_ = this->create_subscription<nav_msgs::msg::Path> (
@@ -93,9 +104,7 @@ class FollowNode: public rclcpp::Node {
             }
 
             //PID gains
-            double Kp_linear = 1.0;
-            double Ki_linear = 0.20;
-            double Kd_linear = 0.00;
+            
             //double Kp_theta= 1.00;
             //double Ki_theta= 0.00;
             //double Kd_theta= 0.00;
@@ -262,6 +271,14 @@ class FollowNode: public rclcpp::Node {
         std::vector<geometry_msgs::msg::PoseStamped> path_;
         std::mutex mutex_;
         geometry_msgs::msg::Pose2D pose_;
+
+
+        // PID gains
+        double Kp_linear;
+        double Ki_linear;
+        double Kd_linear;
+
+        // waypoint index
         int current_waypoint_index_;    
 
         // action server
