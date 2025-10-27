@@ -21,8 +21,7 @@
 #include <laser_geometry/laser_geometry.hpp>
 #include <cmath>
 #include <cstdlib>
-
-
+#include <inrof2025_ros_type/srv/ball_pose.hpp>
 
 namespace mcl {
     class Particle{
@@ -79,7 +78,6 @@ namespace mcl {
                 this->odomNoise3_ = this->get_parameter("odomNoise3").as_double();
                 this->odomNoise4_ = this->get_parameter("odomNoise4").as_double();
                 particles_.resize(particleNum_);
-                pro_.resize(particleNum_);
 
                 measurementLikelihoods_.resize(particleNum_);
 
@@ -565,7 +563,7 @@ namespace mcl {
             std::double_t totalLikelihood_;//全パーティクルの尤度の合計
             std::double_t averageLikelihood_;//平均尤度を保持するための変数
             std::vector<std::double_t> measurementLikelihoods_;//各パーティクルの尤度
-            std::vector<probability> pro_;//使っていない
+            //std::vector<probability> pro_;//使っていない
 
             std::double_t effectiveSampleSize_;//パーティクルの偏り具合
             std::double_t resampleThreshold_;//リサピリングの閾値
@@ -631,7 +629,7 @@ namespace mcl {
             void timer_callback() {
                 RCLCPP_INFO(this->get_logger(), "In timer loop");
             }
-    }
+    };
 }
 
 
