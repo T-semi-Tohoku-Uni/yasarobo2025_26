@@ -121,7 +121,7 @@ def generate_launch_description():
 
     mcl_node = Node(
         package="yasarobo2025_26",
-        executable="mcl_node",
+        executable="mcl_node_test",
         parameters=[{
             "initial_x": x,
             "initial_y": y,

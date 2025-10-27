@@ -104,7 +104,7 @@ ros_node_executable(gen_path)
 ros_node_executable(follow_node)
 ros_node_executable(rotate_node)
 ros_node_executable(dummy_vacume_uart)
-ros_node_executable(mcl_node)
+ros_node_executable(mcl_node_test)
 ros_node_executable(vel_feedback_node)
 
 install(DIRECTORY include/ DESTINATION include/${PROJECT_NAME})
