@@ -6,8 +6,8 @@
       <Sequence>
         <vacume_on on="1"/>
         <Delay delay_msec="5000">
-          <generate_route x="1.34"
-                          y="1.8"/>
+          <generate_route x="0.3"
+                          y="2.0"/>
         </Delay>
         <follow_route/>
         <rotate theta="3.14"/>
