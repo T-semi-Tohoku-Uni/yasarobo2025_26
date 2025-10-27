@@ -7,7 +7,7 @@
         <vacume_on on="1"/>
         <Delay delay_msec="5000">
           <generate_route x="0.3"
-                          y="1.0"/>
+                          y="1.5"/>
         </Delay>
         <follow_route/>
         <rotate theta="3.14"/>
