@@ -16,10 +16,10 @@ import xacro
 import math
 
 def generate_launch_description():
-    x = 0.25
-    y = 0.25
+    x = 0.3
+    y = 1.5
     z = 0.30
-    theata = math.pi / 2
+    theata = 0.0
 
     package_dir = get_package_share_directory("yasarobo2025_26")
 
