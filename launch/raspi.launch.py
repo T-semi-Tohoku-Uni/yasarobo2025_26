@@ -17,7 +17,7 @@ import math
 
 def generate_launch_description():
     x = 0.3
-    y = 1.5
+    y = 2.2
     z = 0.30
     theata = 0.0
 
@@ -123,7 +123,7 @@ def generate_launch_description():
         executable="mcl_node",
         output="screen",
         parameters=[{
-            "particleNum": 1000,
+            "particleNum": 100,
             "initial_x": x,
             "initial_y": y,
             "initial_theta": theata,
