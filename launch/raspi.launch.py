@@ -123,7 +123,7 @@ def generate_launch_description():
         executable="mcl_node",
         output="screen",
         parameters=[{
-            "particleNum": 150,
+            "particleNum": 300,
             "initial_x": x,
             "initial_y": y,
             "initial_theta": theata,
@@ -176,10 +176,10 @@ def generate_launch_description():
         executable="follow_node",
         output="screen",
         parameters=[{
-            "max_linear_speed": 0.10,
+            "max_linear_speed": 0.05,
             "max_angular_speed": 0.5,
             "lookahead_distance": 0.10,
-            "Kp_linear": 0.50,
+            "Kp_linear": 1.00,
             "Ki_linear": 0.00,
             "Kd_linear": 0.00,
             "max_linear_tolerance": 0.08,
