@@ -17,6 +17,11 @@
 
 ### ros2 humble
 [公式の手順](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debs.html)にしたがってインストール
+追加でこちらも実行
+```bash
+echo 'source /opt/ros/humble/setup.bash' >> ~/.bashrc
+```
+
 
 ### rosdep
 ```bash
@@ -88,8 +93,6 @@ cd ~/ros_ws/src/ldrobot-lidar-ros2/scripts/
 cd
 cd ros_ws/src
 git clone git@github.com:keigo1216/inrof2025_ros_type.git
-cd ~ros_ws
-colcon build --packages-select inrof2025_ros_type
 ```
 
 ### メインのプログラムのインストール
@@ -150,6 +153,13 @@ rosdep install --from-paths src -y --ignore-src
 ```
 
 ## 実行方法
+（初回のみ全てのパッケージをビルド）
+```bash
+cd
+cd ros_ws
+colcon build
+```
+
 ビルド
 ```bash
 cd 
