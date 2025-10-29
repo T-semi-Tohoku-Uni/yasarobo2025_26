@@ -153,8 +153,8 @@ def generate_launch_description():
         executable="vel_feedback_uart",
         output="screen",
         parameters=[{
-            "Kp_linear": 1.0,
-            "Kp_angular": 1.0,
+            "Kp_linear": 0.1,
+            "Kp_angular": 0.1,
         }]
     )
 
