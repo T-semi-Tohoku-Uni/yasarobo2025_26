@@ -180,7 +180,7 @@ def generate_launch_description():
         executable="follow_node",
         output="screen",
         parameters=[{
-            "max_linear_speed": 0.05,
+            "max_linear_speed": 0.10,
             "max_angular_speed": 0.5,
             "lookahead_distance": 0.10,
             "Kp_linear": 1.00,
