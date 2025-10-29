@@ -151,7 +151,11 @@ def generate_launch_description():
     vel_feedback_node = Node(
         package="yasarobo2025_26",
         executable="vel_feedback_uart",
-        output="screen"
+        output="screen",
+        parameters=[{
+            "Kp_linear": 1.0,
+            "Kp_angular": 1.0,
+        }]
     )
 
     vacume_node = Node(
