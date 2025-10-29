@@ -9,7 +9,7 @@
         "/opt/ros/humble/local/lib/python3.10/dist-packages"
     ],
     "cmake.configureEnvironment": {
-        "CMAKE_PREFIX_PATH": "${env:HOME}/ros_ws/install"
+        "CMAKE_PREFIX_PATH": "/home/yamat/ros_ws/install"
     },
     "files.associations": {
         "functional": "cpp",
@@ -104,5 +104,6 @@
         "span": "cpp",
         "syncstream": "cpp",
         "valarray": "cpp"
-    }
+    },
+    "C_Cpp.default.compilerPath": "/usr/bin/g++"
 }

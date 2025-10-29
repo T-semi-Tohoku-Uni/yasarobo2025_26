@@ -21,8 +21,11 @@ namespace raspi {
     class CmdVel: public rclcpp::Node {
         public:
             explicit CmdVel(const rclcpp::NodeOptions & options = rclcpp::NodeOptions()): Node("cmd_vel_feedback", options) {
+                this->declare_parameter<double>("Kp_linear", 0.00);
+                this->declare_parameter<double>("Kp_angular", 0.00);
+                this->get_parameter("Kp_linear", Kp_linear);
+                this->get_parameter("Kp_angular", Kp_angular);
                 fd_vel_ = open_serial("/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.2");
-
                 r_ = 0.14;
                 auto feedbackQ = rclcpp::QoS(rclcpp::KeepLast(10));
                 pub_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel_feedback", feedbackQ);
@@ -31,17 +34,54 @@ namespace raspi {
                 );
                 rclcpp::QoS sendQ(rclcpp::KeepLast(10));
                 sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
-                    "/cmd_vel", sendQ, std::bind(&CmdVel::sendVel, this, std::placeholders::_1)
+                    "/cmd_vel", sendQ, std::bind(&CmdVel::cmdVelCallback, this, std::placeholders::_1)
+                );
+                control_timer_ = this->create_wall_timer(
+                    std::chrono::microseconds(20), std::bind(&CmdVel::cascadeControl, this)
                 );
             }
         private:
-            void sendVel(geometry_msgs::msg::Twist::SharedPtr msg) {
+
+            void cmdVelCallback(geometry_msgs::msg::Twist::SharedPtr msg) {
+                cmd_vel_ = *msg;
+            }
+        
+
+
+            void cascadeControl(){ 
+
+                double vx_target = cmd_vel_.linear.x;
+                double vy_target = cmd_vel_.linear.y;
+                double omega_target = cmd_vel_.angular.z;
+
+                double vx_cur = cmd_vel_feedback_.linear.x;
+                double vy_cur = cmd_vel_feedback_.linear.y;
+                double omega_cur = cmd_vel_feedback_.angular.z;
+
+                double error_vx = vx_target - vx_cur;
+                double error_vy = vy_target - vy_cur;
+                double error_omega = omega_target - omega_cur;
+
+                double vx = vx_target + Kp_linear * error_vx;
+                double vy = vy_target + Kp_linear * error_vy;
+                double omega = omega_target + Kp_angular * error_omega;
+            
+                geometry_msgs::msg::Twist twist;
+                twist.linear.x = vx;
+                twist.linear.y = vy;
+                twist.angular.z = omega;
+
+                sendVel(twist);
+            }
+
+
+            void sendVel(geometry_msgs::msg::Twist msg) {
                 U32Bytes u32_bytes[3];
                 uint8_t buf[14];
                 memset(buf, 0x00, sizeof(buf));
-                float vel_x = msg->linear.x;
-                float vel_y = msg->linear.y;
-                float vel_theta = msg->angular.z;
+                float vel_x = msg.linear.x;
+                float vel_y = msg.linear.y;
+                float vel_theta = msg.angular.z;
 
                 MotorVel motor_vel = forwardKinematics(vel_x, vel_y, vel_theta);
     
@@ -105,6 +145,7 @@ namespace raspi {
                         // caculate x, y, theta
                         // TODO: 時間付きで渡してあげたい気持ち
                         geometry_msgs::msg::Twist twist = inverseKinematics(cmd_feedback[0], cmd_feedback[1], cmd_feedback[2]);
+                        cmd_vel_feedback_ = twist;
                         // twist.linear.x = cmd_feedback[0];
                         // twist.linear.y = cmd_feedback[1];
                         // twist.angular.z = cmd_feedback[2];
@@ -198,10 +239,15 @@ namespace raspi {
 
             int fd_vel_;
             float r_;
+            double Kp_linear, Kp_angular;
             std::vector<uint8_t> recev_buffer_;
             rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_;
             rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_;
             rclcpp::TimerBase::SharedPtr receive_timer_;
+            rclcpp::TimerBase::SharedPtr control_timer_;
+            geometry_msgs::msg::Twist cmd_vel_;
+            geometry_msgs::msg::Twist cmd_vel_feedback_;
+            
     };
 }
 
