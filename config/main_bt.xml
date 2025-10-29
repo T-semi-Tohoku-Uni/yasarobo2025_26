@@ -25,7 +25,7 @@
           <generate_route x="1.34"
                           y="1.0"/>
           <follow_route/>
-          <rotate theta="1.57"/>
+          <rotate theta="3.14"/>
           <generate_route x="1.34"
                           y="1.8"/>
           <follow_route/>
