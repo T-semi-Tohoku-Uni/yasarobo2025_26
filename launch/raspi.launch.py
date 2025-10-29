@@ -129,7 +129,7 @@ def generate_launch_description():
             "initial_theta": theata,
             "odomNoise1": 2.0,
             "odomNoise2": 0.5,
-            "odomNoise3": 5.0,
+            "odomNoise3": 2.0,
             "odomNoise4": 5.0,
             "resampleThreshold": 0.9,
         }],
