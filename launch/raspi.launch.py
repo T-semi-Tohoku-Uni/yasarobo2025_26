@@ -131,6 +131,7 @@ def generate_launch_description():
             "odomNoise2": 4.0,
             "odomNoise3": 4.0,
             "odomNoise4": 4.0,
+            "resampleThreshold": 0.9,
         }],
     )
 
