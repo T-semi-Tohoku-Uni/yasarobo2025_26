@@ -73,7 +73,7 @@ namespace mcl {
                 this->declare_parameter<std::int32_t>("scanStep", 50);
                 this->declare_parameter<std::double_t>("lfmSigma", 0.03);
                 this->declare_parameter<std::double_t>("zHit", 1.0);
-                this->declare_parameter<std::double_t>("zMax", 1.0);
+                this->declare_parameter<std::double_t>("zMax", 0.0);
                 this->declare_parameter<std::double_t>("zRand", 1.0);
                 
                 particleNum_ = this->get_parameter("particleNum").as_int();
