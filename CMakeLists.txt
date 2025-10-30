@@ -30,6 +30,7 @@ find_package(laser_geometry REQUIRED)
 find_package(tf2_sensor_msgs REQUIRED)
 find_package(behaviortree_cpp REQUIRED)
 find_package(inrof2025_ros_type REQUIRED)
+find_package(nanoflann REQUIRED)
 
 if (BUILD_WITH_SIM)
   find_package(gazebo_ros REQUIRED)
@@ -53,12 +54,18 @@ function(dependencies target)
     "behaviortree_cpp"
     "inrof2025_ros_type"
   )
+
+  target_include_directories(${target}
+  PUBLIC
+  "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
+  "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+
   if (BUILD_WITH_SIM)
     ament_target_dependencies(${target} 
       "gazebo_msgs"
     )
   endif()
-  target_link_libraries(${target} ${YAML_CPP_LIBRARIES}) 
+  target_link_libraries(${target} ${YAML_CPP_LIBRARIES} nanoflann::nanoflann) 
 endfunction()
 
 function(ros_node_executable target)
@@ -106,6 +113,7 @@ ros_node_executable(rotate_node)
 ros_node_executable(dummy_vacume_uart)
 ros_node_executable(mcl_node)
 ros_node_executable(vel_feedback_node)
+ros_node_executable(ball_detect_node)
 
 install(DIRECTORY include/ DESTINATION include/${PROJECT_NAME})
 install(DIRECTORY launch worlds models urdf config map meshes

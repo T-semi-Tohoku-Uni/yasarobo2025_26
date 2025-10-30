@@ -212,6 +212,12 @@ def generate_launch_description():
         output="screen"
     )
 
+    detect_node = Node(
+        package="yasarobo2025_26",
+        executable="ball_detect_node",
+        output="screen"
+    )
+
 
     return LaunchDescription([
         SetEnvironmentVariable(name='RCUTILS_COLORIZED_OUTPUT', value='1'),
@@ -232,6 +238,7 @@ def generate_launch_description():
         rotate_node,
         bt_node,
         vacume_node,
+        detect_node,
         TimerAction(
             period=2.0,
             actions=[gzserver_cmd, gzclient_cmd]
