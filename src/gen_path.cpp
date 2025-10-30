@@ -101,6 +101,7 @@ namespace path {
             generator();
         }
 
+        /*経路生成*/
         void generator() {
             double sx = curOdom_.x;
             double sy = curOdom_.y;
@@ -128,15 +129,17 @@ namespace path {
             const int du[4] = {-1, 1, 0, 0};
             const int dv[4] = {0, 0, -1, 1};
 
+            /*探索ループ*/
             while(!q.empty()) { 
                 Cell cur = q.top(); q.pop();
-                if (cur.u == gu && cur.v == gv) break;
+                if (cur.u == gu && cur.v == gv) break; // ゴールに到達したら終了
 
                 for (int dir = 0; dir < 4; dir++ ) {
                     int nu = cur.u + du[dir];
                     int nv = cur.v + dv[dir];
 
                     if (nu >= 0 && nu < this->mapWidth_ && nv >= 0 && nv < this->mapHeight_) {
+                        /*コスト計算*/
                         double cost = cur.cost + distField_.at<double>(nv, nu);
                         if (cost < distances[nv][nu]) {
                             distances[nv][nu] = cost;
