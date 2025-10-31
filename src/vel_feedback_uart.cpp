@@ -48,59 +48,65 @@ namespace raspi {
 
             //dtは後で考える
             void accelerationControl(geometry_msgs::msg::Twist::SharedPtr msg) {
+                
+                cmd_vel_prime_ = *msg;
+
+                dt = 0.02;
+
+                //input linear velocity 
+                double vx_0 = cmd_vel_prime_.linear.x;
+                double vy_0 = cmd_vel_prime_.linear.y;
+                double omega_0 = cmd_vel_.angular.z;
+
+                //previous linear velocity
+                double vx_prev = cmd_vel_.linear.x;
+                double vy_prev = cmd_vel_.linear.y;
+                double omega_prev = cmd_vel_.linear.z;
+
+                double v_0_abs = std::hypot(vx_0, vy_0);
+                double v_prev_abs = std::hypot(vx_prev, vy_prev);
+
+                //max delta_v tolerance
+                double max_delta_v = max_linear_acceleration * dt;
+                double max_delta_omega = max_angular_acceleration * dt;
+
+                double delta_v = v_0_abs - v_prev_abs;
+                double delta_omega = omega_0 - omega_prev;
+
+                if (std::abs(delta_v) > max_delta_v){
+
+                    delta_v = (delta_v > 0 ? max_delta_v : -max_delta_v);
+                }
+
+                double v_new_abs = v_prev_abs + delta_v;
+
+                //Limit linear acceleration
+                double vx_new = 0.0;
+                double vy_new = 0.0;
+                //non 0
+                if (v_0_abs > 1e-6){
+                    vx_new = v_new_abs * (vx_0 / v_0_abs);
+                    vy_new = v_new_abs * (vy_0 / v_0_abs);
+                }                
+
+                //Limit angular acceleration
+                double delata_omeaga = omega_0 - omega_prev;
+                if (std::abs(delta_omega) > max_delta_omega) {
+                    delta_omega = (delta_omega > 0 ? max_delta_omega : -max_delta_omega);
+                }
+                double omega_new = omega_prev + delta_omega;
+
+
+                geometry_msgs::msg::Twist cmd_vel_1;
+                cmd_vel_1.linear.x = vx_new;
+                cmd_vel_1.linear.y = vy_new;
+                cmd_vel_1.angular.z = omega_new;
+
                 cmd_vel_ = *msg;
-                // cmd_vel_prime_ = *msg;
-
-                // dt = 0.02;
-
-                // //input linear velocity 
-                // double vx_0 = cmd_vel_prime_.linear.x;
-                // double vy_0 = cmd_vel_prime_.linear.y;
-                // double omega_0 = cmd_vel_.angular.z;
-
-                // //previous linear velocity
-                // double vx_prev = cmd_vel_.linear.x;
-                // double vy_prev = cmd_vel_.linear.y;
-                // double omega_prev = cmd_vel_.linear.z;
-
-                // double v_0_abs = std::hypot(vx_0, vy_0);
-                // double v_prev_abs = std::hypot(vx_prev, vy_prev);
-
-                // //max delta_v tolerance
-                // double max_delta_v = max_linear_acceleration * dt;
-                // double max_delta_omega = max_angular_acceleration * dt;
-
-                // double delta_v = v_0_abs - v_prev_abs;
-                // double delta_omega = omega_0 - omega_prev;
-
-                // if (std::abs(delta_v) > max_delta_v){
-
-                //     delta_v = (delta_v > 0 ? max_delta_v : -max_delta_v);
-                // }
-
-                // double v_new_abs = v_prev_abs + delta_v;
-
-                // //Limit linear acceleration
-                // double vx_new = 0.0;
-                // double vy_new = 0.0;
-                // //non 0
-                // if (v_0_abs > 1e-6){
-                //     vx_new = v_new_abs * (vx_0 / v_0_abs);
-                //     vy_new = v_new_abs * (vy_0 / v_0_abs);
-                // }                
-
-                // //Limit angular acceleration
-                // double delata_omeaga = omega_0 - omega_prev;
-                // if (std::abs(delta_omega) > max_delta_omega) {
-                //     delta_omega = (delta_omega > 0 ? max_delta_omega : -max_delta_omega);
-                // }
-                // double omega_new = omega_prev + delta_omega;
 
 
-
-                // cmd_vel_.linear.x = vx_new;
-                // cmd_vel_.linear.y = vy_new;
-                // cmd_vel_.angular.z = omega_new;
+                RCLCPP_INFO(this->get_logger, cmd_vel_1.linear.x);
+                RCLCPP_INFO(this0->get_logger, cmd_vel_.linear.x);
             }
         
 
