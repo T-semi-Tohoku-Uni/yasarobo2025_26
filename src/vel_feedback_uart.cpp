@@ -86,11 +86,9 @@ namespace raspi {
 
                 //non 0
                 if (v_target_abs > 1e-6){
-                    if (v_target_abs >= v_prev_abs){
-                        vx_new = v_new_abs * (vx_0 / v_target_abs);
-                        vy_new = v_new_abs * (vy_0 / v_target_abs);
-                    }
-                }  else {
+                    vx_new = v_new_abs * (vx_0 / v_target_abs);
+                    vy_new = v_new_abs * (vy_0 / v_target_abs);
+                }  else if (v_prev_abs > 1e-6) {
                     vx_new = v_new_abs * (vx_prev / v_prev_abs);
                     vy_new = v_new_abs * (vy_prev / v_prev_abs);
                 }            
