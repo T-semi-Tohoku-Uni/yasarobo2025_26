@@ -19,7 +19,7 @@ def generate_launch_description():
     x = 0.25
     y = 0.25
     z = 0.30
-    theata = math.pi / 2
+    theata = math.pi/2
 
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
     package_dir = get_package_share_directory("yasarobo2025_26")
@@ -65,7 +65,7 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(
             os.path.join(pkg_gazebo_ros, 'launch', 'gzserver.launch.py')
         ),
-        launch_arguments={'world': world}.items()
+        launch_arguments={'world': world, 'verbose': 'true'}.items()
     )
     gzclient_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(

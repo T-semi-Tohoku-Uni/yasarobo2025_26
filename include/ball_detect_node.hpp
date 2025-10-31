@@ -14,16 +14,27 @@ namespace DBSCAN {
         NOISE=-2,
     };
 
+    class UnitVector {
+        public:
+            UnitVector(double x, double y, double eps);
+            double getX() const;
+            double getY() const;
+        private:
+            double x_, y_;
+    };
+
     class Point {
         public:
-            Point(float x, float y, int clusterID=DBSCAN::ClusterID::UNVISITED);
+            Point(float x, float y, int pointID, int clusterID=DBSCAN::ClusterID::UNVISITED);
             float getX() const;
             float getY() const;
             int getID() const;
+            int getPointID() const;
             void setID(int id);
         private:
             float x_, y_;
             int clusterID_;
+            int pointID_;
     };
 
     class PointCloud {
@@ -69,8 +80,13 @@ namespace DBSCAN {
             );
 
             // delete wall
-            std::unordered_map<int, std::vector<DBSCAN::Point>> deleteWall(
-                std::unordered_map<int, std::vector<DBSCAN::Point>> clusters
+            double median(std::vector<double>& v);
+            std::vector<int> deleteWall(
+                std::unordered_map<int, std::vector<DBSCAN::Point>>& clusters
+            );
+            std::vector<DBSCAN::Point> collectBallPoints(
+                const std::unordered_map<int, std::vector<DBSCAN::Point>>& clusters,
+                const std::vector<int>& ball_cluster_ids
             );
 
             // convert LaserScan to Point
@@ -88,6 +104,10 @@ namespace DBSCAN {
             double EPS_;
             double MIN_PTS_;
             
+            // delete wall parameter
+            double DIFF_THTRSHOLD_;
+            double WALL_THTRSHOLD_;
+
             // env
             bool is_sim_;
 

@@ -5,9 +5,13 @@ DBSCAN::BallDetect::BallDetect(const rclcpp::NodeOptions & options): Node("ball_
     this->declare_parameter<std::string>("frame_id", "ldlidar_base");
     this->declare_parameter<double>("eps", 0.1);
     this->declare_parameter<double>("min_pts", 10);
+    this->declare_parameter<double>("wall_threshold", 0.01);
+    this->declare_parameter<double>("diff_threshold", 1e-8);
     this->get_parameter("frame_id", frame_id_);
     this->get_parameter("eps", EPS_);
     this->get_parameter("min_pts", MIN_PTS_);
+    this->get_parameter("wall_threshold", WALL_THTRSHOLD_);
+    this->get_parameter("diff_threshold", DIFF_THTRSHOLD_);
 
     // subscribe topic
     rclcpp::SensorDataQoS lidarScanQos = rclcpp::SensorDataQoS();
@@ -57,10 +61,88 @@ geometry_msgs::msg::Pose2D DBSCAN::BallDetect::detect() {
     /*
         execute dbscan
     */
+    // get cluster
     std::unordered_map<int, std::vector<DBSCAN::Point>> clusters =
         DBSCAN::BallDetect::dbscan(point_cloud.points, tree);
-    
+    // delete wall cluster
+    std::vector<int> ball_cluster_ids = DBSCAN::BallDetect::deleteWall(clusters);
+    std::vector<DBSCAN::Point> ball_cluster = DBSCAN::BallDetect::collectBallPoints(
+        clusters, ball_cluster_ids
+    );
+    this->pubClusters_->publish(point2PointCloud2(ball_cluster));
+
     return ball_pose;
+}
+
+std::vector<DBSCAN::Point> DBSCAN::BallDetect::collectBallPoints(
+    const std::unordered_map<int, std::vector<DBSCAN::Point>>& clusters,
+    const std::vector<int>& ball_cluster_ids
+){
+    std::vector<DBSCAN::Point> ball_points;
+    ball_points.reserve(450);
+
+    for (size_t cid : ball_cluster_ids) {
+        auto it = clusters.find(static_cast<int>(cid));
+        if (it == clusters.end()) continue;
+
+        const auto& pts = it->second;
+        ball_points.insert(ball_points.end(), pts.begin(), pts.end());
+    }
+
+    return ball_points;
+}
+
+double DBSCAN::BallDetect::median(std::vector<double>& v) {
+    if (v.empty()) return 0.0;
+    std::nth_element(v.begin(), v.begin() + v.size()/2, v.end());
+    return v[v.size()/2];
+}
+
+std::vector<int> DBSCAN::BallDetect::deleteWall(
+    std::unordered_map<int, std::vector<DBSCAN::Point>>& clusters
+) {
+    std::vector<int> ball_cluster_ids;
+
+    for (auto& [cid, pts]: clusters) {
+        if (pts.size() < 3) continue;
+
+        // sort on x
+        std::sort(
+            pts.begin(), 
+            pts.end(),
+            [](DBSCAN::Point& a, DBSCAN::Point& b) {
+                return a.getPointID() < b.getPointID();
+            }
+        );
+
+        std::vector<double> second_deriv;
+        for (size_t i=1; i+1<pts.size(); i++) {
+            double x1 = pts[i-1].getX(), y1 = pts[i-1].getY();
+            double x2 = pts[i].getX(),     y2 = pts[i].getY();
+            double x3 = pts[i+1].getX(), y3 = pts[i+1].getY();
+            
+            DBSCAN::UnitVector v1 = DBSCAN::UnitVector(x2-x1, y2-y1, DIFF_THTRSHOLD_);
+            DBSCAN::UnitVector v2 = DBSCAN::UnitVector(x3-x2, y3-y2, DIFF_THTRSHOLD_);
+
+            double ax = v2.getX() - v1.getX();
+            double ay = v2.getY() - v1.getY();
+
+            second_deriv.push_back(std::hypot(ax, ay));
+        }
+
+        // if (cid == 1) {
+        //     for (double p_: second_deriv) {
+        //         RCLCPP_INFO(this->get_logger(), "%lf", p_);
+        //     }
+        //     RCLCPP_INFO(this->get_logger(), "##################");
+        //     ball_cluster_ids.push_back(cid);
+        // }
+
+        double med = DBSCAN::BallDetect::median(second_deriv);
+        if (std::abs(med) > WALL_THTRSHOLD_) ball_cluster_ids.push_back(cid);
+    }
+
+    return ball_cluster_ids;
 }
 
 std::unordered_map<int, std::vector<DBSCAN::Point>> DBSCAN::BallDetect::dbscan(std::vector<DBSCAN::Point> &points, DBSCAN::KdTree &tree) {
@@ -75,7 +157,7 @@ std::unordered_map<int, std::vector<DBSCAN::Point>> DBSCAN::BallDetect::dbscan(s
         }  
     }
 
-    this->pubClusters_->publish(point2PointCloud2(points));
+    // this->pubClusters_->publish(point2PointCloud2(points));
 
     // sort point on x
     std::unordered_map<int, std::vector<DBSCAN::Point>> clusters;
@@ -151,7 +233,7 @@ DBSCAN::PointCloud DBSCAN::BallDetect::scan2Point(const sensor_msgs::msg::LaserS
         if (is_sim_) theta = scan.angle_min + ((std::double_t)(i))*scan.angle_increment;
         else theta = scan.angle_min + ((std::double_t)(i))*scan.angle_increment - 3.0*M_PI/2.0;
 
-        DBSCAN::Point p(r*cos(theta), r*sin(theta));
+        DBSCAN::Point p(r*cos(theta), r*sin(theta), i);
         point_cloud.points.push_back(p);
     }
     return point_cloud;
@@ -235,10 +317,15 @@ sensor_msgs::msg::PointCloud2 DBSCAN::BallDetect::point2PointCloud2(
     return cloud;
 }
 
-DBSCAN::Point::Point(float x, float y, int clusterID) {
+DBSCAN::Point::Point(float x, float y, int pointID, int clusterID) {
     this->x_ = x;
     this->y_ = y;
+    this->pointID_ = pointID;
     this->clusterID_ = clusterID;
+}
+
+int DBSCAN::Point::getPointID() const {
+    return this->pointID_;
 }
 
 size_t DBSCAN::PointCloud::kdtree_get_point_count() const {
@@ -269,6 +356,25 @@ int DBSCAN::Point::getID() const {
 
 void DBSCAN::Point::setID(int id) {
     clusterID_ = id;
+}
+
+DBSCAN::UnitVector::UnitVector(double x, double y, double eps) {
+    double norm = std::hypot(x, y);
+    if (norm > eps) {
+        x_ = x / norm;
+        y_ = y / norm;
+    } else {
+        x_ = 0.0;
+        y_ = 0.0;
+    }
+}
+
+double DBSCAN::UnitVector::getX() const {
+    return x_;
+}
+
+double DBSCAN::UnitVector::getY() const {
+    return y_;
 }
 
 int main(int argc, char *argv[]) {
