@@ -106,6 +106,7 @@ jobs:
             sleep 2
             
             export GAZEBO_MODEL_DATABASE_URI=""
+            export GAZEBO_MODEL_PATH=$GITHUB_WORKSPACE/ros_ws/install/yasarobo2025_26/share/yasarobo2025_26/models/:${GAZEBO_MODEL_PATH}
             launch_test src/yasarobo2025_26/test/test_integration.py
 
             echo "Killing Xvfb and leftover Gazebo processes..."
