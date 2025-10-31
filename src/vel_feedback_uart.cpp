@@ -23,7 +23,7 @@ namespace raspi {
             explicit CmdVel(const rclcpp::NodeOptions & options = rclcpp::NodeOptions()): Node("cmd_vel_feedback", options) {
                 this->declare_parameter<double>("Kp_linear", 0.00);
                 this->declare_parameter<double>("Kp_angular", 0.00);
-                this->declare_parameter<double>("max_linear_acceleration", 0.010);
+                this->declare_parameter<double>("max_linear_acceleration", 0.10);
                 this->declare_parameter<double>("max_angular_acceleration", 0.00);
                 this->get_parameter("Kp_linear", Kp_linear);
                 this->get_parameter("Kp_angular", Kp_angular);
