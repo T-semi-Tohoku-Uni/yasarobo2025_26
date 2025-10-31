@@ -56,7 +56,7 @@ namespace raspi {
                 //input linear velocity 
                 double vx_0 = cmd_vel_prime_.linear.x;
                 double vy_0 = cmd_vel_prime_.linear.y;
-                double omega_0 = cmd_vel_.angular.z;
+                double omega_0 = cmd_vel_prime_.angular.z;
 
                 //previous linear velocity
                 double vx_prev = cmd_vel_.linear.x;
