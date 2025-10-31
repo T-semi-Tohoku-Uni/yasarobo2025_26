@@ -26,7 +26,7 @@ namespace joy2Vel {
                 twist.linear.set__z(0.0);
                 twist.angular.set__x(0.0);
                 twist.angular.set__y(0.0);
-                twist.angular.set__z(rightJoyy_*60);
+                twist.angular.set__z(rightJoyy_);
                 pub_->publish(twist);
             }
 
