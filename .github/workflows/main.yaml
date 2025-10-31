@@ -104,7 +104,8 @@ jobs:
             XVFB_PID=$!
             echo "Started Xvfb with PID $XVFB_PID"
             sleep 2
-
+            
+            export GAZEBO_MODEL_DATABASE_URI=""
             launch_test src/yasarobo2025_26/test/test_integration.py
 
             echo "Killing Xvfb and leftover Gazebo processes..."
