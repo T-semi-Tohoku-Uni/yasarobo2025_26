@@ -89,8 +89,8 @@ namespace raspi {
                     vx_new = v_new_abs * (vx_0 / v_target_abs);
                     vy_new = v_new_abs * (vy_0 / v_target_abs);
                 } else {
-                    vx_new = v_new_abs * (1/sqrt(2));
-                    vy_new = v_new_abs * (1/sqrt(2));
+                    vx_new = v_new_abs * (vx_prev / v_prev_abs);
+                    vy_new = v_new_abs * (vx_prev / v_prev_abs);
                 }            
 
                 //Limit angular acceleration
