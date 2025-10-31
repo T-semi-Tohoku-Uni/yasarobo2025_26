@@ -156,6 +156,7 @@ def generate_launch_description():
         parameters=[{
             "Kp_linear": 0.1,
             "Kp_angular": 0.05,
+            "max_linear_acceleration": 0.1
         }]
     )
 
