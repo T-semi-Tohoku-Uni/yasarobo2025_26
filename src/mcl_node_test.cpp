@@ -47,9 +47,24 @@ namespace mcl {
             std::double_t w_;//尤度
     };
 
+    
+    class Obstaclespointclowd : public sensor_msgs::msg::LaserScan{
+        public:
+            const std::double_t& getobstaclesW() const& {return obstaclesw_;}
+
+            void setobstacles(std::double_t w){
+                obstaclesw_ = w;
+            }
+        private:
+        std::double_t obstaclesw_;
+    };
+
+
+
     enum class MeasurementModel { 
         //使う観測モデルの選択　多分拡張性を持たせている
-        LikelihoodFieldModel 
+        LikelihoodFieldModel
+        ClassConditionalMeasurementModel 
     };
     
     class MCL: public rclcpp::Node {
@@ -96,6 +111,7 @@ namespace mcl {
                 geometry_msgs::msg::Pose2D initialNoise;
                 auto cloud_qos = rclcpp::SensorDataQoS();
                 particleMarker_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/cloud", cloud_qos);
+                obstaclesParticleMarker_= this->create_publisher<sensor_msgs::msg::PointCloud2>("/obstaclescloud", cloud_qos);
                 initialNoise.set__x(0.07); // var of x
                 initialNoise.set__y(0.07); // var of y
                 initialNoise.set__theta(M_PI/180.0); // var of theta
@@ -115,6 +131,7 @@ namespace mcl {
                 this->zHit_ = 1.0;
                 this->zMax_ = 0.0;
                 this->zRand_ = 1.0;
+                this->unknownLambda_ = 0.1;
 
                 //mapの読み込み
                  MCL::readMap();
@@ -258,10 +275,11 @@ namespace mcl {
 
                 updateParticles(delta_);//移動量に応じてロボットの自己位置が更新される
                 printParticlesMakerOnRviz2();//パーティクルをRviz上に表示
-                caculateMeasurementModel(*scan_); // lidarからの情報を受け取りパーティクルの尤度を計算
+                calculateMeasurementModel(*scan_); // lidarからの情報を受け取りパーティクルの尤度を計算
                 estimatePose();//全パーティクルの重みつき計算をして最終的な自己位置
                 resampleParticles();//パーティクルの偏りを見る
                 printTrajectoryOnRviz2();
+                printObstaclesParticlesOnRviz2(*scan_);
             }
 
             //パーティクルを再度配置する
@@ -281,7 +299,7 @@ namespace mcl {
 
             //移動量からノイズを含む自己位置を推定する
             void updateParticles(geometry_msgs::msg::Twist delta) {
-                std::double_t dd2 = delta.linear.x * delta.linear.x + delta.linear.y + delta.linear.y;
+                std::double_t dd2 = delta.linear.x * delta.linear.x + delta.linear.y * delta.linear.y;
                 std::double_t dy2 = delta.angular.z * delta.angular.z;
                 // std::double_t dd2 = 0;
                 // std::double_t dy2 = 0;
@@ -307,7 +325,7 @@ namespace mcl {
             }
 
             //各パーティクルの尤度を計算する
-            void caculateMeasurementModel(sensor_msgs::msg::LaserScan scan) {
+            void calculateMeasurementModel(sensor_msgs::msg::LaserScan scan) {
                 //最大尤度となるパーティクルのインデックスを取得
                 totalLikelihood_ = 0.0;
                 std::double_t maxLikelihood = 0.0;
@@ -321,6 +339,8 @@ namespace mcl {
                     // 尤度場モデル
                     if (measurementModel_ == MeasurementModel::LikelihoodFieldModel) {
                         likelihood_table.push_back(std::move(caculateLikelihoodFieldModel(particles_[i].getPose(), scan)));
+                    }else if(measurementModel_ == MeasurementModel::ClassConditionalMeasurementModel){
+                        likelihood_table.push_back(std::move(calculateClassConditionalMeasurementModel(particles_[i].getPose(), scan)));
                     }
                     if (i == 0) {
                         maxLikelihood = likelihood;
@@ -332,6 +352,9 @@ namespace mcl {
                     // RCLCPP_INFO(this->get_logger(), "%lf", maxLikelihood);
                 }
                 // RCLCPP_INFO(this->get_logger(), "%lf", maxLikelihood);
+
+                if (measurementModel_ == MeasurementModel::ClassConditionalMeasurementModel)calculateUnknownScanProbs(particles_[maxLikelihoodParticleIdx_].getPose(),scan);
+
 
                 //各パーティクルの最終的な重みを決定
                 std::double_t w_sum = 0;
@@ -400,6 +423,94 @@ namespace mcl {
 
                 
                 return p_vector;
+            }
+
+            //クラス条件付き観測モデルを用いた
+            std::vector<std::double_t> calculateClassConditionalMeasurementModel(geometry_msgs::msg::Pose2D pose, sensor_msgs::msg::LaserScan scan){
+                scan_endpoints_.clear();
+
+                std::double_t var = lfmSigma_*lfmSigma_;
+                std::double_t normConst = 1.0 /(sqrt(2.0 * M_PI*var));
+                std::double_t range_max = scan.range_max();
+                std::double_t unknownConst = 1.0/(1.0 - exp(-unknownLambda_ * range_max));
+                std::double_t pMax = 1.0/mapResolution_;
+                std::double_t pRand = 1.0/ range_max * mapResolution_;
+                std::double_t pKnownPrior = 0.5;//存在する確率
+                std::double_t pUnknownPrior = 1.0 - pKnownPrior;
+                std::double_t w = 0.0;
+                std::vector<double_t> p_vector;
+
+                for(std::size_t i = 0; i < scan.ranges.size(); i+=scanStep_){
+                    // スキャン点が地図に存在するかしないかの確率
+                    // この和がパーティクルの尤度となる
+
+                    std::double_t pKnown, pUnknown;
+                    std::double_t r = scan.ranges[i];
+                    if (r < scan.range_min || scan.range_max < r) {
+                        pKnown = (zMax_ * pMax + zRand_ * pRand) * pKnownPrior;
+                        pUnknown = (unknownConst * unknownLambda_*exp(-unknownLambda_ * scan.range_max) * mapResolution_) * pUnknownPrior;
+                    }else {
+                        std::double_t a = scan.angle_min + (std::double_t)i * scan.angle_increment + pose.theta;
+                        std::double_t x = r * cos(a) + pose.x;
+                        std::double_t y = r * sin(a) + pose.y;
+
+                        std::int32_t u,v;
+                        xy2uv(x,y,&u,&v);
+                        if(0 <= u && u < mapWidth_ && 0 <= v && v < mapHeight_){
+                            std::double_t d = (std::double_t)distField_.at<std::double_t>(v,u);
+                            std::double_t pHit = normConst * exp(-(d * d) / (2.0 * var)) * mapResolution_;
+                            pKnown = (zHit_ * pHit + zRand_ * pRand) * pKnownPrior;
+                        }else {
+                            pKnown = (zRand_ * pRand) * pKnownPrior;
+                        }
+                        pUnknown = (unknownConst * unknownLambda_ * exp(-unknownLambda_ * r) * mapResolution_) * pUnknownPrior;
+
+
+                    }
+                    std::double_t p = pKnown + pUnknown;
+                    if(p > 1.0)p = 1.0;
+                    p_vector.push_back(p);
+
+                }
+                 
+
+            }
+
+            void calculateUnknownScanProbs(geometry_msgs::msg::Pose2D pose,sensor_msgs::msg::LaserScan scan){
+                //unknownScanProbs_.resize(scan.ranges.size(), 0.0);
+                std::double_t var = lfmSigma_*lfmSigma_;
+                std::double_t normConst = 1.0 /(sqrt(2.0 * M_PI*var));
+                std::double_t range_max = scan.range_max();
+                std::double_t unknownConst = 1.0/(1.0 - exp(-unknownLambda_ * range_max));
+                std::double_t pMax = 1.0/mapResolution_;
+                std::double_t pRand = 1.0/ range_max * mapResolution_;
+                std::double_t pKnownPrior = 0.5;//存在する確率
+                std::double_t pUnknownPrior = 1.0 - pKnownPrior;
+                for (std::size_t i = 0; i < scan.ranges.size(); i++){
+                    std::double_t pKnown, pUnknown;
+                    std::double_t r = scan.ranges[i];
+                    if (r < scan.range_min || scan.range_max < r) {
+                        pKnown = (zMax_ * pMax + zRand_ * pRand) * pKnownPrior;
+                        pUnknown = (unknownConst * unknownLambda_*exp(-unknownLambda_ * scan.range_max) * mapResolution_) * pUnknownPrior;
+                    }else {
+                        std::double_t a = scan.angle_min + (std::double_t)i * scan.angle_increment + pose.theta;
+                        std::double_t x = r * cos(a) + pose.x;
+                        std::double_t y = r * sin(a) + pose.y;
+
+                        std::int32_t u,v;
+                        xy2uv(x,y,&u,&v);
+                        if(0 <= u && u < mapWidth_ && 0 <= v && v < mapHeight_){
+                            std::double_t d = (std::double_t)distField_.at<std::double_t>(v,u);
+                            std::double_t pHit = normConst * exp(-(d * d) / (2.0 * var)) * mapResolution_;
+                            pKnown = (zHit_ * pHit + zRand_ * pRand) * pKnownPrior;
+                        }else {
+                            pKnown = (zRand_ * pRand) * pKnownPrior;
+                        }
+                        pUnknown = (unknownConst * unknownLambda_ * exp(-unknownLambda_ * r) * mapResolution_) * pUnknownPrior;
+                    }
+                    obstacles_[i].setobstacles(pUnknown / (pKnown + pUnknown));
+                }
+
             }
 
             void lidarpose2uv(double range, double theta, geometry_msgs::msg::Pose2D pose, double *x_odom, double *y_odom, int *u, int *v) {
@@ -485,6 +596,49 @@ namespace mcl {
                 }
             }
 
+            void printObstaclesParticlesOnRviz2(geometry_msgs::msg::LaserScan scan){
+                sensor_msgs::msg::PointCloud2 obstaclesCloud_;
+                obstaclesparticleNum_ = scan.ranges.size();
+                obstaclesCloud_.header.stamp = this->get_clock()->now();
+                obstaclesCloud_.header.frame_id = "map";
+                obstaclesCloud_.height = 1;
+                obstaclesCloud_.width = obstaclesparticleNum_;
+                obstaclesCloud_.is_dense = false;
+                obstaclesCloud_.is_bigendian  = false;
+
+                sensor_msgs::PointCloud2Modifier modifier(obstaclesCloud_);
+                modifier.setPointCloud2FieldsByString(2, "xyz", "rgb");
+                modifier.resize(obstaclesparticleNum_);
+
+                sensor_msgs::PointCloud2Iterator<std::float_t> iter_x(obstaclesCloud_, "x");
+                sensor_msgs::PointCloud2Iterator<std::float_t> iter_y(obstaclesCloud_, "y");
+                sensor_msgs::PointCloud2Iterator<std::float_t> iter_z(obstaclesCloud_, "z");
+                sensor_msgs::PointCloud2Iterator<uint8_t>  iter_r(obstaclesCloud_, "r");
+                sensor_msgs::PointCloud2Iterator<uint8_t>  iter_g(obstaclesCloud_, "g");
+                sensor_msgs::PointCloud2Iterator<uint8_t>  iter_b(obstaclesCloud_, "b");
+
+                int i = 0;
+
+                for (const Obstaclespointclowd &o: obstacles_) {
+                    std::double_t angle = scan.angle_min + ((std::double_t)(i))*scan.angle_increment +  particles_[maxLikelihoodParticleIdx_].getTheta();
+                    std::double_t range = scan.ranges[i];
+                    *iter_x = particles_[maxLikelihoodParticleIdx_].getX() + range * cos(angle);
+                    *iter_y = particles_[maxLikelihoodParticleIdx_].getY() + range * sin(angle);
+                    *iter_z = 0;
+
+                    *iter_r = 0;
+                    *iter_g = int(o.getobstaclesW()*255);
+                    *iter_b = 0;
+
+                    ++iter_x, ++iter_y, ++iter_z;
+                    ++iter_r; ++iter_g; ++iter_b;
+                    ++i;
+                }
+
+                obstaclesParticleMarker_->publish(obstaclesCloud_);
+
+            }
+
             void printParticlesMakerOnRviz2() {
                 sensor_msgs::msg::PointCloud2 cloud_;
                 cloud_.header.stamp = this->get_clock()->now();
@@ -543,6 +697,8 @@ namespace mcl {
 
 
 
+
+
             //map用のパラメータ
             std::string mapDir_;
             std::double_t mapResolution_;
@@ -553,10 +709,17 @@ namespace mcl {
 
             // パーティクルの数
             int particleNum_;//パーティクルの総数
+            int obstaclesparticleNum_;
             // 絶対座標
             std::vector<Particle> particles_;
+
             geometry_msgs::msg::Pose2D mclPose_;//最終的な自己位置
             rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr particleMarker_;//ポイントクラウド
+
+            std::vector<Obstaclespointclowd> obstacles_;
+            rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr obstaclesParticleMarker_;
+            std::double_t unknownLambda_;
+
 
             // likelihood
             int maxLikelihoodParticleIdx_;//最も高い尤度をもつパーティクルを保持
@@ -564,6 +727,10 @@ namespace mcl {
             std::double_t averageLikelihood_;//平均尤度を保持するための変数
             std::vector<std::double_t> measurementLikelihoods_;//各パーティクルの尤度
             //std::vector<probability> pro_;//使っていない
+
+            // 各スキャン点が未知障害物である確率
+            // 動的障害物の棄却使用時，またはクラス条件付き観測モデル使用時のみ利用可能
+            std::vector<double> unknownScanProbs_;
 
             std::double_t effectiveSampleSize_;//パーティクルの偏り具合
             std::double_t resampleThreshold_;//リサピリングの閾値
