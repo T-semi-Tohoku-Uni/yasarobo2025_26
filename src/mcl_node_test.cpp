@@ -63,7 +63,7 @@ namespace mcl {
 
     enum class MeasurementModel { 
         //使う観測モデルの選択　多分拡張性を持たせている
-        LikelihoodFieldModel
+        LikelihoodFieldModel,
         ClassConditionalMeasurementModel 
     };
     
@@ -431,7 +431,7 @@ namespace mcl {
 
                 std::double_t var = lfmSigma_*lfmSigma_;
                 std::double_t normConst = 1.0 /(sqrt(2.0 * M_PI*var));
-                std::double_t range_max = scan.range_max();
+                std::double_t range_max = scan.range_max;
                 std::double_t unknownConst = 1.0/(1.0 - exp(-unknownLambda_ * range_max));
                 std::double_t pMax = 1.0/mapResolution_;
                 std::double_t pRand = 1.0/ range_max * mapResolution_;
@@ -480,7 +480,7 @@ namespace mcl {
                 //unknownScanProbs_.resize(scan.ranges.size(), 0.0);
                 std::double_t var = lfmSigma_*lfmSigma_;
                 std::double_t normConst = 1.0 /(sqrt(2.0 * M_PI*var));
-                std::double_t range_max = scan.range_max();
+                std::double_t range_max = scan.range_max;
                 std::double_t unknownConst = 1.0/(1.0 - exp(-unknownLambda_ * range_max));
                 std::double_t pMax = 1.0/mapResolution_;
                 std::double_t pRand = 1.0/ range_max * mapResolution_;
@@ -596,7 +596,7 @@ namespace mcl {
                 }
             }
 
-            void printObstaclesParticlesOnRviz2(geometry_msgs::msg::LaserScan scan){
+            void printObstaclesParticlesOnRviz2(sensor_msgs::msg::LaserScan scan){
                 sensor_msgs::msg::PointCloud2 obstaclesCloud_;
                 obstaclesparticleNum_ = scan.ranges.size();
                 obstaclesCloud_.header.stamp = this->get_clock()->now();
