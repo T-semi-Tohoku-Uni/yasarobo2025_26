@@ -98,14 +98,11 @@ namespace raspi {
 
 
                 geometry_msgs::msg::Twist cmd_vel_1;
-                cmd_vel_1.linear.x = vx_new;
-                cmd_vel_1.linear.y = vy_new;
-                cmd_vel_1.angular.z = omega_new;
+                cmd_vel_.linear.x = vx_new;
+                cmd_vel_.linear.y = vy_new;
+                cmd_vel_.angular.z = omega_new;
 
-                cmd_vel_ = *msg;
-
-
-                RCLCPP_INFO(this->get_logger(), "%f, %f", cmd_vel_1.linear.x, cmd_vel_.linear.x);
+                RCLCPP_INFO(this->get_logger(), "%f", cmd_vel_1.linear.x);
             }
         
 

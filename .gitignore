@@ -1,6 +1,7 @@
 log/
 build/
 install/
+__pycache__
 
 *.gv
 *.pdf
