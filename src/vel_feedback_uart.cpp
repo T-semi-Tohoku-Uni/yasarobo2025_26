@@ -27,8 +27,8 @@ namespace raspi {
                 this->declare_parameter<double>("max_angular_acceleration", 0.00);
                 this->get_parameter("Kp_linear", Kp_linear);
                 this->get_parameter("Kp_angular", Kp_angular);
-                this->get_parameter("max__linear_acceleration", max_linear_acceleration);
-                this->get_parameter("max_linear_acceleration", max_angular_acceleration);
+                this->get_parameter("max_linear_acceleration", max_linear_acceleration);
+                this->get_parameter("max_angular_acceleration", max_angular_acceleration);
                 fd_vel_ = open_serial("/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.2");
                 r_ = 0.14;
                 auto feedbackQ = rclcpp::QoS(rclcpp::KeepLast(10));
@@ -63,14 +63,14 @@ namespace raspi {
                 double vy_prev = cmd_vel_.linear.y;
                 double omega_prev = cmd_vel_.angular.z;
 
-                double v_0_abs = std::hypot(vx_0, vy_0);
+                double v_target_abs= std::hypot(vx_0, vy_0);
                 double v_prev_abs = std::hypot(vx_prev, vy_prev);
 
                 //max delta_v tolerance
                 double max_delta_v = max_linear_acceleration * dt;
                 double max_delta_omega = max_angular_acceleration * dt;
 
-                double delta_v = v_0_abs - v_prev_abs;
+                double delta_v = v_target_abs - v_prev_abs;
                 double delta_omega = omega_0 - omega_prev;
 
                 if (std::abs(delta_v) > max_delta_v){
@@ -83,10 +83,11 @@ namespace raspi {
                 //Limit linear acceleration
                 double vx_new = 0.0;
                 double vy_new = 0.0;
+
                 //non 0
-                if (v_0_abs > 1e-6){
-                    vx_new = v_new_abs * (vx_0 / v_0_abs);
-                    vy_new = v_new_abs * (vy_0 / v_0_abs);
+                if (v_target_abs > 1e-6){
+                    vx_new = v_new_abs * (vx_0 / v_target_abs);
+                    vy_new = v_new_abs * (vy_0 / v_target_abs);
                 }                
 
                 //Limit angular acceleration
