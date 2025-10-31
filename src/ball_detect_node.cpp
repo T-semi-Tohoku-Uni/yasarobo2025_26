@@ -57,12 +57,13 @@ geometry_msgs::msg::Pose2D DBSCAN::BallDetect::detect() {
     /*
         execute dbscan
     */
-    DBSCAN::BallDetect::dbscan(point_cloud.points, tree);
-
+    std::unordered_map<int, std::vector<DBSCAN::Point>> clusters =
+        DBSCAN::BallDetect::dbscan(point_cloud.points, tree);
+    
     return ball_pose;
 }
 
-void DBSCAN::BallDetect::dbscan(std::vector<DBSCAN::Point> &points, DBSCAN::KdTree &tree) {
+std::unordered_map<int, std::vector<DBSCAN::Point>> DBSCAN::BallDetect::dbscan(std::vector<DBSCAN::Point> &points, DBSCAN::KdTree &tree) {
     int C = 0;
     for (DBSCAN::Point &p: points) {
         if (p.getID() != DBSCAN::ClusterID::UNVISITED) continue; // Not marked
@@ -75,6 +76,15 @@ void DBSCAN::BallDetect::dbscan(std::vector<DBSCAN::Point> &points, DBSCAN::KdTr
     }
 
     this->pubClusters_->publish(point2PointCloud2(points));
+
+    // sort point on x
+    std::unordered_map<int, std::vector<DBSCAN::Point>> clusters;
+    for(DBSCAN::Point& p: points) {
+        if (p.getID() < 0) continue;
+        clusters[p.getID()].push_back(p); 
+    }
+
+    return clusters;
 }
 
 void DBSCAN::BallDetect::expandCluster(

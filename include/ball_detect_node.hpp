@@ -52,7 +52,10 @@ namespace DBSCAN {
             void lidarCallback(const sensor_msgs::msg::LaserScan::SharedPtr msg);
 
             // DBSCAN algorithm
-            void dbscan(std::vector<DBSCAN::Point> &points, DBSCAN::KdTree &tree);
+            std::unordered_map<int, std::vector<DBSCAN::Point>> dbscan(
+                std::vector<DBSCAN::Point> &points, 
+                DBSCAN::KdTree &tree
+            );
             void expandCluster(
                 Point &p, 
                 std::vector<DBSCAN::Point> &points,
@@ -63,6 +66,11 @@ namespace DBSCAN {
             std::vector<size_t> regionQuery(
                 DBSCAN::Point &p, 
                 DBSCAN::KdTree& tree
+            );
+
+            // delete wall
+            std::unordered_map<int, std::vector<DBSCAN::Point>> deleteWall(
+                std::unordered_map<int, std::vector<DBSCAN::Point>> clusters
             );
 
             // convert LaserScan to Point
