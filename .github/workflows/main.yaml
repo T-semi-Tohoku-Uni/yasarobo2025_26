@@ -95,6 +95,7 @@ jobs:
         run: |
             cd ros_ws
             source /opt/ros/humble/setup.bash
+            source /usr/share/gazebo/setup.bash
             source install/setup.bash
             ls -R ${GITHUB_WORKSPACE}/ros_ws/install/yasarobo2025_26/share/yasarobo2025_26/models || echo "models not found"
             echo $GAZEBO_MODEL_PATH

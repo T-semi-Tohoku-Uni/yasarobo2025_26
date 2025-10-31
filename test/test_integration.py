@@ -46,7 +46,7 @@ def generate_test_description():
         PythonLaunchDescriptionSource(
             os.path.join(pkg_gazebo_ros, 'launch', 'gzserver.launch.py')
         ),
-        launch_arguments={'world': world, 'verbose': 'true'}.items()
+        launch_arguments={'world': world, 'verbose': 'true', 'headless': 'true'}.items()
     )
 
     spawn_entity = Node(
