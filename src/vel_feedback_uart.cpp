@@ -102,7 +102,7 @@ namespace raspi {
                 cmd_vel_.linear.y = vy_new;
                 cmd_vel_.angular.z = omega_new;
 
-                RCLCPP_INFO(this->get_logger(), "%f", cmd_vel_.linear.x);
+                RCLCPP_INFO(this->get_logger(), "%f", vx_new);
             }
         
 
