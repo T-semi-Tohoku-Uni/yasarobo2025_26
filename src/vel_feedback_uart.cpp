@@ -105,8 +105,7 @@ namespace raspi {
                 cmd_vel_ = *msg;
 
 
-                RCLCPP_INFO(this->get_logger, cmd_vel_1.linear.x);
-                RCLCPP_INFO(this->get_logger, cmd_vel_.linear.x);
+                RCLCPP_INFO(this->get_logger(), "%f, %f", cmd_vel_1.linear.x, cmd_vel_.linear.x);
             }
         
 
