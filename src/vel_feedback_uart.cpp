@@ -88,7 +88,10 @@ namespace raspi {
                 if (v_target_abs > 1e-6){
                     vx_new = v_new_abs * (vx_0 / v_target_abs);
                     vy_new = v_new_abs * (vy_0 / v_target_abs);
-                }                
+                } else {
+                    vx_new = v_new_abs * (1/sqrt(2));
+                    vy_new = v_new_abs * (1/sqrt(2));
+                }            
 
                 //Limit angular acceleration
                 double delata_omeaga = omega_0 - omega_prev;
