@@ -285,11 +285,7 @@ class FollowNode: public rclcpp::Node {
 
         // waypoint index
         int current_waypoint_index_;    
-
-        // action server
-        rclcpp_action::Server<inrof2025_ros_type::action::Follow>::SharedPtr action_server_;
-        std::shared_ptr<rclcpp_action::ServerGoalHandle<inrof2025_ros_type::action::Follow>> goal_handle_;
-
+        
         // rotate action server
         rclcpp_action::Server<inrof2025_ros_type::action::Rotate>::SharedPtr action_rotate_server_;
         std::shared_ptr<rclcpp_action::ServerGoalHandle<inrof2025_ros_type::action::Rotate>> goal_rotate_handle_;
