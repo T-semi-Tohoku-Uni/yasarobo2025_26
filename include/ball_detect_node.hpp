@@ -47,6 +47,13 @@ namespace DBSCAN {
             bool kdtree_get_bbox(BBOX&) const;
     };
 
+    class Circle {
+        public:
+            Circle(double x, double y, double r);
+        private:
+            double x_, y_, r_;
+    };
+
 
     using KdTree = nanoflann::KDTreeSingleIndexAdaptor<
         nanoflann::L2_Simple_Adaptor<float, DBSCAN::PointCloud>,
@@ -84,7 +91,8 @@ namespace DBSCAN {
             std::vector<int> deleteWall(
                 std::unordered_map<int, std::vector<DBSCAN::Point>>& clusters
             );
-            std::vector<DBSCAN::Point> collectBallPoints(
+            // <cluster_id, cluster_points>
+            std::vector<std::pair<int, std::vector<DBSCAN::Point>>> collectBallPoints(
                 const std::unordered_map<int, std::vector<DBSCAN::Point>>& clusters,
                 const std::vector<int>& ball_cluster_ids
             );
@@ -93,7 +101,7 @@ namespace DBSCAN {
             DBSCAN::PointCloud scan2Point(const sensor_msgs::msg::LaserScan scan);
 
             sensor_msgs::msg::PointCloud2 point2PointCloud2(
-                const std::vector<DBSCAN::Point> &points
+                const std::vector<std::pair<int, std::vector<DBSCAN::Point>>> &points
             );
 
             // Lidar
@@ -107,6 +115,9 @@ namespace DBSCAN {
             // delete wall parameter
             double DIFF_THTRSHOLD_;
             double WALL_THTRSHOLD_;
+
+            // ball 
+            std::vector<DBSCAN::Circle> ball_;
 
             // env
             bool is_sim_;

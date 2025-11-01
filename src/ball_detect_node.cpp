@@ -66,30 +66,38 @@ geometry_msgs::msg::Pose2D DBSCAN::BallDetect::detect() {
         DBSCAN::BallDetect::dbscan(point_cloud.points, tree);
     // delete wall cluster
     std::vector<int> ball_cluster_ids = DBSCAN::BallDetect::deleteWall(clusters);
-    std::vector<DBSCAN::Point> ball_cluster = DBSCAN::BallDetect::collectBallPoints(
+    std::vector<std::pair<int, std::vector<DBSCAN::Point>>> ball_cluster = DBSCAN::BallDetect::collectBallPoints(
         clusters, ball_cluster_ids
     );
     this->pubClusters_->publish(point2PointCloud2(ball_cluster));
 
+    /*
+        decision target ball
+    */
+    // if ball_cluster is empty, continue searching ball
+    if(ball_cluster.size() == 0) return ball_pose; // TODO
+    // caculate ball position
+
+    //
+
     return ball_pose;
 }
 
-std::vector<DBSCAN::Point> DBSCAN::BallDetect::collectBallPoints(
+std::vector<std::pair<int, std::vector<DBSCAN::Point>>> DBSCAN::BallDetect::collectBallPoints(
     const std::unordered_map<int, std::vector<DBSCAN::Point>>& clusters,
     const std::vector<int>& ball_cluster_ids
 ){
-    std::vector<DBSCAN::Point> ball_points;
-    ball_points.reserve(450);
+    std::vector<std::pair<int, std::vector<DBSCAN::Point>>> ball_cluster;
+    ball_cluster.reserve(ball_cluster_ids.size());
 
-    for (size_t cid : ball_cluster_ids) {
-        auto it = clusters.find(static_cast<int>(cid));
+    for (size_t cid: ball_cluster_ids) {
+        auto it = clusters.find(static_cast<int>(cid)); 
         if (it == clusters.end()) continue;
-
-        const auto& pts = it->second;
-        ball_points.insert(ball_points.end(), pts.begin(), pts.end());
+        const std::vector<DBSCAN::Point> &pts = it->second;
+        ball_cluster.push_back(std::make_pair(static_cast<int>(cid), pts));
     }
-
-    return ball_points;
+    
+    return ball_cluster;
 }
 
 double DBSCAN::BallDetect::median(std::vector<double>& v) {
@@ -129,14 +137,6 @@ std::vector<int> DBSCAN::BallDetect::deleteWall(
 
             second_deriv.push_back(std::hypot(ax, ay));
         }
-
-        // if (cid == 1) {
-        //     for (double p_: second_deriv) {
-        //         RCLCPP_INFO(this->get_logger(), "%lf", p_);
-        //     }
-        //     RCLCPP_INFO(this->get_logger(), "##################");
-        //     ball_cluster_ids.push_back(cid);
-        // }
 
         double med = DBSCAN::BallDetect::median(second_deriv);
         if (std::abs(med) > WALL_THTRSHOLD_) ball_cluster_ids.push_back(cid);
@@ -240,7 +240,7 @@ DBSCAN::PointCloud DBSCAN::BallDetect::scan2Point(const sensor_msgs::msg::LaserS
 }
 
 sensor_msgs::msg::PointCloud2 DBSCAN::BallDetect::point2PointCloud2(
-    const std::vector<DBSCAN::Point> &points
+    const std::vector<std::pair<int, std::vector<DBSCAN::Point>>> &points
 ) {
     sensor_msgs::msg::PointCloud2 cloud;
     cloud.header.frame_id = frame_id_;
@@ -252,7 +252,12 @@ sensor_msgs::msg::PointCloud2 DBSCAN::BallDetect::point2PointCloud2(
 
     sensor_msgs::PointCloud2Modifier modifier(cloud);
     modifier.setPointCloud2FieldsByString(2, "xyz", "rgb");
-    modifier.resize(points.size());
+    size_t total_points = 0;
+    for (const std::pair<int, std::vector<DBSCAN::Point>>& point: points) {
+        total_points += point.second.size();
+    }
+    RCLCPP_INFO(this->get_logger(), "%d", total_points);
+    modifier.resize(total_points);
 
     sensor_msgs::PointCloud2Iterator<float> iter_x(cloud, "x");
     sensor_msgs::PointCloud2Iterator<float> iter_y(cloud, "y");
@@ -261,18 +266,18 @@ sensor_msgs::msg::PointCloud2 DBSCAN::BallDetect::point2PointCloud2(
     sensor_msgs::PointCloud2Iterator<uint8_t> iter_g(cloud, "g");
     sensor_msgs::PointCloud2Iterator<uint8_t> iter_b(cloud, "b");
 
-    // ---- クラスタごとの点数をカウント ----
+    // count each clusters point
     std::unordered_map<int, int> cluster_counts;
-    for (const Point &p : points) {
-        cluster_counts[p.getID()]++;
+    for (const std::pair<int, std::vector<DBSCAN::Point>> &p: points) {
+        cluster_counts[p.first] = p.second.size();
     }
 
-    // ---- クラスタを点数の多い順にソート ----
+    // sort clusters
     std::vector<std::pair<int, int>> sorted_clusters(cluster_counts.begin(), cluster_counts.end());
     std::sort(sorted_clusters.begin(), sorted_clusters.end(),
               [](auto &a, auto &b) { return a.second > b.second; });
 
-    // ---- 固定色パレット（お好みで変更可）----
+    // fixed color
     std::vector<std::array<uint8_t, 3>> color_palette = {
         {255, 0, 0},     // red
         {0, 255, 0},     // green
@@ -286,7 +291,7 @@ sensor_msgs::msg::PointCloud2 DBSCAN::BallDetect::point2PointCloud2(
         {0, 128, 255}    // light blue
     };
 
-    // ---- クラスタごとに色を固定割り当て ----
+    // assign color to each clusters
     std::map<int, std::array<uint8_t, 3>> cluster_colors;
     size_t color_idx = 0;
     for (auto &pair : sorted_clusters) {
@@ -299,19 +304,22 @@ sensor_msgs::msg::PointCloud2 DBSCAN::BallDetect::point2PointCloud2(
         color_idx++;
     }
 
-    // ---- PointCloud2 に書き込み ----
-    for (const Point &p : points) {
-        *iter_x = p.getX();
-        *iter_y = p.getY();
-        *iter_z = 0.0f;
-
-        auto color = cluster_colors[p.getID()];
-        *iter_r = color[0];
-        *iter_g = color[1];
-        *iter_b = color[2];
-
-        ++iter_x; ++iter_y; ++iter_z;
-        ++iter_r; ++iter_g; ++iter_b;
+    // write point cloud
+    for (const std::pair<int, std::vector<DBSCAN::Point>> &cluster : points) {
+        int cluster_id = cluster.first;
+        for (const DBSCAN::Point &p: cluster.second) {
+            *iter_x = p.getX();
+            *iter_y = p.getY();
+            *iter_z = 0.0f;
+    
+            auto color = cluster_colors[cluster_id];
+            *iter_r = color[0];
+            *iter_g = color[1];
+            *iter_b = color[2];
+    
+            ++iter_x; ++iter_y; ++iter_z;
+            ++iter_r; ++iter_g; ++iter_b;
+        }
     }
 
     return cloud;
@@ -375,6 +383,12 @@ double DBSCAN::UnitVector::getX() const {
 
 double DBSCAN::UnitVector::getY() const {
     return y_;
+}
+
+DBSCAN::Circle::Circle(double x, double y, double r) {
+    this->x_ = x;
+    this->y_ = y;
+    this->r_ = r;
 }
 
 int main(int argc, char *argv[]) {
