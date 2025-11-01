@@ -224,7 +224,6 @@ def generate_launch_description():
         node_robot_state_publisher,
         # node_ball_state_publisher,
         spawn_entity,
-        ball_spawn_entity,
         rviz_node,
         map_server_cmd,
         start_lifecycle_manager_cmd,
@@ -242,5 +241,11 @@ def generate_launch_description():
         TimerAction(
             period=2.0,
             actions=[gzserver_cmd, gzclient_cmd]
+        ),
+        RegisterEventHandler(
+            event_handler=OnProcessExit(
+                target_action=spawn_entity,
+                on_exit=[ball_spawn_entity]
+            )
         )
     ])
