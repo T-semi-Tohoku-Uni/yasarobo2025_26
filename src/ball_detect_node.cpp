@@ -66,19 +66,27 @@ geometry_msgs::msg::Pose2D DBSCAN::BallDetect::detect() {
         DBSCAN::BallDetect::dbscan(point_cloud.points, tree);
     // delete wall cluster
     std::vector<int> ball_cluster_ids = DBSCAN::BallDetect::deleteWall(clusters);
-    std::vector<std::pair<int, std::vector<DBSCAN::Point>>> ball_cluster = DBSCAN::BallDetect::collectBallPoints(
+    std::vector<std::pair<int, std::vector<DBSCAN::Point>>> ball_clusters = DBSCAN::BallDetect::collectBallPoints(
         clusters, ball_cluster_ids
     );
-    this->pubClusters_->publish(point2PointCloud2(ball_cluster));
+    this->pubClusters_->publish(point2PointCloud2(ball_clusters));
 
     /*
         decision target ball
     */
     // if ball_cluster is empty, continue searching ball
-    if(ball_cluster.size() == 0) return ball_pose; // TODO
+    if(ball_clusters.size() == 0) return ball_pose; // TODO
     // caculate ball position
+    std::vector<DBSCAN::Circle> ball_position;
+    ball_position.resize(ball_clusters.size());
+    for (std::pair<int, std::vector<DBSCAN::Point>> &_ball: ball_clusters) {
+        ball_position.push_back(Circle(_ball.second));
+    }
 
-    //
+    // for debug
+    for (auto &p: ball_position) {
+        RCLCPP_INFO(this->get_logger(), "%f, %f, %f", p.getX(), p.getY(), p.getR());
+    }
 
     return ball_pose;
 }
@@ -256,7 +264,6 @@ sensor_msgs::msg::PointCloud2 DBSCAN::BallDetect::point2PointCloud2(
     for (const std::pair<int, std::vector<DBSCAN::Point>>& point: points) {
         total_points += point.second.size();
     }
-    RCLCPP_INFO(this->get_logger(), "%d", total_points);
     modifier.resize(total_points);
 
     sensor_msgs::PointCloud2Iterator<float> iter_x(cloud, "x");
@@ -385,10 +392,40 @@ double DBSCAN::UnitVector::getY() const {
     return y_;
 }
 
-DBSCAN::Circle::Circle(double x, double y, double r) {
-    this->x_ = x;
-    this->y_ = y;
-    this->r_ = r;
+DBSCAN::Circle::Circle(): x_(0.0), y_(0.0), r_(0.0) {}
+
+// O(n)
+DBSCAN::Circle::Circle(std::vector<DBSCAN::Point> &points) {
+    Eigen::MatrixXd A(points.size(), 3);
+    Eigen::VectorXd b(points.size());
+
+    for (size_t i=0; i<points.size(); i++ ) {
+        double x = points[i].getX();
+        double y = points[i].getY();
+        A(i,0) = 2*x;
+        A(i,1) = 2*y;
+        A(i,2) = 1.0;
+        b(i) = x*x + y*y;
+    }
+
+    // 3*3 linear equation -> O(1)
+    Eigen::Vector3d sol = (A.transpose() * A).ldlt().solve(A.transpose() * b);
+    
+    this->x_ = sol(0);
+    this->y_ = sol(1);
+    this->r_ = std::sqrt(x_*x_ + y_*y_ + sol(2));
+}
+
+double DBSCAN::Circle::getX() {
+    return this->x_;
+} 
+
+double DBSCAN::Circle::getY() {
+    return this->y_;
+}
+
+double DBSCAN::Circle::getR() {
+    return this->r_;
 }
 
 int main(int argc, char *argv[]) {

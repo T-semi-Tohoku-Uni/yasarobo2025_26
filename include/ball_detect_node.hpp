@@ -7,6 +7,7 @@
 #include <vector>
 #include <nanoflann.hpp>
 #include <random>
+#include <Eigen/Dense>
 
 namespace DBSCAN {
     enum ClusterID {
@@ -49,7 +50,11 @@ namespace DBSCAN {
 
     class Circle {
         public:
-            Circle(double x, double y, double r);
+            Circle();
+            Circle(std::vector<DBSCAN::Point> &cluster);
+            double getX();
+            double getY();
+            double getR();
         private:
             double x_, y_, r_;
     };
