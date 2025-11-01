@@ -15,10 +15,10 @@ BT::PortsList ActionNodes::Rotate::providedPorts() {
 }
 
 BT::NodeStatus ActionNodes::Rotate::onStart() {
-    RCLCPP_INFO(this->ros_node_->get_logger(), "Call Rotate");
+    RCLCPP_INFO(this->ros_node_->get_logger(), "Start Rotate");
     // Get inputport
     BT::Expected<double> msg = getInput<double>("theta");
-    if (!msg) { // Inputの値が適切でないときの処理
+    if (!msg) {
         throw BT::RuntimeError("missing required input [sample_input]: ", msg.error() );
     }
     double targetTheta = msg.value();

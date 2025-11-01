@@ -16,14 +16,16 @@ BT::PortsList ActionNodes::VacumeOn::providedPorts() {
 }
 
 BT::NodeStatus ActionNodes::VacumeOn::tick() {
-    RCLCPP_INFO(this->ros_node_->get_logger(), "Call vacume on");
-
     BT::Expected<bool> tmp_on = getInput<bool>("on");
     if (!tmp_on) throw BT::RuntimeError("missing required input x: ", tmp_on.error() );
 
-    double on = tmp_on.value();
+    bool on = tmp_on.value();
     if (this->ros_node_ == nullptr) RCLCPP_ERROR(this->ros_node_->get_logger(), "null ptr");
     this->ros_node_->send_vacume_on(on);
+
+    if (on) RCLCPP_INFO(this->ros_node_->get_logger(), "VacumeOn");
+    else RCLCPP_INFO(this->ros_node_->get_logger(), "Vacume OFF");
+
     return BT::NodeStatus::SUCCESS;
 }
 
