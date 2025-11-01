@@ -1,6 +1,6 @@
 #include "ball_detect_node.hpp"
 
-DBSCAN::BallDetect::BallDetect(const rclcpp::NodeOptions & options): Node("ball_detect_node", options) {
+DBSCAN::BallDetect::BallDetect(const rclcpp::NodeOptions & options): Node("ball_detect_node", options), tf_buffer_(this->get_clock()), tf_listener_(tf_buffer_) {
     // parameter
     this->declare_parameter<std::string>("frame_id", "ldlidar_base");
     this->declare_parameter<double>("eps", 0.1);
@@ -48,7 +48,7 @@ geometry_msgs::msg::Pose2D DBSCAN::BallDetect::detect() {
     /*
         construct KD-tree
     */
-    // convert LaserScan to PointCloud
+    // convert LaserScan to PointCloud, point_cloud origin is field.
     PointCloud point_cloud = scan2Point(*scan_);
     // construct KD-tree
     DBSCAN::KdTree tree(
@@ -81,11 +81,6 @@ geometry_msgs::msg::Pose2D DBSCAN::BallDetect::detect() {
     ball_position.resize(ball_clusters.size());
     for (std::pair<int, std::vector<DBSCAN::Point>> &_ball: ball_clusters) {
         ball_position.push_back(Circle(_ball.second));
-    }
-
-    // for debug
-    for (auto &p: ball_position) {
-        RCLCPP_INFO(this->get_logger(), "%f, %f, %f", p.getX(), p.getY(), p.getR());
     }
 
     return ball_pose;
@@ -234,6 +229,17 @@ std::vector<size_t> DBSCAN::BallDetect::regionQuery(
 
 DBSCAN::PointCloud DBSCAN::BallDetect::scan2Point(const sensor_msgs::msg::LaserScan scan) {
     DBSCAN::PointCloud point_cloud;
+
+    geometry_msgs::msg::TransformStamped transform_stamped;
+    try {
+        // get tf
+        transform_stamped = tf_buffer_.lookupTransform("odom", frame_id_, tf2::TimePointZero);
+    } catch (tf2::TransformException &ex) {
+        RCLCPP_WARN(this->get_logger(), "Transform lookup failed: %s", ex.what());
+        return point_cloud;
+    }
+
+
     for (size_t i=0; i<scan.ranges.size(); i++) {
         double r, theta;
         r = scan.ranges[i];
@@ -241,8 +247,22 @@ DBSCAN::PointCloud DBSCAN::BallDetect::scan2Point(const sensor_msgs::msg::LaserS
         if (is_sim_) theta = scan.angle_min + ((std::double_t)(i))*scan.angle_increment;
         else theta = scan.angle_min + ((std::double_t)(i))*scan.angle_increment - 3.0*M_PI/2.0;
 
-        DBSCAN::Point p(r*cos(theta), r*sin(theta), i);
-        point_cloud.points.push_back(p);
+        // convert origin
+        try {
+            geometry_msgs::msg::PointStamped point_st;
+            point_st.header.frame_id = frame_id_;
+            point_st.header.stamp = this->now();
+            point_st.point.x = r*cos(theta);
+            point_st.point.y = r*sin(theta);
+            point_st.point.z = 0.0;
+
+            geometry_msgs::msg::PointStamped point;
+            tf2::doTransform(point_st, point, transform_stamped);
+            point_cloud.points.push_back(Point(point.point.x, point.point.y, i));
+
+        } catch (tf2::TransformException &ex) {
+            RCLCPP_WARN(this->get_logger(), "Transform failed: %s", ex.what());
+        }
     }
     return point_cloud;
 }
@@ -251,7 +271,7 @@ sensor_msgs::msg::PointCloud2 DBSCAN::BallDetect::point2PointCloud2(
     const std::vector<std::pair<int, std::vector<DBSCAN::Point>>> &points
 ) {
     sensor_msgs::msg::PointCloud2 cloud;
-    cloud.header.frame_id = frame_id_;
+    cloud.header.frame_id = "map";
     cloud.header.stamp = rclcpp::Clock().now();
     cloud.height = 1;
     cloud.width = points.size();
