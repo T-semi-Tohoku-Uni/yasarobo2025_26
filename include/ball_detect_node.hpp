@@ -58,6 +58,7 @@ namespace DBSCAN {
             double getX();
             double getY();
             double getR();
+            void printRviz2(rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubBallShape_);
         private:
             double x_, y_, r_;
     };
@@ -138,6 +139,7 @@ namespace DBSCAN {
             // For debug
             std::string frame_id_;
             rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubClusters_;
+            rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubBallShape_;
     };
 }
 

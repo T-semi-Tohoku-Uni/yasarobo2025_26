@@ -25,6 +25,11 @@ DBSCAN::BallDetect::BallDetect(const rclcpp::NodeOptions & options): Node("ball_
         "/clusters", clustersQos
     );
 
+    rclcpp::SensorDataQoS ballShapeQos = rclcpp::SensorDataQoS();
+    this->pubBallShape_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+        "/ball_shape", ballShapeQos
+    );
+
     const char *sim = std::getenv("WITH_SIM");
     if (!sim || std::string(sim) != "1") is_sim_ = false;
     else is_sim_ = true;
@@ -69,18 +74,23 @@ geometry_msgs::msg::Pose2D DBSCAN::BallDetect::detect() {
     std::vector<std::pair<int, std::vector<DBSCAN::Point>>> ball_clusters = DBSCAN::BallDetect::collectBallPoints(
         clusters, ball_cluster_ids
     );
+    // print rviz2
     this->pubClusters_->publish(point2PointCloud2(ball_clusters));
 
     /*
         decision target ball
     */
     // if ball_cluster is empty, continue searching ball
-    if(ball_clusters.size() == 0) return ball_pose; // TODO
+    if(ball_clusters.size() == 0) return ball_pose; 
     // caculate ball position
     std::vector<DBSCAN::Circle> ball_position;
     ball_position.resize(ball_clusters.size());
     for (std::pair<int, std::vector<DBSCAN::Point>> &_ball: ball_clusters) {
         ball_position.push_back(Circle(_ball.second));
+    }
+    // print rviz2
+    for (DBSCAN::Circle &c: ball_position) {
+        c.printRviz2(this->pubBallShape_);
     }
 
     return ball_pose;
@@ -446,6 +456,37 @@ double DBSCAN::Circle::getY() {
 
 double DBSCAN::Circle::getR() {
     return this->r_;
+}
+
+void DBSCAN::Circle::printRviz2(rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubBallShape_) {
+    sensor_msgs::msg::PointCloud2 cloud_msg;
+    cloud_msg.header.frame_id = "map";
+    cloud_msg.header.stamp = rclcpp::Clock().now();
+
+    sensor_msgs::PointCloud2Modifier modifier(cloud_msg);
+    modifier.setPointCloud2FieldsByString(1, "xyz");
+
+    const int NUM_POINTS = 36;
+
+    modifier.resize(NUM_POINTS + 1);
+
+    sensor_msgs::PointCloud2Iterator<float> iter_x(cloud_msg, "x");
+    sensor_msgs::PointCloud2Iterator<float> iter_y(cloud_msg, "y");
+    sensor_msgs::PointCloud2Iterator<float> iter_z(cloud_msg, "z");
+
+    for (int i = 0; i < NUM_POINTS; i++, ++iter_x, ++iter_y, ++iter_z) {
+        float angle = 2.0 * M_PI * i / NUM_POINTS;
+        *iter_x = x_ + r_ * std::cos(angle);
+        *iter_y = y_ + r_ * std::sin(angle);
+        *iter_z = 0.0;
+    }
+
+    // Add center
+    *iter_x = x_;
+    *iter_y = y_;
+    *iter_z = 0.0;
+
+    pubBallShape_->publish(cloud_msg);
 }
 
 int main(int argc, char *argv[]) {
