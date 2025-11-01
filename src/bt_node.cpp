@@ -103,9 +103,9 @@ namespace ActionNodes {
 
     void BTNode::goalResponseCallback(rclcpp_action::ClientGoalHandle<inrof2025_ros_type::action::Follow>::SharedPtr goal_handle){
         if (goal_handle) {
-            RCLCPP_INFO(this->get_logger(), "get goal_handle");
+
         } else {
-            RCLCPP_WARN(this->get_logger(), "empty goal_handle");
+
         }
     }
 
@@ -139,9 +139,9 @@ namespace ActionNodes {
 
     void BTNode::rotateGoalResponseCallback(rclcpp_action::ClientGoalHandle<inrof2025_ros_type::action::Rotate>::SharedPtr goal_handle){
         if (goal_handle) {
-            RCLCPP_INFO(this->get_logger(), "get goal_handle");
+
         } else {
-            RCLCPP_WARN(this->get_logger(), "empty goal_handle");
+            
         }
     }
 
