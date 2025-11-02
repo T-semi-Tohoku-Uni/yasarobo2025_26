@@ -211,7 +211,10 @@ def generate_launch_description():
     detect_node = Node(
         package="yasarobo2025_26",
         executable="ball_detect_node",
-        output="screen"
+        output="screen",
+        parameters=[{
+            "diff_threshold": 1e-4,
+        }]
     )
 
     # cmd_velをキャッチして、uartに流すプログラムが必要
