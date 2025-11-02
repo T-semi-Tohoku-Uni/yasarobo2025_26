@@ -136,6 +136,7 @@ namespace DBSCAN {
             // delete wall parameter
             double DIFF_THTRSHOLD_;
             double WALL_THTRSHOLD_;
+            double LIDAR_THTRSHOLD_;
 
             // ball 
             std::vector<DBSCAN::Circle> ball_;
