@@ -157,14 +157,14 @@ rosdep install --from-paths src -y --ignore-src
 ```bash
 cd
 cd ros_ws
-colcon build
+colcon build --symlink-install
 ```
 
 ビルド
 ```bash
 cd 
 cd ros_ws
-colcon build --packages-select yasarobo2025_26
+colcon build --packages-select yasarobo2025_26 --symlink-install
 ```
 実行
 ```bash
