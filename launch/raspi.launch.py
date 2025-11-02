@@ -133,7 +133,7 @@ def generate_launch_description():
             "odomNoise4": 5.0,
             "resampleThreshold": 0.9,
             "particleNum": 100,
-            "scanStep": 10,
+            "scanStep": 5,
         }],
     )
 
