@@ -213,7 +213,8 @@ def generate_launch_description():
         executable="ball_detect_node",
         output="screen",
         parameters=[{
-            "diff_threshold": 1e-4,
+            "wall_threshold": 1,
+            "diff_threshold": 1e-8,
         }]
     )
 
