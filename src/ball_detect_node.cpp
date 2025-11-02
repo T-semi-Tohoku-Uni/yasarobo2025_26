@@ -4,7 +4,7 @@ DBSCAN::BallDetect::BallDetect(const rclcpp::NodeOptions & options): Node("ball_
     // parameter
     this->declare_parameter<std::string>("frame_id", "ldlidar_base");
     this->declare_parameter<double>("eps", 0.1);
-    this->declare_parameter<double>("min_pts", 10);
+    this->declare_parameter<int>("min_pts", 10);
     this->declare_parameter<double>("wall_threshold", 0.01);
     this->declare_parameter<double>("diff_threshold", 1e-8);
     this->declare_parameter<double>("lidar_threshold", 1.0/5.0*M_PI);
