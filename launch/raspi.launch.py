@@ -208,6 +208,12 @@ def generate_launch_description():
         output="screen"
     )
 
+    detect_node = Node(
+        package="yasarobo2025_26",
+        executable="ball_detect_node",
+        output="screen"
+    )
+
     # cmd_velをキャッチして、uartに流すプログラムが必要
     return LaunchDescription([
         node_robot_state_publisher,
@@ -225,5 +231,6 @@ def generate_launch_description():
         vacume_node,
         bt_node,
         rotate_node,
+        detect_node
         # static_from_odom_to_basefootprint
     ])
