@@ -106,9 +106,8 @@ geometry_msgs::msg::Pose2D DBSCAN::BallDetect::detect() {
     // find closest ball
     geometry_msgs::msg::Pose2D closest_ball = DBSCAN::BallDetect::findClosestBall(ball_position);
     // print rviz2
-    for (DBSCAN::Circle &c: ball_position) {
-        c.printRviz2(this->pubBallShape_);
-    }
+    sensor_msgs::msg::PointCloud2 ball_point_cloud = DBSCAN::BallDetect::circle2PointCloud2(ball_position);
+    this->pubBallShape_->publish(ball_point_cloud);
 
     return closest_ball;
 }
@@ -513,8 +512,11 @@ double DBSCAN::Circle::getR() {
     return this->r_;
 }
 
-void DBSCAN::Circle::printRviz2(
-    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubBallShape_)
+bool DBSCAN::Circle::isClosest() {
+    return this->is_closest_;
+}
+
+sensor_msgs::msg::PointCloud2 DBSCAN::BallDetect::circle2PointCloud2(std::vector<DBSCAN::Circle> ball_position)
 {
     sensor_msgs::msg::PointCloud2 cloud_msg;
     cloud_msg.header.frame_id = "map";
@@ -524,7 +526,7 @@ void DBSCAN::Circle::printRviz2(
     modifier.setPointCloud2FieldsByString(2, "xyz", "rgb");
 
     const int NUM_POINTS = 36;
-    modifier.resize(NUM_POINTS + 1);
+    modifier.resize((NUM_POINTS + 1)*ball_position.size());
 
     sensor_msgs::PointCloud2Iterator<float> iter_x(cloud_msg, "x");
     sensor_msgs::PointCloud2Iterator<float> iter_y(cloud_msg, "y");
@@ -533,32 +535,34 @@ void DBSCAN::Circle::printRviz2(
     sensor_msgs::PointCloud2Iterator<uint8_t> iter_g(cloud_msg, "g");
     sensor_msgs::PointCloud2Iterator<uint8_t> iter_b(cloud_msg, "b");
 
-    // color settings
-    uint8_t red = 255, green = 255, blue = 255;
-    if (this->is_closest_) {
-        red = 0; green = 0; blue = 255;
-    }
+    for (DBSCAN::Circle &_b: ball_position) {
+        // color settings
+        uint8_t red = 255, green = 255, blue = 255;
+        if (_b.isClosest()) {
+            red = 0; green = 0; blue = 255;
+        }
 
-    for (int i = 0; i < NUM_POINTS; i++, ++iter_x, ++iter_y, ++iter_z, ++iter_r, ++iter_g, ++iter_b) {
-        float angle = 2.0 * M_PI * i / NUM_POINTS;
-        *iter_x = x_ + r_ * std::cos(angle);
-        *iter_y = y_ + r_ * std::sin(angle);
+        for (int i = 0; i < NUM_POINTS; i++, ++iter_x, ++iter_y, ++iter_z, ++iter_r, ++iter_g, ++iter_b) {
+            float angle = 2.0 * M_PI * i / NUM_POINTS;
+            *iter_x = _b.getX() + _b.getR() * std::cos(angle);
+            *iter_y = _b.getY() + _b.getR() * std::sin(angle);
+            *iter_z = 0.0;
+
+            *iter_r = red;
+            *iter_g = green;
+            *iter_b = blue;
+        }
+
+        // 中心点
+        *iter_x = _b.getX();
+        *iter_y = _b.getY();
         *iter_z = 0.0;
-
         *iter_r = red;
         *iter_g = green;
         *iter_b = blue;
     }
 
-    // 中心点
-    *iter_x = x_;
-    *iter_y = y_;
-    *iter_z = 0.0;
-    *iter_r = red;
-    *iter_g = green;
-    *iter_b = blue;
-
-    pubBallShape_->publish(cloud_msg);
+    return cloud_msg;
 }
 
 int main(int argc, char *argv[]) {

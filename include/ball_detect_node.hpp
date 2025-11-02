@@ -60,7 +60,7 @@ namespace DBSCAN {
             double getX();
             double getY();
             double getR();
-            void printRviz2(rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubBallShape_);
+            bool isClosest();
         private:
             double is_closest_;
             double x_, y_, r_;
@@ -139,6 +139,7 @@ namespace DBSCAN {
 
             // ball 
             std::vector<DBSCAN::Circle> ball_;
+            sensor_msgs::msg::PointCloud2 circle2PointCloud2(std::vector<DBSCAN::Circle> ball_position);
 
             // env
             bool is_sim_;
