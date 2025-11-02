@@ -123,7 +123,7 @@ def generate_launch_description():
         executable="mcl_node",
         output="screen",
         parameters=[{
-            "particleNum": 300,
+            "particleNum": 100,
             "initial_x": x,
             "initial_y": y,
             "initial_theta": theata,
@@ -133,7 +133,7 @@ def generate_launch_description():
             "odomNoise4": 5.0,
             "resampleThreshold": 0.9,
             "particleNum": 100,
-            "scanStep": 50,
+            "scanStep": 10,
         }],
     )
 
