@@ -228,6 +228,7 @@ def generate_launch_description():
         executable="ball_detect_node",
         output="screen",
         parameters=[{
+            "min_pts": 10,
             "lidar_threshold": 1/5*math.pi
         }]
     )

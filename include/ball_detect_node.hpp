@@ -131,7 +131,7 @@ namespace DBSCAN {
 
             // DBSCAN parameter
             double EPS_;
-            double MIN_PTS_;
+            int MIN_PTS_;
             
             // delete wall parameter
             double DIFF_THTRSHOLD_;
