@@ -226,7 +226,10 @@ def generate_launch_description():
     detect_node = Node(
         package="yasarobo2025_26",
         executable="ball_detect_node",
-        output="screen"
+        output="screen",
+        parameters=[{
+            "lidar_threshold": 1/5*math.pi
+        }]
     )
 
 

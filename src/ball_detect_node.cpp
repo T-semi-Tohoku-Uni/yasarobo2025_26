@@ -7,7 +7,7 @@ DBSCAN::BallDetect::BallDetect(const rclcpp::NodeOptions & options): Node("ball_
     this->declare_parameter<double>("min_pts", 10);
     this->declare_parameter<double>("wall_threshold", 0.01);
     this->declare_parameter<double>("diff_threshold", 1e-8);
-    this->declare_parameter<double>("lidar_threshold", 1/5*M_PI);
+    this->declare_parameter<double>("lidar_threshold", 1.0/5.0*M_PI);
     this->get_parameter("frame_id", frame_id_);
     this->get_parameter("eps", EPS_);
     this->get_parameter("min_pts", MIN_PTS_);
@@ -312,8 +312,8 @@ DBSCAN::PointCloud DBSCAN::BallDetect::scan2Point(const sensor_msgs::msg::LaserS
             if (theta > M_PI) theta -= M_2_PI;
             if (theta < -M_PI) theta += M_2_PI;
             
-            if (theta < -M_PI/2+this->LIDAR_THTRSHOLD_) continue;
-            if (theta >  M_PI/2-this->LIDAR_THTRSHOLD_) continue;
+            if (theta < -M_PI_2+this->LIDAR_THTRSHOLD_) continue;
+            if (theta >  M_PI_2-this->LIDAR_THTRSHOLD_) continue;
         }
         // convert origin
         try {

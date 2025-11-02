@@ -215,6 +215,7 @@ def generate_launch_description():
         parameters=[{
             "wall_threshold": 0.1,
             "diff_threshold": 1e-8,
+            "lidar_threshold": 0.5*math.pi
         }]
     )
 
