@@ -311,11 +311,11 @@ DBSCAN::PointCloud DBSCAN::BallDetect::scan2Point(const sensor_msgs::msg::LaserS
             if (theta < -M_PI) theta += M_2_PI;
             
             // clip
-            if (theta < -M_PI/2+1/10*M_PI) continue;
-            if (theta >  M_PI/2-1/10*M_PI) continue;
+            if (theta < -M_PI/2+2/10*M_PI) continue;
+            if (theta >  M_PI/2-2/10*M_PI) continue;
 
             // if (theta < (1/10)*M_PI || theta > (9/10)*M_PI) continue;
-            RCLCPP_INFO(this->get_logger(), "%lf", theta);
+            // RCLCPP_INFO(this->get_logger(), "%lf", theta);
         }
         // convert origin
         try {
