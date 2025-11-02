@@ -10,6 +10,7 @@
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <behaviortree_cpp/behavior_tree.h>
 #include <behaviortree_cpp/bt_factory.h>
+#include <behaviortree_cpp/loggers/groot2_publisher.h>
 #include "../include/bt_node.hpp"
 #include "../include/bt_vacume_on.hpp"
 #include "../include/bt_ball_detect.hpp"
@@ -103,9 +104,9 @@ namespace ActionNodes {
 
     void BTNode::goalResponseCallback(rclcpp_action::ClientGoalHandle<inrof2025_ros_type::action::Follow>::SharedPtr goal_handle){
         if (goal_handle) {
-            RCLCPP_INFO(this->get_logger(), "get goal_handle");
+
         } else {
-            RCLCPP_WARN(this->get_logger(), "empty goal_handle");
+
         }
     }
 
@@ -139,9 +140,9 @@ namespace ActionNodes {
 
     void BTNode::rotateGoalResponseCallback(rclcpp_action::ClientGoalHandle<inrof2025_ros_type::action::Rotate>::SharedPtr goal_handle){
         if (goal_handle) {
-            RCLCPP_INFO(this->get_logger(), "get goal_handle");
+
         } else {
-            RCLCPP_WARN(this->get_logger(), "empty goal_handle");
+            
         }
     }
 
@@ -203,6 +204,7 @@ int main(int argc, char* argv[]) {
 
     BT::Tree tree = factory.createTree("MainBT");
 
+    BT::Groot2Publisher groot2_publisher(tree);
     printTreeRecursively(tree.rootNode());
 
     NodeStatus status = NodeStatus::RUNNING;

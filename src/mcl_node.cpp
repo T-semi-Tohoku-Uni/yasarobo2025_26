@@ -68,6 +68,13 @@ namespace mcl {
                 this->declare_parameter<std::float_t>("odomNoise2", 1.0);
                 this->declare_parameter<std::float_t>("odomNoise3", 1.0);
                 this->declare_parameter<std::float_t>("odomNoise4", 1.0);
+                this->declare_parameter<std::float_t>("mapResolution", 0.01);
+                this->declare_parameter<std::string>("mapDir", "src/yasarobo2025_26/map/");
+                this->declare_parameter<std::int32_t>("scanStep", 50);
+                this->declare_parameter<std::double_t>("lfmSigma", 0.03);
+                this->declare_parameter<std::double_t>("zHit", 1.0);
+                this->declare_parameter<std::double_t>("zMax", 0.0);
+                this->declare_parameter<std::double_t>("zRand", 1.0);
                 
                 particleNum_ = this->get_parameter("particleNum").as_int();
                 double initial_x = this->get_parameter("initial_x").as_double();
@@ -78,6 +85,14 @@ namespace mcl {
                 this->odomNoise2_ = this->get_parameter("odomNoise2").as_double();
                 this->odomNoise3_ = this->get_parameter("odomNoise3").as_double();
                 this->odomNoise4_ = this->get_parameter("odomNoise4").as_double();
+                this->mapResolution_ = this->get_parameter("mapResolution").as_double();
+                this->mapDir_ = this->get_parameter("mapDir").as_string();
+                this->scanStep_ = this->get_parameter("scanStep").as_int();
+                this->lfmSigma_ = this->get_parameter("lfmSigma").as_double();
+                this->zHit_ = this->get_parameter("zHit").as_double();
+                this->zMax_ = this->get_parameter("zMax").as_double();
+                this->zRand_ = this->get_parameter("zRand").as_double();
+
                 particles_.resize(particleNum_);
                 pro_.resize(particleNum_);
 
@@ -107,17 +122,6 @@ namespace mcl {
                 
                 // set mesurementModel
                 measurementModel_ = MeasurementModel::LikelihoodFieldModel;
-
-                // TODO: move parameter settings to yaml file
-                this->mapResolution_ = 0.01;
-                this->mapWidth_ = 182;
-                this->mapHeight_ = 232;
-                this->mapDir_ = "src/yasarobo2025_26/map/";
-                this->scanStep_ = 50;
-                this->lfmSigma_ = 0.03;
-                this->zHit_ = 1.0;
-                this->zMax_ = 0.0;
-                this->zRand_ = 1.0;
 
                 MCL::readMap();
                 

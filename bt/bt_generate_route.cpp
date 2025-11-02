@@ -17,7 +17,7 @@ BT::PortsList ActionNodes::GenerateRoute::providedPorts() {
 }
 
 BT::NodeStatus ActionNodes::GenerateRoute::tick() {
-    RCLCPP_INFO(this->ros_node_->get_logger(), "Call generate route");
+    RCLCPP_INFO(this->ros_node_->get_logger(), "Start GenerateRoute");
 
     BT::Expected<double> tmp_x = getInput<double>("x");
     BT::Expected<double> tmp_y = getInput<double>("y");
