@@ -18,6 +18,9 @@ DBSCAN::BallDetect::BallDetect(const rclcpp::NodeOptions & options): Node("ball_
     this->subLider_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
         "/ldlidar_node/scan", lidarScanQos, std::bind(&BallDetect::lidarCallback, this, std::placeholders::_1)
     );
+    this->subPose_ = this->create_subscription<geometry_msgs::msg::Pose2D>(
+        "/pose", 10, std::bind(&DBSCAN::BallDetect::poseCallback, this, std::placeholders::_1)
+    );
 
     // publish topic
     rclcpp::SensorDataQoS clustersQos = rclcpp::SensorDataQoS();
@@ -42,12 +45,24 @@ void DBSCAN::BallDetect::lidarCallback(const sensor_msgs::msg::LaserScan::Shared
     detect();
 }
 
+void DBSCAN::BallDetect::poseCallback(const geometry_msgs::msg::Pose2D::SharedPtr msg) {
+    if (this->pose_) {
+        *(this->pose_) = *msg;
+    } else {
+        this->pose_ = std::make_unique<geometry_msgs::msg::Pose2D>(*msg);
+    }
+}
+
 geometry_msgs::msg::Pose2D DBSCAN::BallDetect::detect() {
-    geometry_msgs::msg::Pose2D ball_pose;
+    // declare dummy_ball_pose
+    // TODO: もうちょいいい方法ほしいな
+    geometry_msgs::msg::Pose2D dummy_ball_pose;
+    dummy_ball_pose.x = -100;
+    dummy_ball_pose.y = -100;
 
     if (!scan_) {
         RCLCPP_WARN(this->get_logger(), "scan_ is empty, so skip detect function");
-        return ball_pose;
+        return dummy_ball_pose;
     }
 
     /*
@@ -81,19 +96,54 @@ geometry_msgs::msg::Pose2D DBSCAN::BallDetect::detect() {
         decision target ball
     */
     // if ball_cluster is empty, continue searching ball
-    if(ball_clusters.size() == 0) return ball_pose; 
+    if(ball_clusters.size() == 0) return dummy_ball_pose; 
     // caculate ball position
     std::vector<DBSCAN::Circle> ball_position;
     ball_position.resize(ball_clusters.size());
     for (std::pair<int, std::vector<DBSCAN::Point>> &_ball: ball_clusters) {
         ball_position.push_back(Circle(_ball.second));
     }
+    // find closest ball
+    geometry_msgs::msg::Pose2D closest_ball = DBSCAN::BallDetect::findClosestBall(ball_position);
     // print rviz2
     for (DBSCAN::Circle &c: ball_position) {
         c.printRviz2(this->pubBallShape_);
     }
 
-    return ball_pose;
+    return closest_ball;
+}
+
+geometry_msgs::msg::Pose2D DBSCAN::BallDetect::findClosestBall(
+    std::vector<DBSCAN::Circle> &ball
+) {
+    geometry_msgs::msg::Pose2D closest_ball;
+
+    if (!pose_) {
+        RCLCPP_WARN(this->get_logger(), "pose topic is empty");
+        closest_ball.x = ball[0].getX();
+        closest_ball.y = ball[0].getY();
+        closest_ball.theta = 0.0;
+        return closest_ball;
+    }
+
+    int closest_index=0;
+    double min_distance = std::numeric_limits<double>::max();
+    for (size_t i=0; i<ball.size(); i++) {
+        double d = std::hypot(ball[i].getX()-pose_->x, ball[i].getY()-pose_->y);
+        if (min_distance > d) {
+            closest_index = i;
+            min_distance = d;
+        }
+    }
+
+    closest_ball.x = ball[closest_index].getX();
+    closest_ball.y = ball[closest_index].getY();
+    closest_ball.theta = 0.0;
+
+    // mark closest ball
+    ball[closest_index].markClosest();
+
+    return closest_ball;
 }
 
 std::vector<std::pair<int, std::vector<DBSCAN::Point>>> DBSCAN::BallDetect::collectBallPoints(
@@ -422,7 +472,7 @@ double DBSCAN::UnitVector::getY() const {
     return y_;
 }
 
-DBSCAN::Circle::Circle(): x_(0.0), y_(0.0), r_(0.0) {}
+DBSCAN::Circle::Circle(): is_closest_(false), x_(0.0), y_(0.0), r_(0.0) {}
 
 // O(n)
 DBSCAN::Circle::Circle(std::vector<DBSCAN::Point> &points) {
@@ -444,6 +494,11 @@ DBSCAN::Circle::Circle(std::vector<DBSCAN::Point> &points) {
     this->x_ = sol(0);
     this->y_ = sol(1);
     this->r_ = std::sqrt(x_*x_ + y_*y_ + sol(2));
+    this->is_closest_ = false;
+}
+
+void DBSCAN::Circle::markClosest() {
+    this->is_closest_ = true;
 }
 
 double DBSCAN::Circle::getX() {
@@ -458,33 +513,50 @@ double DBSCAN::Circle::getR() {
     return this->r_;
 }
 
-void DBSCAN::Circle::printRviz2(rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubBallShape_) {
+void DBSCAN::Circle::printRviz2(
+    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubBallShape_)
+{
     sensor_msgs::msg::PointCloud2 cloud_msg;
     cloud_msg.header.frame_id = "map";
     cloud_msg.header.stamp = rclcpp::Clock().now();
 
     sensor_msgs::PointCloud2Modifier modifier(cloud_msg);
-    modifier.setPointCloud2FieldsByString(1, "xyz");
+    modifier.setPointCloud2FieldsByString(2, "xyz", "rgb");
 
     const int NUM_POINTS = 36;
-
     modifier.resize(NUM_POINTS + 1);
 
     sensor_msgs::PointCloud2Iterator<float> iter_x(cloud_msg, "x");
     sensor_msgs::PointCloud2Iterator<float> iter_y(cloud_msg, "y");
     sensor_msgs::PointCloud2Iterator<float> iter_z(cloud_msg, "z");
+    sensor_msgs::PointCloud2Iterator<uint8_t> iter_r(cloud_msg, "r");
+    sensor_msgs::PointCloud2Iterator<uint8_t> iter_g(cloud_msg, "g");
+    sensor_msgs::PointCloud2Iterator<uint8_t> iter_b(cloud_msg, "b");
 
-    for (int i = 0; i < NUM_POINTS; i++, ++iter_x, ++iter_y, ++iter_z) {
+    // color settings
+    uint8_t red = 255, green = 255, blue = 255;
+    if (this->is_closest_) {
+        red = 0; green = 0; blue = 255;
+    }
+
+    for (int i = 0; i < NUM_POINTS; i++, ++iter_x, ++iter_y, ++iter_z, ++iter_r, ++iter_g, ++iter_b) {
         float angle = 2.0 * M_PI * i / NUM_POINTS;
         *iter_x = x_ + r_ * std::cos(angle);
         *iter_y = y_ + r_ * std::sin(angle);
         *iter_z = 0.0;
+
+        *iter_r = red;
+        *iter_g = green;
+        *iter_b = blue;
     }
 
-    // Add center
+    // 中心点
     *iter_x = x_;
     *iter_y = y_;
     *iter_z = 0.0;
+    *iter_r = red;
+    *iter_g = green;
+    *iter_b = blue;
 
     pubBallShape_->publish(cloud_msg);
 }

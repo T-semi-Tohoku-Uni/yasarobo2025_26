@@ -11,6 +11,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/buffer.h>
+#include <optional>
 
 namespace DBSCAN {
     enum ClusterID {
@@ -55,11 +56,13 @@ namespace DBSCAN {
         public:
             Circle();
             Circle(std::vector<DBSCAN::Point> &cluster);
+            void markClosest();
             double getX();
             double getY();
             double getR();
             void printRviz2(rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubBallShape_);
         private:
+            double is_closest_;
             double x_, y_, r_;
     };
 
@@ -77,6 +80,7 @@ namespace DBSCAN {
         private:
             // callback
             void lidarCallback(const sensor_msgs::msg::LaserScan::SharedPtr msg);
+            void poseCallback(const geometry_msgs::msg::Pose2D::SharedPtr msg);
 
             // DBSCAN algorithm
             std::unordered_map<int, std::vector<DBSCAN::Point>> dbscan(
@@ -106,6 +110,11 @@ namespace DBSCAN {
                 const std::vector<int>& ball_cluster_ids
             );
 
+            // search
+            geometry_msgs::msg::Pose2D findClosestBall(
+                std::vector<DBSCAN::Circle> &ball
+            );
+
             // convert LaserScan to Point
             DBSCAN::PointCloud scan2Point(const sensor_msgs::msg::LaserScan scan);
 
@@ -116,6 +125,9 @@ namespace DBSCAN {
             // Lidar
             sensor_msgs::msg::LaserScan::SharedPtr scan_;
             rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr subLider_;
+
+            // pose
+            std::unique_ptr<geometry_msgs::msg::Pose2D> pose_;
 
             // DBSCAN parameter
             double EPS_;
@@ -136,10 +148,15 @@ namespace DBSCAN {
             tf2_ros::TransformListener tf_listener_;
             rclcpp::TimerBase::SharedPtr timer_;
 
-            // For debug
+            // lidar frame
             std::string frame_id_;
+
+            // publisher
             rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubClusters_;
             rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubBallShape_;
+
+            // subscriber
+            rclcpp::Subscription<geometry_msgs::msg::Pose2D>::SharedPtr subPose_;
     };
 }
 

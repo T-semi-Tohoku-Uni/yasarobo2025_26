@@ -98,6 +98,17 @@ def generate_launch_description():
             '-z', str(z)
         ]
     )
+    ball_spawn_entity_2 = Node(
+        package='gazebo_ros',
+        executable='spawn_entity.py',
+        arguments=[
+            '-file', str(ball_urdf_file),
+            '-entity', 'ball_2',
+            '-x', str(1.50),
+            '-y', str(1.0),
+            '-z', str(z)
+        ]
+    )
 
     # rviz2 settings
     rviz_node = Node(
@@ -246,6 +257,12 @@ def generate_launch_description():
             event_handler=OnProcessExit(
                 target_action=spawn_entity,
                 on_exit=[ball_spawn_entity]
+            )
+        ),
+        RegisterEventHandler(
+            event_handler=OnProcessExit(
+                target_action=ball_spawn_entity,
+                on_exit=[ball_spawn_entity_2]
             )
         )
     ])
