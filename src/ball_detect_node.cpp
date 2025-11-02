@@ -306,7 +306,8 @@ DBSCAN::PointCloud DBSCAN::BallDetect::scan2Point(const sensor_msgs::msg::LaserS
         if (is_sim_) theta = scan.angle_min + ((std::double_t)(i))*scan.angle_increment;
         else {
             theta = scan.angle_min + ((std::double_t)(i))*scan.angle_increment - 3.0*M_PI/2.0;
-            if (theta < (1/10)*M_PI || theta > (9/10)*M_PI) continue;
+            // if (theta < (1/10)*M_PI || theta > (9/10)*M_PI) continue;
+            RCLCPP_INFO(this->get_logger(), "%lf", theta);
         }
         // convert origin
         try {
