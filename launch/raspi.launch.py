@@ -123,7 +123,7 @@ def generate_launch_description():
         executable="mcl_node",
         output="screen",
         parameters=[{
-            "particleNum": 100,
+            "particleNum": 50,
             "initial_x": x,
             "initial_y": y,
             "initial_theta": theata,
