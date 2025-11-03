@@ -17,6 +17,9 @@ DBSCAN::BallDetect::BallDetect(const rclcpp::NodeOptions & options): Node("ball_
     this->get_parameter("diff_threshold", DIFF_THTRSHOLD_);
     this->get_parameter("lidar_threshold", LIDAR_THTRSHOLD_);
 
+    // initialize field
+    field_ = DBSCAN::Field("src/yasarobo2025_26/map/");
+
     // subscribe topic
     rclcpp::SensorDataQoS lidarScanQos = rclcpp::SensorDataQoS();
     this->subLider_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
@@ -105,7 +108,9 @@ geometry_msgs::msg::Pose2D DBSCAN::BallDetect::detect() {
     std::vector<DBSCAN::Circle> ball_position;
     ball_position.resize(ball_clusters.size());
     for (std::pair<int, std::vector<DBSCAN::Point>> &_ball: ball_clusters) {
-        ball_position.push_back(Circle(_ball.second));
+        DBSCAN::Circle c = Circle(_ball.second);
+        // check ball on field
+        if(this->isBallOnField(field_, c)) ball_position.push_back(Circle(_ball.second));
     }
     // find closest ball
     geometry_msgs::msg::Pose2D closest_ball = DBSCAN::BallDetect::findClosestBall(ball_position);
@@ -180,21 +185,21 @@ std::vector<int> DBSCAN::BallDetect::deleteWall(
     for (auto& [cid, pts]: clusters) {
         if (pts.size() < 3) continue;
 
-        /*
-            regtancle th
-        */
-        double min_x = std::numeric_limits<double>::max();
-        double min_y = std::numeric_limits<double>::max();
-        double max_x = std::numeric_limits<double>::min();
-        double max_y = std::numeric_limits<double>::min();
-        for (DBSCAN::Point &p: pts) {
-            if (min_x > p.getX()) min_x = p.getX();
-            if (min_y > p.getY()) min_y = p.getY();
-            if (max_x < p.getX()) max_x = p.getX();
-            if (max_y < p.getY()) max_y = p.getY();
-        }
-        double diagonal = std::hypot(max_x-min_x, max_y-min_y);
-        if (diagonal > DIAGONAL_THTRSHOLD_) continue;
+        // /*
+        //     regtancle th
+        // */
+        // double min_x = std::numeric_limits<double>::max();
+        // double min_y = std::numeric_limits<double>::max();
+        // double max_x = std::numeric_limits<double>::min();
+        // double max_y = std::numeric_limits<double>::min();
+        // for (DBSCAN::Point &p: pts) {
+        //     if (min_x > p.getX()) min_x = p.getX();
+        //     if (min_y > p.getY()) min_y = p.getY();
+        //     if (max_x < p.getX()) max_x = p.getX();
+        //     if (max_y < p.getY()) max_y = p.getY();
+        // }
+        // double diagonal = std::hypot(max_x-min_x, max_y-min_y);
+        // if (diagonal > DIAGONAL_THTRSHOLD_) continue;
 
         /*
             second diff th
@@ -227,6 +232,8 @@ std::vector<int> DBSCAN::BallDetect::deleteWall(
         if (std::abs(med) > WALL_THTRSHOLD_) {
             ball_cluster_ids.push_back(cid);
         }
+
+
     }
     return ball_cluster_ids;
 }
@@ -594,6 +601,106 @@ sensor_msgs::msg::PointCloud2 DBSCAN::BallDetect::circle2PointCloud2(std::vector
     }
 
     return cloud_msg;
+}
+
+DBSCAN::Field::Field(std::string map_dir) {
+    YAML::Node lconf = YAML::LoadFile(map_dir + "map.yaml");
+    mapResolution_ = lconf["resolution"].as<std::double_t>();
+    mapOrigin_ = lconf["origin"].as<std::vector<std::double_t>>();
+
+    std::string imgFile = map_dir + "map.pgm";
+    cv::Mat mapImg = cv::imread(imgFile, 0);
+    mapWidth_ = mapImg.cols;
+    mapHeight_ = mapImg.rows;
+
+    mapImg_ = mapImg.clone();
+    for (int v = 0; v < mapHeight_; v++ ) {
+        for (int u = 0; u < mapWidth_; u++ ) {
+            uchar val = mapImg_.at<uchar>(v, u);
+            if (val == 0) {
+                mapImg_.at<uchar>(v, u) = 0;
+            } else {
+                mapImg_.at<uchar>(v, u) = 1;
+            }
+        }
+    }
+}
+DBSCAN::Field::Field() {}
+
+bool DBSCAN::BallDetect::isBallOnField(DBSCAN::Field &f, DBSCAN::Circle &c) {
+    // convert map field
+    int u, v;
+    f.xy2uv(c.getX(), c.getY(), &u, &v);
+    
+    // circle center position
+    if (u < 0 || v < 0 || u >= f.mapWidth_ || v >= f.mapHeight_) return false;
+    if (f.mapImg_.at<uchar>(v, u) == 0) return false;
+
+    // 
+    bool inForbidden = false;
+    const double step = M_PI / 8.0;
+    for (double theta = 0.0; theta < 2 * M_PI; theta += step) {
+        double x_edge = c.getX() + c.getR() * std::cos(theta);
+        double y_edge = c.getY() + c.getR() * std::sin(theta);
+
+        int ue, ve;
+        f.xy2uv(x_edge, y_edge, &ue, &ve);
+        if (ue < 0 || ve < 0 || ue >= f.mapWidth_ || ve >= f.mapHeight_) {
+            inForbidden = true;
+            break;
+        }
+
+        if (f.mapImg_.at<uchar>(ve, ue) == 0) {
+            inForbidden = true;
+            break;
+        }
+    }
+
+    if (inForbidden) return false;
+    
+    return true;
+}
+
+
+bool DBSCAN::Field::isBallOnField(DBSCAN::Circle &c) {
+    // convert map field
+    int u, v;
+    xy2uv(c.getX(), c.getY(), &u, &v);
+    printf("%d %d", u, v);
+
+    // circle center position
+    if (u < 0 || v < 0 || u >= mapWidth_ || v >= mapHeight_) return false;
+    if (this->mapImg_.at<uchar>(v, u) == 0) return false;
+
+
+    // 
+    bool inForbidden = false;
+    const double step = M_PI / 8.0;
+    for (double theta = 0.0; theta < 2 * M_PI; theta += step) {
+        double x_edge = c.getX() + c.getR() * std::cos(theta);
+        double y_edge = c.getY() + c.getR() * std::sin(theta);
+
+        int ue, ve;
+        xy2uv(x_edge, y_edge, &ue, &ve);
+        if (ue < 0 || ve < 0 || ue >= mapWidth_ || ve >= mapHeight_) {
+            inForbidden = true;
+            break;
+        }
+
+        if (mapImg_.at<uchar>(ve, ue) == 0) {
+            inForbidden = true;
+            break;
+        }
+    }
+
+    // if (inForbidden) return false;
+    
+    return true;
+}
+
+void DBSCAN::Field::xy2uv(std::double_t x, std::double_t y, std::int32_t *u, std::int32_t *v) {
+    *u = (std::int32_t)(x / mapResolution_);
+    *v = mapHeight_ - 1 - (std::int32_t)(y / mapResolution_);
 }
 
 int main(int argc, char *argv[]) {

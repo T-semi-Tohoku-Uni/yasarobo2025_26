@@ -12,6 +12,8 @@
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/buffer.h>
 #include <optional>
+#include <opencv2/opencv.hpp>
+#include <yaml-cpp/yaml.h>
 
 namespace DBSCAN {
     enum ClusterID {
@@ -66,6 +68,17 @@ namespace DBSCAN {
             double x_, y_, r_;
     };
 
+    class Field {
+        public:
+            Field();
+            Field(std::string map_dir);
+            bool isBallOnField(DBSCAN::Circle &c);
+            void xy2uv(std::double_t x, std::double_t y, std::int32_t *u, std::int32_t *v);
+            double mapResolution_;
+            int mapWidth_, mapHeight_;
+            std::vector<double> mapOrigin_;
+            cv::Mat mapImg_;
+    };
 
     using KdTree = nanoflann::KDTreeSingleIndexAdaptor<
         nanoflann::L2_Simple_Adaptor<float, DBSCAN::PointCloud>,
@@ -122,6 +135,8 @@ namespace DBSCAN {
                 const std::vector<std::pair<int, std::vector<DBSCAN::Point>>> &points
             );
 
+            bool isBallOnField(DBSCAN::Field &f, DBSCAN::Circle &c);
+
             // Lidar
             sensor_msgs::msg::LaserScan::SharedPtr scan_;
             rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr subLider_;
@@ -153,6 +168,9 @@ namespace DBSCAN {
 
             // lidar frame
             std::string frame_id_;
+
+            // field
+            DBSCAN::Field field_;
 
             // publisher
             rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubClusters_;
