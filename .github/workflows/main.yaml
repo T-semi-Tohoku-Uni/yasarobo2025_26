@@ -31,7 +31,7 @@ jobs:
       - name: Install apt repository
         run: |
             sudo apt-get update
-            sudo apt-get install -y libzmq3-dev libboost-dev qtbase5-dev libqt5svg5-dev libzmq3-dev libdw-dev libopencv-dev libudev-dev
+            sudo apt-get install -y libzmq3-dev libboost-dev qtbase5-dev libqt5svg5-dev libzmq3-dev libdw-dev libopencv-dev libudev-dev libnanoflann-dev
 
       - name: Behaivor Tree cache restore
         id: cache-behaivor-tree

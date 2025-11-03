@@ -103,7 +103,7 @@
         "scoped_allocator": "cpp",
         "span": "cpp",
         "syncstream": "cpp",
-        "valarray": "cpp"
-    },
-    "C_Cpp.default.compilerPath": "/usr/bin/g++"
+        "valarray": "cpp",
+        "dense": "cpp"
+    }
 }
