@@ -153,6 +153,7 @@ namespace DBSCAN {
             double DIFF_THTRSHOLD_;
             double WALL_THTRSHOLD_;
             double LIDAR_THTRSHOLD_;
+            double RADIUS_THTRSHOLD_
 
             // ball 
             std::vector<DBSCAN::Circle> ball_;

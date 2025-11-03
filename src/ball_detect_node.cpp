@@ -9,6 +9,7 @@ DBSCAN::BallDetect::BallDetect(const rclcpp::NodeOptions & options): Node("ball_
     this->declare_parameter<double>("wall_threshold", 0.01);
     this->declare_parameter<double>("diff_threshold", 1e-8);
     this->declare_parameter<double>("lidar_threshold", 1.0/5.0*M_PI);
+    this->declare_parameter<double>("radius_threshold", 0.1);
     this->get_parameter("frame_id", frame_id_);
     this->get_parameter("eps", EPS_);
     this->get_parameter("min_pts", MIN_PTS_);
@@ -16,6 +17,7 @@ DBSCAN::BallDetect::BallDetect(const rclcpp::NodeOptions & options): Node("ball_
     this->get_parameter("wall_threshold", WALL_THTRSHOLD_);
     this->get_parameter("diff_threshold", DIFF_THTRSHOLD_);
     this->get_parameter("lidar_threshold", LIDAR_THTRSHOLD_);
+    this->get_parameter("radius_threshold", RADIUS_THTRSHOLD_);
 
     // initialize field
     field_ = DBSCAN::Field("src/yasarobo2025_26/map/");
@@ -110,6 +112,7 @@ geometry_msgs::msg::Pose2D DBSCAN::BallDetect::detect() {
     for (std::pair<int, std::vector<DBSCAN::Point>> &_ball: ball_clusters) {
         DBSCAN::Circle c = Circle(_ball.second);
         // check ball on field
+        if (c.getR() > RADIUS_THTRSHOLD_) continue;
         if(this->isBallOnField(field_, c)) ball_position.push_back(Circle(_ball.second));
     }
     // find closest ball
