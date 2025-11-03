@@ -134,6 +134,7 @@ namespace DBSCAN {
             int MIN_PTS_;
             
             // delete wall parameter
+            double DIAGONAL_THTRSHOLD_;
             double DIFF_THTRSHOLD_;
             double WALL_THTRSHOLD_;
             double LIDAR_THTRSHOLD_;

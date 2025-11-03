@@ -5,12 +5,14 @@ DBSCAN::BallDetect::BallDetect(const rclcpp::NodeOptions & options): Node("ball_
     this->declare_parameter<std::string>("frame_id", "ldlidar_base");
     this->declare_parameter<double>("eps", 0.1);
     this->declare_parameter<int>("min_pts", 10);
+    this->declare_parameter<double>("diagonal_threshold", 0.1);
     this->declare_parameter<double>("wall_threshold", 0.01);
     this->declare_parameter<double>("diff_threshold", 1e-8);
     this->declare_parameter<double>("lidar_threshold", 1.0/5.0*M_PI);
     this->get_parameter("frame_id", frame_id_);
     this->get_parameter("eps", EPS_);
     this->get_parameter("min_pts", MIN_PTS_);
+    this->get_parameter("diagonal_threshold", DIAGONAL_THTRSHOLD_);
     this->get_parameter("wall_threshold", WALL_THTRSHOLD_);
     this->get_parameter("diff_threshold", DIFF_THTRSHOLD_);
     this->get_parameter("lidar_threshold", LIDAR_THTRSHOLD_);
@@ -178,6 +180,25 @@ std::vector<int> DBSCAN::BallDetect::deleteWall(
     for (auto& [cid, pts]: clusters) {
         if (pts.size() < 3) continue;
 
+        /*
+            regtancle th
+        */
+        double min_x = std::numeric_limits<double>::max();
+        double min_y = std::numeric_limits<double>::max();
+        double max_x = std::numeric_limits<double>::min();
+        double max_y = std::numeric_limits<double>::min();
+        for (DBSCAN::Point &p: pts) {
+            if (min_x > p.getX()) min_x = p.getX();
+            if (min_y > p.getY()) min_y = p.getY();
+            if (max_x < p.getX()) max_x = p.getX();
+            if (max_y < p.getY()) max_y = p.getY();
+        }
+        double diagonal = std::hypot(max_x-min_x, max_y-min_y);
+        if (diagonal > DIAGONAL_THTRSHOLD_) continue;
+
+        /*
+            second diff th
+        */
         // sort on x
         std::sort(
             pts.begin(), 
@@ -203,9 +224,10 @@ std::vector<int> DBSCAN::BallDetect::deleteWall(
         }
 
         double med = DBSCAN::BallDetect::median(second_deriv);
-        if (std::abs(med) > WALL_THTRSHOLD_) ball_cluster_ids.push_back(cid);
+        if (std::abs(med) > WALL_THTRSHOLD_) {
+            ball_cluster_ids.push_back(cid);
+        }
     }
-
     return ball_cluster_ids;
 }
 
