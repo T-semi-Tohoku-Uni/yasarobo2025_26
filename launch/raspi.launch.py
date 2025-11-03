@@ -123,7 +123,7 @@ def generate_launch_description():
         executable="mcl_node",
         output="screen",
         parameters=[{
-            "particleNum": 300,
+            "particleNum": 50,
             "initial_x": x,
             "initial_y": y,
             "initial_theta": theata,
@@ -132,6 +132,7 @@ def generate_launch_description():
             "odomNoise3": 2.0,
             "odomNoise4": 5.0,
             "resampleThreshold": 0.9,
+            "scanStep": 5,
         }],
     )
 
@@ -183,7 +184,7 @@ def generate_launch_description():
         executable="follow_node",
         output="screen",
         parameters=[{
-            "max_linear_speed": 0.10,
+            "max_linear_speed": 0.13,
             "max_angular_speed": 0.5,
             "lookahead_distance": 0.10,
             "Kp_linear": 1.00,
