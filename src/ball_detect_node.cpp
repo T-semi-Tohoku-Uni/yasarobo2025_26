@@ -617,10 +617,10 @@ DBSCAN::Field::Field(std::string map_dir) {
     for (int v = 0; v < mapHeight_; v++ ) {
         for (int u = 0; u < mapWidth_; u++ ) {
             uchar val = mapImg_.at<uchar>(v, u);
-            if (val == 0) {
-                mapImg_.at<uchar>(v, u) = 0;
-            } else {
+            if (val >= 239) {
                 mapImg_.at<uchar>(v, u) = 1;
+            } else {
+                mapImg_.at<uchar>(v, u) = 0;
             }
         }
     }
