@@ -163,6 +163,8 @@ namespace path {
             pathMsg.header.frame_id = "map";
             pathMsg.header.stamp    = this->now();
 
+            double last_yaw = 0.0;
+
             for (size_t i = 0; i < path.size(); ++i) {
                 auto [gr, gc] : path
                 geometry_msgs::msg::PoseStamped pose;
@@ -175,6 +177,18 @@ namespace path {
 
                 // 進行方向の yaw を持たせる
                 double yaw = 0.0;
+                if (i+1 < path.size()){
+                    /*次の点があるとき*/
+                    auto[next_gr,next_gc] : path[i+1];
+                    double next_x = (next_gr + 0.5) * mapResolution_;
+                    double next_y = (static_cast<double>(mapHeight_ - next_gc - 1) + 0.5) * mapResolution_;
+                    yaw = std::atan2(next_y - y, next_x - x);
+                    last_yaw = yaw;
+                }else{
+                    /*次の点がないとき*/
+                    yaw = last_yaw
+
+                }
                 pose.pose.orientation.w = 1.0;
 
 
