@@ -20,8 +20,8 @@ class FollowNode: public rclcpp::Node {
             this->declare_parameter<double>("lookahead_distance", 0.05);
             this->declare_parameter<double>("max_linear_speed", 0.2);
             this->declare_parameter<double>("max_theta_speed", 2.0);
-            this->declare_parameter<double>("Kp_linear", 1.0);
-            this->declare_parameter<double>("Ki_linear", 0.20);
+            this->declare_parameter<double>("Kp_linear", 0.10);
+            this->declare_parameter<double>("Ki_linear", 0.00);
             this->declare_parameter<double>("Kd_linear", 0.00);
             this->declare_parameter<double>("max_linear_tolerance", 0.08);
             this->declare_parameter<double>("max_reaching_distance", 0.02);
@@ -213,7 +213,6 @@ class FollowNode: public rclcpp::Node {
                     linear_error_derivative_y_prev = linear_error_derivative_y;
 
 
-
                     RCLCPP_INFO(this->get_logger(), "speed_x, speed_y:%.2f  %.2f", linear_speed_cmd_dx, linear_speed_cmd_dy);
 
                     //RCLCPP_INFO(this->get_logger(), "pose:", "%.4f %.4f ", pose_.x, pose_.y);
@@ -221,8 +220,6 @@ class FollowNode: public rclcpp::Node {
                     //RCLCPP_INFO(this->get_logger(), "dx, dy:", "%.4f %.4f ", dx, dy);
                     //RCLCPP_INFO(this->get_logger(), "linear cmd: %.4f %.4f ", linear_speed_cmd_x, linear_speed_cmd_y);
                     
-                    
-
 
                     //PID control for theta speed
                     //static double theta_error_prev = 0.0;
@@ -269,19 +266,32 @@ class FollowNode: public rclcpp::Node {
                     linear_speed.linear.y = -sin(pose_.theta) * linear_speed_cmd_x + cos(pose_.theta) * linear_speed_cmd_y;
 
 
-
                     //apply speed limits 
                     geometry_msgs::msg::Twist clipped_v = clip(linear_speed);
-                    
+                    cmd_pub_->publish(clipped_v);
+
+
+                    double clipped_v_x_r = clipped_v.linear.x;
+                    double clipped_v_y_r = clipped_v.linear.y;
+
+                    RCLCPP_INFO(this->get_logger(), "%.2f, %.2f", linear_speed.linear.x, linear_speed.linear.y);
+
+                    double clipped_v_x_f = cos(pose_.theta) * clipped_v_x_r + sin(pose_.theta) * clipped_v_y_r;
+                    double clipped_v_y_f = -sin(pose_.theta) * clipped_v_x_r + cos(pose_.theta) * clipped_v_y_r; 
+
+
+                    linear_speed_cmd_x = clipped_v_x_r;
+                    linear_speed_cmd_y = clipped_v_y_r;
+
 
                     //cmd.angular.z = Kp_theta * theta_error + Ki_theta*theta_error_integral + Kd_theta*theta_error_derivative;
 
 
-                    //send cmd
-                    //geometry_msgs::msg::Twist cmd;
-                    //cmd.linear.x = linear_speed_cmd;
-                    //cmd.angular.z = theta_speed_cmd;
-                    cmd_pub_->publish(clipped_v);
+                    // // send cmd
+                    // geometry_msgs::msg::Twist cmd;
+                    // cmd.linear.x = linear_speed_cmd;
+                    // cmd.angular.z = theta_speed_cmd;
+                    // cmd_pub_->publish(linear_speed);
 
                     //publish feedback
                     auto feedback_msg = std::make_shared<inrof2025_ros_type::action::Follow::Feedback>();
