@@ -217,7 +217,8 @@ def generate_launch_description():
             "min_pts": 5,
             "wall_threshold": 0.20,
             "diff_threshold": 1e-8,
-            "lidar_threshold": 3.0/40.0*math.pi
+            "lidar_threshold": 3.0/40.0*math.pi,
+            "radius_threshold": 0.05
         }]
     )
 
