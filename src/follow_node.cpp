@@ -136,6 +136,8 @@ class FollowNode: public rclcpp::Node {
             //while (theta_error > M_PI) theta_error -= 2*M_PI;
             //while (theta_error < -M_PI) theta_error += 2*M_PI;
 
+            // RCLCPP_INFO(this->get_logger(), "%lf %lf", dx, dy);
+
         
             if (max_linear_tolerance > linear_error){ //&& max_theta_tolerance > std::abs(theta_error)) {
                 if (current_waypoint_index_ < (int)path_.size() -1){ //&&  linear_error < lookahead_distance_ / 2.0 ) {
@@ -176,7 +178,7 @@ class FollowNode: public rclcpp::Node {
                     static double linear_error_derivative_x_prev = 0.0;
                     //static double linear_error_integral_x = 0.0;
                     //linear_error_integral_x += dx * dt;
-                    double linear_error_derivative_x = (dx - linear_error_prev_dx) / dt;
+                    double linear_error_derivative_x = dx - linear_error_prev_dx;
                     double linear_error_derivative_dx = linear_error_derivative_x - linear_error_derivative_x_prev;
                     
                     double linear_speed_cmd_dx = Kp_linear * linear_error_derivative_x
@@ -198,7 +200,7 @@ class FollowNode: public rclcpp::Node {
                     static double linear_error_derivative_y_prev = 0.0;
                     //static double linear_error_integral_y = 0.0;
                     //linear_error_integral_y += dy * dt;
-                    double linear_error_derivative_y = (dy - linear_error_prev_dy) / dt;
+                    double linear_error_derivative_y = dy - linear_error_prev_dy;
                     double linear_error_derivative_dy = linear_error_derivative_y - linear_error_derivative_y_prev;
                     
 
@@ -209,11 +211,13 @@ class FollowNode: public rclcpp::Node {
                     static double linear_speed_cmd_y = 0.0; 
                     linear_speed_cmd_y += linear_speed_cmd_dy; 
 
+                    // RCLCPP_INFO(this->get_logger(), "%lf %lf %lf", dy, dy * dt, linear_speed_cmd_dy);
+
                     linear_error_prev_dy = dy;
                     linear_error_derivative_y_prev = linear_error_derivative_y;
 
 
-                    RCLCPP_INFO(this->get_logger(), "speed_x, speed_y:%.2f  %.2f", linear_speed_cmd_dx, linear_speed_cmd_dy);
+                    // RCLCPP_INFO(this->get_logger(), "speed_x, speed_y:%.2f  %.2f", linear_speed_cmd_dx, linear_speed_cmd_dy);
 
                     //RCLCPP_INFO(this->get_logger(), "pose:", "%.4f %.4f ", pose_.x, pose_.y);
                     //RCLCPP_INFO(this->get_logger(), "path:", "%.4f %.4f ", path_[current_waypoint_index_].pose.position.x, path_[current_waypoint_index_].pose.position.y);
@@ -274,14 +278,14 @@ class FollowNode: public rclcpp::Node {
                     double clipped_v_x_r = clipped_v.linear.x;
                     double clipped_v_y_r = clipped_v.linear.y;
 
-                    RCLCPP_INFO(this->get_logger(), "%.2f, %.2f", linear_speed.linear.x, linear_speed.linear.y);
+                    // RCLCPP_INFO(this->get_logger(), "%.2f, %.2f", linear_speed.linear.x, linear_speed.linear.y);
 
-                    double clipped_v_x_f = cos(pose_.theta) * clipped_v_x_r + sin(pose_.theta) * clipped_v_y_r;
-                    double clipped_v_y_f = -sin(pose_.theta) * clipped_v_x_r + cos(pose_.theta) * clipped_v_y_r; 
+                    double clipped_v_x_f = cos(pose_.theta) * clipped_v_x_r - sin(pose_.theta) * clipped_v_y_r;
+                    double clipped_v_y_f = sin(pose_.theta) * clipped_v_x_r + cos(pose_.theta) * clipped_v_y_r; 
 
 
-                    linear_speed_cmd_x = clipped_v_x_r;
-                    linear_speed_cmd_y = clipped_v_y_r;
+                    linear_speed_cmd_x = clipped_v_x_f;
+                    linear_speed_cmd_y = clipped_v_y_f;
 
 
                     //cmd.angular.z = Kp_theta * theta_error + Ki_theta*theta_error_integral + Kd_theta*theta_error_derivative;
