@@ -187,9 +187,9 @@ namespace path {
                 }else{
                     /*次の点がないとき*/
                     yaw = last_yaw
-
                 }
-                pose.pose.orientation.w = 1.0;
+                
+                pose.pose.orientation.w = std::cos(yaw / 2.0);
 
 
                 // RCLCPP_INFO(this->get_logger(), "%.4f %.4f", pose.pose.position.x, pose.pose.position.y);
