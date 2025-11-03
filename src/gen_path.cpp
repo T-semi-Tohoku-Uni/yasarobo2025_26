@@ -163,7 +163,8 @@ namespace path {
             pathMsg.header.frame_id = "map";
             pathMsg.header.stamp    = this->now();
 
-            for (auto [gr, gc] : path) {
+            for (size_t i = 0; i < path.size(); ++i) {
+                auto [gr, gc] : path
                 geometry_msgs::msg::PoseStamped pose;
                 pose.header = pathMsg.header;
 
