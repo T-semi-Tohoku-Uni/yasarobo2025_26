@@ -1,29 +1,31 @@
+import os
+
 from ament_index_python.packages import get_package_share_directory
 
 
 from launch import LaunchDescription
-from launch.actions import ExecuteProcess, IncludeLaunchDescription, RegisterEventHandler, SetEnvironmentVariable, TimerAction
-from launch.event_handlers import OnProcessExit, OnProcessStart
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, IncludeLaunchDescription
+from launch.actions import RegisterEventHandler
+from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
+
 from launch_ros.actions import Node
-import launch.logging
+from launch_ros.substitutions import FindPackageShare
 
 import xacro
-import os
 import math
 
-def generate_launch_description():
-    logger = launch.logging.get_logger("simulation_launch")
 
+def generate_launch_description():
     x = 0.25
     y = 0.25
     z = 0.30
     theata = math.pi/2
 
-    use_sim_time = LaunchConfiguration('use_sim_time', default='true')
-    package_dir = get_package_share_directory("yasarobo2025_26")
-    pkg_gazebo_ros = get_package_share_directory("gazebo_ros")
+    use_sim_time = LaunchConfiguration('use_sim_time', default=True)
+    package_dir = os.path.join(get_package_share_directory("yasarobo2025_26"))
+
     world = os.path.join(
         get_package_share_directory("yasarobo2025_26"), "worlds", "field.world"
     )
@@ -37,14 +39,18 @@ def generate_launch_description():
         "config",
         "default.rviz"
     )
-    print(map_server_config_path)
     lifecycle_nodes = ['map_server']
 
-    # load robot urdf file
+    gazebo = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([os.path.join(
+            get_package_share_directory('ros_gz_sim'), 'launch'), '/gz_sim.launch.py']),
+        launch_arguments=[('gz_args', [f' -r 4 {world}'])]
+    )
+
     xacro_file = os.path.join(package_dir, "urdf", "robot.xacro")
-    doc = xacro.parse(open(xacro_file))
-    xacro.process_doc(doc)
-    params = {'robot_description': doc.toxml()}
+    doc = xacro.process_file(xacro_file, mappings={'use_sim' : 'true'})
+    robot_desc = doc.toprettyxml(indent='  ')
+    params = {'robot_description': robot_desc}
 
     # load ball urdf file
     ball_urdf_file = os.path.join(package_dir, "urdf", "ball.urdf")
@@ -53,72 +59,42 @@ def generate_launch_description():
         package='robot_state_publisher',
         executable='robot_state_publisher',
         output='screen',
-        emulate_tty=True,
-        parameters=[
-            params,
-            {"use_sim_time": use_sim_time}
-        ]
-    )
-    
-    # gazebo settings
-    gzserver_cmd = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(pkg_gazebo_ros, 'launch', 'gzserver.launch.py')
-        ),
-        launch_arguments={'world': world, 'verbose': 'true'}.items()
-    )
-    gzclient_cmd = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(pkg_gazebo_ros, 'launch', 'gzclient.launch.py')
-        )
+        parameters=[params]
     )
 
-    spawn_entity = Node(
-        package='gazebo_ros', executable='spawn_entity.py',
-        arguments=['-topic', 'robot_description',
-                    '-entity', 'robot',
-                    '-x', str(x),
-                    '-y', str(y),
-                    '-z', str(z),
-                    '-Y', str(theata),
-                ],
+    gz_spawn_entity = Node(
+        package='ros_gz_sim',
+        executable='create',
         output='screen',
-        emulate_tty=True,
+        arguments=['-string', robot_desc,
+                   '-name', 'robot',
+                   '-allow_renaming', 'false',
+                   '-x', str(x),
+                   '-y', str(y),
+                   '-z', str(z),
+                   '-Y', str(theata)
+                ],
     )
 
-    # TODO: create ball
-    ball_spawn_entity = Node(
-        package='gazebo_ros',
-        executable='spawn_entity.py',
+    # Bridge
+    bridge = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
         arguments=[
-            '-file', str(ball_urdf_file),
-            '-entity', 'ball',
-            '-x', str(1.19),
-            '-y', str(1.6),
-            '-z', str(z)
-        ]
-    )
-    ball_spawn_entity_2 = Node(
-        package='gazebo_ros',
-        executable='spawn_entity.py',
-        arguments=[
-            '-file', str(ball_urdf_file),
-            '-entity', 'ball_2',
-            '-x', str(1.50),
-            '-y', str(1.0),
-            '-z', str(z)
-        ]
+            '/ldlidar_node/scan@sensor_msgs/msg/LaserScan@ignition.msgs.LaserScan',
+            '/odom@nav_msgs/msg/Odometry@gz.msgs.Odometry',
+            '/cmd_vel@geometry_msgs/msg/Twist@gz.msgs.Twist',
+            '/tf@tf2_msgs/msg/TFMessage@gz.msgs.Pose_V',
+            '/tf_static@tf2_msgs/msg/TFMessage@gz.msgs.Pose_V'],
+        output='screen'
     )
 
-    # rviz2 settings
-    rviz_node = Node(
+    rviz = Node(
         package="rviz2",
         executable="rviz2",
         name="rviz2",
         output="log",
-        emulate_tty=True,
-        parameters=[{"use_sim_time": use_sim_time}],
-        arguments=["-d", rviz_config_path]
+        arguments=["-d", rviz_config_path],
     )
 
     # nav2 map_server
@@ -128,6 +104,8 @@ def generate_launch_description():
         output="screen",
         parameters=[{'yaml_filename': map_server_config_path}]
     )
+
+    # tf transfromer
     start_lifecycle_manager_cmd = Node(
         package="nav2_lifecycle_manager",
         executable="lifecycle_manager",
@@ -139,13 +117,12 @@ def generate_launch_description():
                     {'node_names': lifecycle_nodes}]
     )
 
-    # tf transfromer
     static_from_map_to_odom = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
         name="static_transform_publisher",
         output="screen",
-        arguments=['0', '0', '-0.255', '0', '0', '0', 'map', 'odom']
+        arguments=['0', '0', '0', '0', '0', '0', 'map', 'odom']
     )
 
     mcl_node = Node(
@@ -236,13 +213,42 @@ def generate_launch_description():
         }]
     )
 
+    ball_spawn_entity = Node(
+        package='ros_gz_sim',
+        executable='create',
+        output='screen',
+        arguments=[
+            '-file', str(ball_urdf_file),
+            '-name', 'ball',
+            '-x', str(1.19),
+            '-y', str(1.6),
+            '-z', str(z),
+            '-allow_renaming', 'true'
+        ],
+    )
+
+        
+    ball_spawn_entity_2 = Node(
+        package='ros_gz_sim',
+        executable='create',
+        output='screen',
+        arguments=[
+            '-file', str(ball_urdf_file),
+            '-name', 'ball',
+            '-x', str(1.50),
+            '-y', str(1.0),
+            '-z', str(z),
+            '-allow_renaming', 'true'
+        ],
+    )
+
 
     return LaunchDescription([
-        SetEnvironmentVariable(name='RCUTILS_COLORIZED_OUTPUT', value='1'),
+        gazebo,
         node_robot_state_publisher,
-        # node_ball_state_publisher,
-        spawn_entity,
-        rviz_node,
+        gz_spawn_entity,
+        bridge,
+        rviz,
         map_server_cmd,
         start_lifecycle_manager_cmd,
         static_from_map_to_odom,
@@ -256,20 +262,6 @@ def generate_launch_description():
         bt_node,
         vacume_node,
         detect_node,
-        TimerAction(
-            period=2.0,
-            actions=[gzserver_cmd, gzclient_cmd]
-        ),
-        RegisterEventHandler(
-            event_handler=OnProcessExit(
-                target_action=spawn_entity,
-                on_exit=[ball_spawn_entity]
-            )
-        ),
-        RegisterEventHandler(
-            event_handler=OnProcessExit(
-                target_action=ball_spawn_entity,
-                on_exit=[ball_spawn_entity_2]
-            )
-        )
+        ball_spawn_entity,
+        ball_spawn_entity_2
     ])
