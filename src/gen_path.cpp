@@ -166,13 +166,15 @@ namespace path {
             double last_yaw = 0.0;
 
             for (size_t i = 0; i < path.size(); ++i) {
-                auto [gr, gc] : path
+                auto [gr, gc] : path;
                 geometry_msgs::msg::PoseStamped pose;
                 pose.header = pathMsg.header;
 
                 // OccupancyGrid のセル → ワールド座標（セル中心にオフセット）
-                pose.pose.position.x = (gr + 0.5) * mapResolution_;
-                pose.pose.position.y = (static_cast<double>(mapHeight_ - gc - 1) + 0.5) * mapResolution_;
+                double x = (gr + 0.5) * mapResolution_;
+                double y = (static_cast<double>(mapHeight_ - gc - 1) + 0.5) * mapResolution_;
+                pose.pose.position.x = x;
+                pose.pose.position.y = y;
                 pose.pose.position.z = 0.0;
 
                 // 進行方向の yaw を持たせる
@@ -186,7 +188,7 @@ namespace path {
                     last_yaw = yaw;
                 }else{
                     /*次の点がないとき*/
-                    yaw = last_yaw
+                    yaw = last_yaw;
                 }
                 
                 pose.pose.orientation.w = std::cos(yaw / 2.0);
