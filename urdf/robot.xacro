@@ -61,7 +61,7 @@
   <joint name="base_joint" type="fixed">
     <parent link="base_footprint"/>
     <child  link="base_link"/>
-    <origin xyz="0.0 0.0 0.03" rpy="0 0 0"/>
+    <origin xyz="0.0 0.0 0.05" rpy="0 0 0"/>
   </joint>
 
   <!-- LD19_with_mounter_v4_1 -->
@@ -95,8 +95,10 @@
     <origin xyz="0.033 0.013 -0.05" rpy="0 0 0"/>
   </joint>
   <gazebo reference="ldlidar_base">
-    <sensor type="ray" name="lidar_sensor">
-      <always_on>true</always_on>
+    <sensor type="gpu_lidar" name="lidar_sensor">
+      <ignition_frame_id>ldlidar_base</ignition_frame_id>
+      <topic>/ldlidar_node/scan</topic>
+      <alwaysOn>1</alwaysOn>
       <visualize>true</visualize>
       <update_rate>10</update_rate>
       <ray>
@@ -107,24 +109,21 @@
             <min_angle>-1.3</min_angle>
             <max_angle> 1.3</max_angle>
           </horizontal>
+          <vertical>
+            <samples>1</samples>
+            <resolution>0.1</resolution>
+            <min_angle>0.0</min_angle>
+            <max_angle>0.0</max_angle>
+          </vertical>
         </scan>
         <range>
           <min>0.02</min>
           <max>12.0</max>
           <resolution>0.015</resolution>
         </range>
-        <noise>
-          <type>gaussian</type>
-          <mean>0.0</mean>
-          <stddev>0.0</stddev>
-        </noise>
       </ray>
-      <plugin filename="libgazebo_ros_ray_sensor.so" name="gazebo_lidar">
-        <ros>
-          <remapping>~/out:=/ldlidar_node/scan</remapping>
-        </ros>
-        <output_type>sensor_msgs/LaserScan</output_type>
-        <frame_name>ldlidar_base</frame_name>
+      <plugin filename="libignition-gazebo-sensors-system.so" name="ignition::gazebo::systems::Sensors">
+          <render_engine>ogre</render_engine>
       </plugin>
     </sensor>
   </gazebo>
@@ -351,19 +350,23 @@
     <child  link="alm_1_v3_2"/>
   </joint>
 
-  <!-- Gazebo プラグイン -->
   <gazebo>
-    <plugin name="gazebo_ros_planar_move" filename="libgazebo_ros_planar_move.so">
-      <ros>
-        <use_sim_time>true</use_sim_time>
-        <namespace>/</namespace>
-      </ros>
-      <update_rate>1000</update_rate>
-      <use_cmd_vel_topic>true</use_cmd_vel_topic>
-      <cmd_vel_topic>/cmd_vel</cmd_vel_topic>
-      <publish_odom>true</publish_odom>
-      <publish_odom_tf>true</publish_odom_tf>
+    <plugin filename="libignition-gazebo-velocity-control-system.so"
+            name="ignition::gazebo::systems::VelocityControl">
+      <topic>/cmd_vel</topic>
+    </plugin>
+    <plugin filename="libignition-gazebo-odometry-publisher-system.so"
+          name="ignition::gazebo::systems::OdometryPublisher">
+
+    <odom_frame>odom</odom_frame>
+    <robot_base_frame>base_footprint</robot_base_frame>
+    <odom_publish_frequency>50</odom_publish_frequency>
+    <odom_topic>/odom</odom_topic>
+    <tf_topic>/tf</tf_topic>
+    <dimensions>2</dimensions>
+    <gaussian_noise>0.0</gaussian_noise>
     </plugin>
   </gazebo>
+  
 
 </robot>

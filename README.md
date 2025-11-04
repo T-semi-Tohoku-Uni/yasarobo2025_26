@@ -55,9 +55,7 @@ cd ros_ws
 
 ### gazeboのインストール
 ```bash
-sudo apt -y install gazebo
-sudo apt install ros-humble-gazebo-*
-. /usr/share/gazebo/setup.sh
+sudo apt-get install ros-${ROS_DISTRO}-ros-gz
 ```
 
 ### rosのworkspaceを作成
@@ -113,7 +111,7 @@ echo 'export RCUTILS_COLORIZED_OUTPUT=1' >> ~/.bashrc
 ### シミュレーションで実行する場合
 gazeboに表示するモデルのパスを設定
 ```bash
-echo 'export GAZEBO_MODEL_PATH=$HOME/ros_ws/install/yasarobo2025_26/share/yasarobo2025_26/models/:${GAZEBO_MODEL_PATH}' >> ~/.bashrc
+echo 'export IGN_GAZEBO_RESOURCE_PATH=~/ros_ws/src/yasarobo2025_26/models/' >> ~/.bashrc
 ```
 `WITH_SIM`環境変数を`1`に設定（`0`にすると実機バージョンでビルドされるので注意）
 ```bash
@@ -170,15 +168,4 @@ colcon build --packages-select yasarobo2025_26 --symlink-install
 ```bash
 source install/setup.bash
 ros2 launch yasarobo2025_26 simulation.launch.py
-```
-
-## 実行時のエラー対応
-### gazeboがクラッシュする
-`simulation.launch.py`を実行した場合に、gazeboが真っ暗になって落ちる（rvizは動ていいる）場合は、gazeboの設定ファイルを再読み込みします。
-```bash
-[gzclient-3] gzclient: /usr/include/boost/smart_ptr/shared_ptr.hpp:728: typename boost::detail::sp_member_access<T>::type boost::shared_ptr<T>::operator->() const [with T = gazebo::rendering::Camera; typename boost::detail::sp_member_access<T>::type = gazebo::rendering::Camera*]: Assertion `px != 0' failed.
-[ERROR] [gzclient-3]: process has died [pid 7519, exit code -6, cmd 'gzclient --gui-client-plugin=libgazebo_ros_eol_gui.so'].
-```
-```bash
-source /usr/share/gazebo/setup.sh
 ```
