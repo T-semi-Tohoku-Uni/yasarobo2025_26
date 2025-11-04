@@ -114,7 +114,7 @@
             <resolution>0.1</resolution>
             <min_angle>0.0</min_angle>
             <max_angle>0.0</max_angle>
-         </vertical>
+          </vertical>
         </scan>
         <range>
           <min>0.02</min>

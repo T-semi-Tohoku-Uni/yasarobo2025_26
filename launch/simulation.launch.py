@@ -1,17 +1,11 @@
 import os
 
 from ament_index_python.packages import get_package_share_directory
-
-
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, ExecuteProcess, IncludeLaunchDescription
-from launch.actions import RegisterEventHandler
-from launch.event_handlers import OnProcessExit
+from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
-
 from launch_ros.actions import Node
-from launch_ros.substitutions import FindPackageShare
 
 import xacro
 import math
@@ -22,10 +16,10 @@ def generate_launch_description():
     x = 0.25
     y = 0.25
     z = 0.30
-    theata = math.pi/2
+    theta = math.pi/2
 
     use_sim_time = LaunchConfiguration('use_sim_time', default=True)
-    package_dir = os.path.join(get_package_share_directory("yasarobo2025_26"))
+    package_dir = get_package_share_directory("yasarobo2025_26")
 
     world = os.path.join(
         get_package_share_directory("yasarobo2025_26"), "worlds", "field.world"
@@ -73,7 +67,7 @@ def generate_launch_description():
                    '-x', str(x),
                    '-y', str(y),
                    '-z', str(z),
-                   '-Y', str(theata)
+                   '-Y', str(theta)
                 ],
     )
 
@@ -132,7 +126,7 @@ def generate_launch_description():
         parameters=[{
             "initial_x": x,
             "initial_y": y,
-            "initial_theta": theata,
+            "initial_theta": theta,
             "use_sim_time": use_sim_time
         }],
         output="screen"
@@ -166,7 +160,7 @@ def generate_launch_description():
         parameters=[{
             "initial_x": x,
             "initial_y": y,
-            "initial_theta": theata,
+            "initial_theta": theta,
             "use_sim_time": use_sim_time
         }],
     )
