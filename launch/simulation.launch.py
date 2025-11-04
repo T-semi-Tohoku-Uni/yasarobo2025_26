@@ -202,6 +202,9 @@ def generate_launch_description():
             "max_angular_speed": 0.7,
             "lookahead_distance": 0.20,
             "resampleThreshold": 0.10,
+            "Kp_linear": 1.0,
+            "Ki_linear": 0.01,
+            "Kd_linear": 0.0,
         }]
     )
 
