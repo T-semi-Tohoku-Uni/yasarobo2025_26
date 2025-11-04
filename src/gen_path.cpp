@@ -178,6 +178,7 @@ namespace path {
                 pose.pose.position.z = 0.0;
 
                 // 進行方向の yaw を持たせる
+                // test
                 double yaw = 0.0;
                 if (i+1 < path.size()){
                     /*次の点があるとき*/
