@@ -638,8 +638,8 @@ namespace mcl {
                 for (const Obstaclespointclowd &o: obstacles_) {
                     std::double_t angle = scan.angle_min + ((std::double_t)(i))*scan.angle_increment +  particles_[maxLikelihoodParticleIdx_].getTheta();
                     std::double_t range = scan.ranges[i];
-                    *iter_x = particles_[maxLikelihoodParticleIdx_].getX() + range * cos(angle);
-                    *iter_y = particles_[maxLikelihoodParticleIdx_].getY() + range * sin(angle);
+                    *iter_x = mclPose_.x + range * cos(angle);
+                    *iter_y = mclPose_.y + range * sin(angle);
                     *iter_z = 0;
 
                     *iter_r = 0;
