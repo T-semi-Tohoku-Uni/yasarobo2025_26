@@ -21,8 +21,15 @@ namespace raspi {
     class CmdVel: public rclcpp::Node {
         public:
             explicit CmdVel(const rclcpp::NodeOptions & options = rclcpp::NodeOptions()): Node("cmd_vel_feedback", options) {
+                this->declare_parameter<double>("Kp_linear", 0.00);
+                this->declare_parameter<double>("Kp_angular", 0.00);
+                this->declare_parameter<double>("max_linear_acceleration", 0.10);
+                this->declare_parameter<double>("max_angular_acceleration", 0.00);
+                this->get_parameter("Kp_linear", Kp_linear);
+                this->get_parameter("Kp_angular", Kp_angular);
+                this->get_parameter("max_linear_acceleration", max_linear_acceleration);
+                this->get_parameter("max_angular_acceleration", max_angular_acceleration);
                 fd_vel_ = open_serial("/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.2");
-
                 r_ = 0.14;
                 auto feedbackQ = rclcpp::QoS(rclcpp::KeepLast(10));
                 pub_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel_feedback", feedbackQ);
@@ -31,17 +38,112 @@ namespace raspi {
                 );
                 rclcpp::QoS sendQ(rclcpp::KeepLast(10));
                 sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
-                    "/cmd_vel", sendQ, std::bind(&CmdVel::sendVel, this, std::placeholders::_1)
+                    "/cmd_vel", sendQ, std::bind(&CmdVel::accelerationControl, this, std::placeholders::_1)
+                );
+                control_timer_ = this->create_wall_timer(
+                    std::chrono::microseconds(20), std::bind(&CmdVel::cascadeControl, this)
                 );
             }
         private:
-            void sendVel(geometry_msgs::msg::Twist::SharedPtr msg) {
+
+            //dtは後で考える
+            void accelerationControl(geometry_msgs::msg::Twist::SharedPtr msg) {
+                
+                cmd_vel_prime_ = *msg;
+
+                dt = 0.02;
+
+                //input linear velocity 
+                double vx_0 = cmd_vel_prime_.linear.x;
+                double vy_0 = cmd_vel_prime_.linear.y;
+                double omega_0 = cmd_vel_prime_.angular.z;
+
+                //previous linear velocity
+                double vx_prev = cmd_vel_.linear.x;
+                double vy_prev = cmd_vel_.linear.y;
+                double omega_prev = cmd_vel_.angular.z;
+
+                double v_target_abs= std::hypot(vx_0, vy_0);
+                double v_prev_abs = std::hypot(vx_prev, vy_prev);
+
+                //max delta_v tolerance
+                double max_delta_v = max_linear_acceleration * dt;
+                double max_delta_omega = max_angular_acceleration * dt;
+
+                double delta_v = v_target_abs - v_prev_abs;
+                double delta_omega = omega_0 - omega_prev;
+
+                if (std::abs(delta_v) > max_delta_v){
+
+                    delta_v = (delta_v > 0 ? max_delta_v : -max_delta_v);
+                }
+
+                double v_new_abs = v_prev_abs + delta_v;
+
+                //Limit linear acceleration
+                double vx_new = 0.0;
+                double vy_new = 0.0;
+
+                //non 0
+                if (v_target_abs > 1e-6){
+                    vx_new = v_new_abs * (vx_0 / v_target_abs);
+                    vy_new = v_new_abs * (vy_0 / v_target_abs);
+                } else if (v_prev_abs > 1e-6) {
+                    vx_new = v_new_abs * (vx_prev / v_prev_abs);
+                    vy_new = v_new_abs * (vy_prev / v_prev_abs);
+                }            
+
+                //Limit angular acceleration
+                double delata_omeaga = omega_0 - omega_prev;
+                if (std::abs(delta_omega) > max_delta_omega) {
+                    delta_omega = (delta_omega > 0 ? max_delta_omega : -max_delta_omega);
+                }
+                double omega_new = omega_prev + delta_omega;
+
+
+                cmd_vel_.linear.x = vx_new;
+                cmd_vel_.linear.y = vy_new;
+                cmd_vel_.angular.z = omega_new;
+
+               // RCLCPP_INFO(this->get_logger(), "%f %f %f %f %f %f", msg->linear.x, vx_0, vx_prev, v_target_abs, v_new_abs, v_new_abs);
+            }
+        
+
+
+            void cascadeControl(){ 
+
+                double vx_target = cmd_vel_.linear.x;
+                double vy_target = cmd_vel_.linear.y;
+                double omega_target = cmd_vel_.angular.z;
+
+                double vx_cur = cmd_vel_feedback_.linear.x;
+                double vy_cur = cmd_vel_feedback_.linear.y;
+                double omega_cur = cmd_vel_feedback_.angular.z;
+
+                double error_vx = vx_target - vx_cur;
+                double error_vy = vy_target - vy_cur;
+                double error_omega = omega_target - omega_cur;
+
+                double vx = vx_target + Kp_linear * error_vx;
+                double vy = vy_target + Kp_linear * error_vy;
+                double omega = omega_target + Kp_angular * error_omega;
+            
+                geometry_msgs::msg::Twist twist;
+                twist.linear.x = vx;
+                twist.linear.y = vy;
+                twist.angular.z = omega;
+
+                sendVel(twist);
+            }
+
+
+            void sendVel(geometry_msgs::msg::Twist msg) {
                 U32Bytes u32_bytes[3];
                 uint8_t buf[14];
                 memset(buf, 0x00, sizeof(buf));
-                float vel_x = msg->linear.x;
-                float vel_y = msg->linear.y;
-                float vel_theta = msg->angular.z;
+                float vel_x = msg.linear.x;
+                float vel_y = msg.linear.y;
+                float vel_theta = msg.angular.z;
 
                 MotorVel motor_vel = forwardKinematics(vel_x, vel_y, vel_theta);
     
@@ -105,6 +207,7 @@ namespace raspi {
                         // caculate x, y, theta
                         // TODO: 時間付きで渡してあげたい気持ち
                         geometry_msgs::msg::Twist twist = inverseKinematics(cmd_feedback[0], cmd_feedback[1], cmd_feedback[2]);
+                        cmd_vel_feedback_ = twist;
                         // twist.linear.x = cmd_feedback[0];
                         // twist.linear.y = cmd_feedback[1];
                         // twist.angular.z = cmd_feedback[2];
@@ -198,10 +301,19 @@ namespace raspi {
 
             int fd_vel_;
             float r_;
+            double Kp_linear, Kp_angular;
+            double max_linear_acceleration;
+            double max_angular_acceleration;
+            double dt;
             std::vector<uint8_t> recev_buffer_;
             rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_;
             rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_;
             rclcpp::TimerBase::SharedPtr receive_timer_;
+            rclcpp::TimerBase::SharedPtr control_timer_;
+            geometry_msgs::msg::Twist cmd_vel_;
+            geometry_msgs::msg::Twist cmd_vel_prime_;
+            geometry_msgs::msg::Twist cmd_vel_feedback_;
+            
     };
 }
 

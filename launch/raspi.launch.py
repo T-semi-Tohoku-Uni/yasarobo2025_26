@@ -123,13 +123,16 @@ def generate_launch_description():
         executable="mcl_node",
         output="screen",
         parameters=[{
+            "particleNum": 50,
             "initial_x": x,
             "initial_y": y,
             "initial_theta": theata,
-            "odomNoise1": 4.0,
-            "odomNoise2": 3.0,
-            "odomNoise3": 4.0,
-            "odomNoise4": 3.0,
+            "odomNoise1": 2.0,
+            "odomNoise2": 0.5,
+            "odomNoise3": 2.0,
+            "odomNoise4": 5.0,
+            "resampleThreshold": 0.9,
+            "scanStep": 5,
         }],
     )
 
@@ -150,7 +153,13 @@ def generate_launch_description():
     vel_feedback_node = Node(
         package="yasarobo2025_26",
         executable="vel_feedback_uart",
-        output="screen"
+        output="screen",
+        parameters=[{
+            "Kp_linear": 0.1,
+            "Kp_angular": 0.05,
+            "max_linear_acceleration": 0.5,
+            "max_angular_acceleration": 10.0
+        }]
     )
 
     vacume_node = Node(
@@ -178,6 +187,11 @@ def generate_launch_description():
             "max_linear_speed": 0.10,
             "max_angular_speed": 0.5,
             "lookahead_distance": 0.10,
+            "Kp_linear": 1.00,
+            "Ki_linear": 0.00,
+            "Kd_linear": 0.00,
+            "max_linear_tolerance": 0.08,
+            "max_reaching_distance": 0.02,
         }]
     )
 
@@ -191,6 +205,20 @@ def generate_launch_description():
         package="yasarobo2025_26",
         executable="bt_node",
         output="screen"
+    )
+
+    detect_node = Node(
+        package="yasarobo2025_26",
+        executable="ball_detect_node",
+        output="screen",
+        parameters=[{
+            "eps": 0.050,
+            "min_pts": 5,
+            "wall_threshold": 0.20,
+            "diff_threshold": 1e-8,
+            "lidar_threshold": 3.0/40.0*math.pi,
+            "radius_threshold": 0.05
+        }]
     )
 
     # cmd_velをキャッチして、uartに流すプログラムが必要
@@ -210,5 +238,6 @@ def generate_launch_description():
         vacume_node,
         bt_node,
         rotate_node,
+        detect_node
         # static_from_odom_to_basefootprint
     ])

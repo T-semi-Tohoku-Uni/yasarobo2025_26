@@ -21,12 +21,12 @@ namespace joy2Vel {
                 std::float_t rightJoyy_ = msg->axes[3];
 
                 geometry_msgs::msg::Twist twist = geometry_msgs::msg::Twist();
-                twist.linear.set__x(leftJoyy_);
-                twist.linear.set__y(leftJoyx_);
+                twist.linear.set__x(leftJoyy_*0.1);
+                twist.linear.set__y(leftJoyx_*0.1);
                 twist.linear.set__z(0.0);
                 twist.angular.set__x(0.0);
                 twist.angular.set__y(0.0);
-                twist.angular.set__z(rightJoyy_*60);
+                twist.angular.set__z(rightJoyy_);
                 pub_->publish(twist);
             }
 

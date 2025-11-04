@@ -1,22 +1,19 @@
 {
-  "configurations": [
-    {
-      "browse": {
-        "databaseFilename": "${default}",
-        "limitSymbolsToIncludedHeaders": false
-      },
-      "includePath": [
-        "/opt/ros/humble/include/**",
-        "${env:HOME}/ros_ws/src/yasarobo2025_26/include/**",
-        "${env:HOME}/ros_ws/install/inrof2025_ros_type/include/**",
-        "/usr/include/**"
-      ],
-      "name": "ROS",
-      "intelliSenseMode": "gcc-x64",
-      "compilerPath": "/usr/bin/gcc",
-      "cStandard": "gnu11",
-      "cppStandard": "c++14"
-    }
-  ],
-  "version": 4
+    "configurations": [
+        {
+            "browse": {
+                "databaseFilename": "${default}",
+                "limitSymbolsToIncludedHeaders": false
+            },
+            "includePath": [
+                "/opt/ros/humble/include/**",
+                "${env:HOME}/ros_ws/src/yasarobo2025_26/include/**",
+                "${env:HOME}/ros_ws/install/inrof2025_ros_type/include/**",
+                "/usr/include/**"
+            ],
+            "name": "ROS",
+            "compilerPath": "/usr/bin/g++"
+        }
+    ],
+    "version": 4
 }

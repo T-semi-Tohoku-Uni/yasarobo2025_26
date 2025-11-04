@@ -40,7 +40,7 @@ sudo apt install -y python3-colcon-common-extensions
 
 ### BaheaivorTreeのインストール
 ```bash
-sudo apt install libzmq3-dev libboost-dev qtbase5-dev libqt5svg5-dev libzmq3-dev libdw-dev
+sudo apt install libzmq3-dev libboost-dev qtbase5-dev libqt5svg5-dev libzmq3-dev libdw-dev libnanoflann-dev
 cd
 git clone https://github.com/BehaviorTree/BehaviorTree.CPP.git
 cd BehaviorTree.CPP

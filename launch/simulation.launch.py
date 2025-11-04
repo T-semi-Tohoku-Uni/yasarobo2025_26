@@ -6,18 +6,20 @@ from launch.actions import ExecuteProcess, IncludeLaunchDescription, RegisterEve
 from launch.event_handlers import OnProcessExit, OnProcessStart
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
-
 from launch_ros.actions import Node
+import launch.logging
 
 import xacro
 import os
 import math
 
 def generate_launch_description():
+    logger = launch.logging.get_logger("simulation_launch")
+
     x = 0.25
     y = 0.25
     z = 0.30
-    theata = math.pi / 2
+    theata = math.pi/2
 
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
     package_dir = get_package_share_directory("yasarobo2025_26")
@@ -44,6 +46,9 @@ def generate_launch_description():
     xacro.process_doc(doc)
     params = {'robot_description': doc.toxml()}
 
+    # load ball urdf file
+    ball_urdf_file = os.path.join(package_dir, "urdf", "ball.urdf")
+
     node_robot_state_publisher = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
@@ -53,14 +58,14 @@ def generate_launch_description():
             params,
             {"use_sim_time": use_sim_time}
         ]
-    ) 
-
+    )
+    
     # gazebo settings
     gzserver_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_gazebo_ros, 'launch', 'gzserver.launch.py')
         ),
-        launch_arguments={'world': world}.items()
+        launch_arguments={'world': world, 'verbose': 'true'}.items()
     )
     gzclient_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -79,6 +84,30 @@ def generate_launch_description():
                 ],
         output='screen',
         emulate_tty=True,
+    )
+
+    # TODO: create ball
+    ball_spawn_entity = Node(
+        package='gazebo_ros',
+        executable='spawn_entity.py',
+        arguments=[
+            '-file', str(ball_urdf_file),
+            '-entity', 'ball',
+            '-x', str(1.19),
+            '-y', str(1.6),
+            '-z', str(z)
+        ]
+    )
+    ball_spawn_entity_2 = Node(
+        package='gazebo_ros',
+        executable='spawn_entity.py',
+        arguments=[
+            '-file', str(ball_urdf_file),
+            '-entity', 'ball_2',
+            '-x', str(1.50),
+            '-y', str(1.0),
+            '-z', str(z)
+        ]
     )
 
     # rviz2 settings
@@ -194,10 +223,21 @@ def generate_launch_description():
         output="screen"
     )
 
+    detect_node = Node(
+        package="yasarobo2025_26",
+        executable="ball_detect_node",
+        output="screen",
+        parameters=[{
+            "min_pts": 10,
+            "wall_threshold": -1.0,
+        }]
+    )
+
 
     return LaunchDescription([
         SetEnvironmentVariable(name='RCUTILS_COLORIZED_OUTPUT', value='1'),
         node_robot_state_publisher,
+        # node_ball_state_publisher,
         spawn_entity,
         rviz_node,
         map_server_cmd,
@@ -212,8 +252,21 @@ def generate_launch_description():
         rotate_node,
         bt_node,
         vacume_node,
+        detect_node,
         TimerAction(
             period=2.0,
             actions=[gzserver_cmd, gzclient_cmd]
+        ),
+        RegisterEventHandler(
+            event_handler=OnProcessExit(
+                target_action=spawn_entity,
+                on_exit=[ball_spawn_entity]
+            )
+        ),
+        RegisterEventHandler(
+            event_handler=OnProcessExit(
+                target_action=ball_spawn_entity,
+                on_exit=[ball_spawn_entity_2]
+            )
         )
     ])

@@ -27,7 +27,7 @@ class RotateNode: public rclcpp::Node {
             timer_ = this->create_wall_timer(std::chrono::milliseconds(100), std::bind(&RotateNode::control, this));
         
             this->max_speed_    = 0.5;
-            this->slow_speed_   = 0.2;
+            this->slow_speed_   = 0.4;
             this->accel_angle_  = M_PI/10;
             this->stop_angle_   = M_PI/90;
 
