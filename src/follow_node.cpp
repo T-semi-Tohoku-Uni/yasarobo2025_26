@@ -60,7 +60,7 @@ class FollowNode: public rclcpp::Node {
                 100ms,
                 std::bind(&FollowNode::controlLoop, this)
             );
-            
+            goal_pub_ = this->create_publisher<geometry_msgs::msg::Pose2D>("goal_pose", 10);
             action_server_ = rclcpp_action::create_server<inrof2025_ros_type::action::Follow>(
                 this,
                 "follow",
@@ -128,6 +128,14 @@ class FollowNode: public rclcpp::Node {
             //decide tolerance range
             double lookahead_distance = 1.0; //m
             //double max_theta_tolerance = 0.05;  //rad
+
+            // publish goal position
+            geometry_msgs::msg::Pose2D goal_pose;
+            goal_pose.x = path_[current_waypoint_index_].pose.position.x;
+            goal_pose.y = path_[current_waypoint_index_].pose.position.y;
+            //goal_pose.theta = path_[]
+
+            goal_pub_ ->publish(goal_pose);
 
             //error calculation
             double dx = path_[current_waypoint_index_].pose.position.x - pose_.x;
@@ -387,11 +395,13 @@ class FollowNode: public rclcpp::Node {
         rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr path_sub_;
         rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
         rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_pub_;
+        rclcpp::Publisher<geometry_msgs::msg::Pose2D>::SharedPtr goal_pub_;
         rclcpp::Subscription<geometry_msgs::msg::Pose2D>::SharedPtr pose_sub_;
         rclcpp::TimerBase::SharedPtr timer_;
         std::vector<geometry_msgs::msg::PoseStamped> path_;
         std::mutex mutex_;
         geometry_msgs::msg::Pose2D pose_;
+        
 
 
         // PID gains
