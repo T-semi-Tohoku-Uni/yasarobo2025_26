@@ -133,8 +133,9 @@ namespace mcl {
                 printParticlesMakerOnRviz2();
 
                 //観測モデルの選択
+                //measurementModel_ = MeasurementModel::ClassConditionalMeasurementModel;
                 measurementModel_ = MeasurementModel::LikelihoodFieldModel;
-
+                
                 MCL::readMap();
                 
                 last_timestamp_ = this->get_clock()->now();
