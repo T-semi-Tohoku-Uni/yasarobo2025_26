@@ -88,6 +88,7 @@ namespace mcl {
                 this->declare_parameter<std::double_t>("zHit", 1.0);
                 this->declare_parameter<std::double_t>("zMax", 0.0);
                 this->declare_parameter<std::double_t>("zRand", 1.0);
+                this->declare_parameter<std::double_t>("unknownLambda",0.1);
                 
                 particleNum_ = this->get_parameter("particleNum").as_int();
                 double initial_x = this->get_parameter("initial_x").as_double();
@@ -105,6 +106,7 @@ namespace mcl {
                 this->zHit_ = this->get_parameter("zHit").as_double();
                 this->zMax_ = this->get_parameter("zMax").as_double();
                 this->zRand_ = this->get_parameter("zRand").as_double();
+                this->unknownLambda_ = this->get_parameter("unknownLambda").as_double();
 
                 particles_.resize(particleNum_);
 
@@ -133,8 +135,8 @@ namespace mcl {
                 printParticlesMakerOnRviz2();
 
                 //観測モデルの選択
-                //measurementModel_ = MeasurementModel::ClassConditionalMeasurementModel;
-                measurementModel_ = MeasurementModel::LikelihoodFieldModel;
+                measurementModel_ = MeasurementModel::ClassConditionalMeasurementModel;
+                //measurementModel_ = MeasurementModel::LikelihoodFieldModel;
                 
                 MCL::readMap();
                 
@@ -452,7 +454,7 @@ namespace mcl {
 
                     std::double_t pKnown, pUnknown;
                     std::double_t r = scan.ranges[i];
-                    if (r < scan.range_min || scan.range_max < r) {
+                    if (std::isnan(r) || r < scan.range_min || scan.range_max < r) {
                         pKnown = (zMax_ * pMax + zRand_ * pRand) * pKnownPrior;
                         pUnknown = (unknownConst * unknownLambda_*exp(-unknownLambda_ * scan.range_max) * mapResolution_) * pUnknownPrior;
                     }else {
@@ -475,15 +477,21 @@ namespace mcl {
                     }
                     std::double_t p = pKnown + pUnknown;
                     if(p > 1.0)p = 1.0;
+                    //RCLCPP_INFO(this->get_logger(),"%.4f %.4f",pUnknown,pKnown);
+                    //RCLCPP_INFO(this->get_logger(),"%.4f",pUnknown);
                     p_vector.push_back(p);
+                     
 
                 }
-                 
+            //RCLCPP_INFO(this->get_logger(),"ookokokkokokoookok"); 
+              
+            return p_vector;
 
             }
 
             void calculateUnknownScanProbs(geometry_msgs::msg::Pose2D pose,sensor_msgs::msg::LaserScan scan){
                 //unknownScanProbs_.resize(scan.ranges.size(), 0.0);
+                obstacles_.resize(scan.ranges.size());
                 std::double_t var = lfmSigma_*lfmSigma_;
                 std::double_t normConst = 1.0 /(sqrt(2.0 * M_PI*var));
                 std::double_t range_max = scan.range_max;
@@ -514,6 +522,8 @@ namespace mcl {
                         }
                         pUnknown = (unknownConst * unknownLambda_ * exp(-unknownLambda_ * r) * mapResolution_) * pUnknownPrior;
                     }
+                    std::double_t p = pUnknown / (pKnown + pUnknown);
+                    //RCLCPP_INFO(this->get_logger(),"%.4f",p);
                     obstacles_[i].setobstacles(pUnknown / (pKnown + pUnknown));
                 }
 
@@ -573,7 +583,7 @@ namespace mcl {
                     tf_broadcaster_->sendTransform(tf_msg);
                 }
 
-                // RCLCPP_INFO(this->get_logger(), "%.4f %.4f %.4f", x, y, theta);
+                //RCLCPP_INFO(this->get_logger(), "%.4f %.4f %.4f", x, y, theta);
             }
 
             //リサンプリング
@@ -639,6 +649,8 @@ namespace mcl {
                     ++iter_x, ++iter_y, ++iter_z;
                     ++iter_r; ++iter_g; ++iter_b;
                     ++i;
+                    std::uint8_t w = int(o.getobstaclesW()*255);
+                    RCLCPP_INFO(this->get_logger(),"%d",w);
                 }
 
                 obstaclesParticleMarker_->publish(obstaclesCloud_);
