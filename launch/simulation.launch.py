@@ -240,37 +240,6 @@ def generate_launch_description():
                     )
                 )
 
-    # ball_spawn_entity_list.append(
-    #     Node(
-    #         package='ros_gz_sim',
-    #         executable='create',
-    #         output='screen',
-    #         arguments=[
-    #             '-file', str(ball_urdf_file),
-    #             '-name', 'ball',
-    #             '-x', str(1.50),
-    #             '-y', str(1.0),
-    #             '-z', str(1.0),
-    #             '-allow_renaming', 'true'
-    #         ],
-    #     )
-    # )
-    # ball_spawn_entity_list.append(
-    #     Node(
-    #         package='ros_gz_sim',
-    #         executable='create',
-    #         output='screen',
-    #         arguments=[
-    #             '-file', str(ball_urdf_file),
-    #             '-name', 'ball',
-    #             '-x', str(1.19),
-    #             '-y', str(1.6),
-    #             '-z', str(1.0),
-    #             '-allow_renaming', 'true'
-    #         ],
-    #     )
-    # )
-
     return LaunchDescription([
         gazebo,
         node_robot_state_publisher,
