@@ -23,6 +23,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <inrof2025_ros_type/srv/ball_pose.hpp>
+#include <omp.h>
 
 using namespace std::chrono_literals; 
 
@@ -419,6 +420,8 @@ namespace mcl {
                 }
                 // RCLCPP_INFO(this->get_logger(), "%lf", maxLikelihood);
                 std::double_t w_sum = 0;
+                
+                #pragma omp parallel for reduction(+:w_sum)
                 for(std::size_t i=0; i<likelihood_table.size(); i++ ) {
                     std::double_t w = 0;
                     for (std::size_t j=0; j<likelihood_table.size(); j++ ) {
@@ -426,16 +429,18 @@ namespace mcl {
                         for (std::size_t k=0; k<likelihood_table[i].size(); k++ ) {
                             // if (std::isnan(likelihood_table[j][k]) || std::isnan(likelihood_table[i][k])) continue;
                             // if (likelihood_table[j][k]<1e-12 || likelihood_table[i][k]<1e-12) continue;
-                            loglikefood_sum += std::log(likelihood_table[j][k]/likelihood_table[i][k]);
+                            
+                            loglikefood_sum += std::log(likelihood_table[j][k]/likelihood_table[i][k]); 
+                            
                             // RCLCPP_INFO(this->get_logger(), "j=%d k=%d %.4f", j, k, likelihood_table[j][k]);
                         }
                         w += std::exp(loglikefood_sum);
                     }
                     w = 1/w;
-                    particles_[i].setW(w);
-                    w_sum += w*w;
+                    particles_[i].setW(w); // iが異なるため、スレッド間で競合しない
+                    w_sum += w*w; // リダクション変数のローカルコピーに加算
                 }
-                effectiveSampleSize_ = 1.0 / w_sum;
+                effectiveSampleSize_ = 1.0 / w_sum; // 全スレッドのw_sumが合計された最終結果
                 
                 // // normalize likelihood and caculate valid sample num
                 // std::double_t sum = 0.0;
