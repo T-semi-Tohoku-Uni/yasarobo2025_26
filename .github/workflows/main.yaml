@@ -93,7 +93,7 @@ jobs:
       - name: launch test
         run: |
             cd ros_ws
-            sudo apt-get install ros-humble-ros-gz
+            sudo apt-get install -y ros-humble-ros-gz
             source /opt/ros/humble/setup.bash
             source install/setup.bash
             
