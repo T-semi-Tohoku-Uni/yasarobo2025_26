@@ -420,7 +420,7 @@ namespace mcl {
                 }
                 // RCLCPP_INFO(this->get_logger(), "%lf", maxLikelihood);
                 std::double_t w_sum = 0;
-                
+                rclcpp::Time start_time = this->get_clock()->now();
                 #pragma omp parallel for reduction(+:w_sum)
                 for(std::size_t i=0; i<likelihood_table.size(); i++ ) {
                     std::double_t w = 0;
@@ -440,7 +440,10 @@ namespace mcl {
                     particles_[i].setW(w); // iが異なるため、スレッド間で競合しない
                     w_sum += w*w; // リダクション変数のローカルコピーに加算
                 }
+                rclcpp::Time end_time = this->get_clock()->now();
                 effectiveSampleSize_ = 1.0 / w_sum; // 全スレッドのw_sumが合計された最終結果
+                double elapsed_ms = (end_time - start_time).seconds() * 1000.0;
+                RCLCPP_INFO(this->get_logger(), "caculateMeasurementModel took: %.3f ms", elapsed_ms);
                 
                 // // normalize likelihood and caculate valid sample num
                 // std::double_t sum = 0.0;
