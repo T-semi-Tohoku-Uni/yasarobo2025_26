@@ -215,13 +215,13 @@ def generate_launch_description():
     ball_y_min = 0.60
     ball_y_max = 1.80
     for i_x in range(2):
-        for i_y in range(2):
+        for i_y in range(4):
             region_x_min = ball_x_min + (ball_x_max-ball_x_min)*i_x/2
-            region_x_max = ball_x_min + (ball_x_max-ball_x_min)*(i_x+1)/4
-            region_y_min = ball_y_min + (ball_y_max-ball_y_min)*i_y/2
+            region_x_max = ball_x_min + (ball_x_max-ball_x_min)*(i_x+1)/2
+            region_y_min = ball_y_min + (ball_y_max-ball_y_min)*i_y/4
             region_y_max = ball_y_min + (ball_y_max-ball_y_min)*(i_y+1)/4
 
-            for _ in range(2):
+            for _ in range(1):
                 ball_x = random.uniform(region_x_min, region_x_max)
                 ball_y = random.uniform(region_y_min, region_y_max)
                 ball_spawn_entity_list.append(
@@ -239,6 +239,37 @@ def generate_launch_description():
                         ],
                     )
                 )
+
+    # ball_spawn_entity_list.append(
+    #     Node(
+    #         package='ros_gz_sim',
+    #         executable='create',
+    #         output='screen',
+    #         arguments=[
+    #             '-file', str(ball_urdf_file),
+    #             '-name', 'ball',
+    #             '-x', str(1.50),
+    #             '-y', str(1.0),
+    #             '-z', str(1.0),
+    #             '-allow_renaming', 'true'
+    #         ],
+    #     )
+    # )
+    # ball_spawn_entity_list.append(
+    #     Node(
+    #         package='ros_gz_sim',
+    #         executable='create',
+    #         output='screen',
+    #         arguments=[
+    #             '-file', str(ball_urdf_file),
+    #             '-name', 'ball',
+    #             '-x', str(1.19),
+    #             '-y', str(1.6),
+    #             '-z', str(1.0),
+    #             '-allow_renaming', 'true'
+    #         ],
+    #     )
+    # )
 
     return LaunchDescription([
         gazebo,
