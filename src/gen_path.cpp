@@ -184,7 +184,9 @@ namespace path {
                 double yaw = 0.0;
                 if (i+1 < path.size()){
                     /*次の点があるとき*/
-                    auto[next_gr,next_gc] : path[i+1];
+                    double next_gr = path[i+1].first;
+                    double next_gc = path[i+1].second;
+                    
                     double next_x = (next_gr + 0.5) * mapResolution_;
                     double next_y = (static_cast<double>(mapHeight_ - next_gc - 1) + 0.5) * mapResolution_;
                     yaw = std::atan2(next_y - y, next_x - x);
