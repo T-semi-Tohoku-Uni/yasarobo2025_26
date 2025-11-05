@@ -166,9 +166,11 @@ namespace path {
             double last_yaw = 0.0;
 
             for (size_t i = 0; i < path.size(); ++i) {
-                auto [gr, gc] : path;
                 geometry_msgs::msg::PoseStamped pose;
                 pose.header = pathMsg.header;
+
+                double gr = path[i].first;
+                double gc = path[i].second;
 
                 // OccupancyGrid のセル → ワールド座標（セル中心にオフセット）
                 double x = (gr + 0.5) * mapResolution_;
