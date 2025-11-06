@@ -19,7 +19,6 @@ def generate_launch_description():
     z = 0.30
     theta = math.pi/2
 
-    use_sim_time = LaunchConfiguration('use_sim_time', default=True)
     package_dir = get_package_share_directory("yasarobo2025_26")
 
     world = os.path.join(
