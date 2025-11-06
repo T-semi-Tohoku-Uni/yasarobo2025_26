@@ -31,6 +31,7 @@ find_package(tf2_sensor_msgs REQUIRED)
 find_package(behaviortree_cpp REQUIRED)
 find_package(inrof2025_ros_type REQUIRED)
 find_package(nanoflann REQUIRED)
+find_package(backward_ros REQUIRED)
 
 if (BUILD_WITH_SIM)
   find_package(gazebo_ros REQUIRED)
