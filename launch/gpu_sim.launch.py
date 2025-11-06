@@ -6,6 +6,7 @@ from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+import launch_ros
 
 import xacro
 import math
@@ -17,6 +18,9 @@ def generate_launch_description():
     y = 0.25
     z = 0.30
     theta = math.pi/2
+
+    # cpu simulation setting
+    os.environ['LIBGL_ALWAYS_SOFTWARE'] = 1 
 
     use_sim_time = LaunchConfiguration('use_sim_time', default=True)
     package_dir = get_package_share_directory("yasarobo2025_26")
@@ -80,7 +84,8 @@ def generate_launch_description():
             '/odom@nav_msgs/msg/Odometry@gz.msgs.Odometry',
             '/cmd_vel@geometry_msgs/msg/Twist@gz.msgs.Twist',
             '/tf@tf2_msgs/msg/TFMessage@gz.msgs.Pose_V',
-            '/tf_static@tf2_msgs/msg/TFMessage@gz.msgs.Pose_V'],
+            '/tf_static@tf2_msgs/msg/TFMessage@gz.msgs.Pose_V',
+            '/world/yasarobo/clock@rosgraph_msgs/msg/Clock@gz.msgs.Clock'],
         output='screen'
     )
 
@@ -90,6 +95,7 @@ def generate_launch_description():
         name="rviz2",
         output="log",
         arguments=["-d", rviz_config_path],
+        remappings=[('clock', '/world/yasarobo/clock')]
     )
 
     # nav2 map_server
@@ -97,7 +103,10 @@ def generate_launch_description():
         package="nav2_map_server",
         executable="map_server",
         output="screen",
-        parameters=[{'yaml_filename': map_server_config_path}]
+        parameters=[
+            {'yaml_filename': map_server_config_path},
+        ],
+        remappings=[('clock', '/world/yasarobo/clock')]
     )
 
     # tf transfromer
@@ -107,9 +116,10 @@ def generate_launch_description():
         name="lifecycle_manager",
         output="screen",
         emulate_tty=True,
-        parameters=[{'use_sim_time': use_sim_time},
-                    {'autostart': True},
-                    {'node_names': lifecycle_nodes}]
+        parameters=[
+            {'autostart': True},
+            {'node_names': lifecycle_nodes}],
+        remappings=[('clock', '/world/yasarobo/clock')]
     )
 
     static_from_map_to_odom = Node(
@@ -117,18 +127,21 @@ def generate_launch_description():
         executable="static_transform_publisher",
         name="static_transform_publisher",
         output="screen",
-        arguments=['0', '0', '0', '0', '0', '0', 'map', 'odom']
+        arguments=['0', '0', '0', '0', '0', '0', 'map', 'odom'],
+        remappings=[('clock', '/world/yasarobo/clock')]
     )
 
     mcl_node = Node(
         package="yasarobo2025_26",
         executable="mcl_node",
-        parameters=[{
-            "initial_x": x,
-            "initial_y": y,
-            "initial_theta": theta,
-            "use_sim_time": use_sim_time
-        }],
+        parameters=[
+            {
+                "initial_x": x,
+                "initial_y": y,
+                "initial_theta": theta,
+            },
+        ],
+        remappings=[('clock', '/world/yasarobo/clock')],
         output="screen"
     )
 
@@ -138,31 +151,36 @@ def generate_launch_description():
         executable="joy_node",
         name="joy_node",
         output="screen",
+        remappings=[('clock', '/world/yasarobo/clock')],
     )
 
     joy2Vel_node = Node(
         package="yasarobo2025_26",
         executable="joy2vel",
         name="joy2vel",
-        output="screen"
+        output="screen",
+        remappings=[('clock', '/world/yasarobo/clock')],
     )
 
     vel_feedback_node = Node(
         package="yasarobo2025_26",
         executable="vel_feedback_node",
-        output="screen"
+        output="screen",
+        remappings=[('clock', '/world/yasarobo/clock')],
     )
 
     gen_path = Node(
         package="yasarobo2025_26",
         executable="gen_path",
         output="screen",
-        parameters=[{
-            "initial_x": x,
-            "initial_y": y,
-            "initial_theta": theta,
-            "use_sim_time": use_sim_time
-        }],
+        parameters=[
+            {
+                "initial_x": x,
+                "initial_y": y,
+                "initial_theta": theta,
+            },
+        ],
+        remappings=[('clock', '/world/yasarobo/clock')],
     )
 
     follow_node = Node(
@@ -177,25 +195,30 @@ def generate_launch_description():
             "Kp_linear": 1.0,
             "Ki_linear": 0.01,
             "Kd_linear": 0.0,
-        }]
+        },
+        ],
+        remappings=[('clock', '/world/yasarobo/clock')],
     )
 
     bt_node = Node (
         package="yasarobo2025_26",
         executable="bt_node",
-        output="screen"
+        output="screen",
+        remappings=[('clock', '/world/yasarobo/clock')],
     )
 
     rotate_node = Node(
         package="yasarobo2025_26",
         executable="rotate_node",
         output="screen",
+        remappings=[('clock', '/world/yasarobo/clock')],
     )
 
     vacume_node = Node(
         package="yasarobo2025_26",
         executable="dummy_vacume_uart",
-        output="screen"
+        output="screen",
+        remappings=[('clock', '/world/yasarobo/clock')],
     )
 
     detect_node = Node(
@@ -205,7 +228,9 @@ def generate_launch_description():
         parameters=[{
             "min_pts": 10,
             "wall_threshold": -1.0,
-        }]
+        },
+        ],
+        remappings=[('clock', '/world/yasarobo/clock')],
     )
 
     # spawn ball on field
@@ -241,6 +266,7 @@ def generate_launch_description():
                 )
 
     return LaunchDescription([
+        launch_ros.actions.SetParameter(name='use_sim_time', value=True),
         gazebo,
         node_robot_state_publisher,
         gz_spawn_entity,

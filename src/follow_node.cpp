@@ -8,6 +8,8 @@
 #include <inrof2025_ros_type/action/follow.hpp>
 #include <inrof2025_ros_type/action/rotate.hpp>
 
+using namespace std::chrono_literals; 
+
 typedef struct MotorVel {
         float v1;
         float v2;
@@ -51,9 +53,14 @@ class FollowNode: public rclcpp::Node {
                 "pose", poseQos, std::bind(&FollowNode::odomCallback, this, std::placeholders::_1)
             );
             cmd_pub_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
-            timer_ = this->create_wall_timer(
-                std::chrono::milliseconds(100), std::bind(&FollowNode::controlLoop, this)
+
+            timer_ = rclcpp::create_timer(
+                this,
+                this->get_clock(),
+                100ms,
+                std::bind(&FollowNode::controlLoop, this)
             );
+            
             action_server_ = rclcpp_action::create_server<inrof2025_ros_type::action::Follow>(
                 this,
                 "follow",
