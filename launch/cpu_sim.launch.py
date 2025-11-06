@@ -19,6 +19,10 @@ def generate_launch_description():
     z = 0.30
     theta = math.pi/2
 
+
+    # cpu simulation setting
+    os.environ['LIBGL_ALWAYS_SOFTWARE'] = '1'
+
     package_dir = get_package_share_directory("yasarobo2025_26")
 
     world = os.path.join(
