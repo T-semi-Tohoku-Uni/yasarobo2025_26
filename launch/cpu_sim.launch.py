@@ -237,7 +237,7 @@ def generate_launch_description():
     ball_y_min = 0.60
     ball_y_max = 1.80
     for i_x in range(2):
-        for i_y in range(4):
+        for i_y in range(1):
             region_x_min = ball_x_min + (ball_x_max-ball_x_min)*i_x/2
             region_x_max = ball_x_min + (ball_x_max-ball_x_min)*(i_x+1)/2
             region_y_min = ball_y_min + (ball_y_max-ball_y_min)*i_y/4
