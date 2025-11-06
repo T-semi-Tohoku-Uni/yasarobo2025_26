@@ -40,6 +40,7 @@ namespace raspi {
                 sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
                     "/cmd_vel", sendQ, std::bind(&CmdVel::accelerationControl, this, std::placeholders::_1)
                 );
+                // TODO
                 control_timer_ = this->create_wall_timer(
                     std::chrono::microseconds(20), std::bind(&CmdVel::cascadeControl, this)
                 );
