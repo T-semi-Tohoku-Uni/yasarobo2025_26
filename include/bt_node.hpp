@@ -11,7 +11,7 @@ namespace ActionNodes {
     class BTNode: public rclcpp::Node {
         public:
             explicit BTNode(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
-            void send_pose(double x, double y);
+            void send_pose(double x, double y, double theta);
             bool isRuning();
             bool ball_detect(double *x, double *y);
             void send_vacume_on(bool on);
