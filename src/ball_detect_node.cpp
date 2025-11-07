@@ -42,10 +42,34 @@ DBSCAN::BallDetect::BallDetect(const rclcpp::NodeOptions & options): Node("ball_
         "/ball_shape", ballShapeQos
     );
 
+    // service
+    srv_ball_pose_ = this->create_service<inrof2025_ros_type::srv::BallPose>(
+        "ball_detect", std::bind(&DBSCAN::BallDetect::ballPoseCallback, this, std::placeholders::_1, std::placeholders::_2)
+    );
+
     const char *sim = std::getenv("WITH_SIM");
     if (!sim || std::string(sim) != "1") is_sim_ = false;
     else is_sim_ = true;
     RCLCPP_INFO(this->get_logger(), "WITH SIM env is %d", is_sim_);
+}
+
+void DBSCAN::BallDetect::ballPoseCallback(
+    const std::shared_ptr<inrof2025_ros_type::srv::BallPose::Request> request,
+    const std::shared_ptr<inrof2025_ros_type::srv::BallPose::Response> response
+) {
+    geometry_msgs::msg::Pose2D ball_pose = DBSCAN::BallDetect::detect();
+    if (ball_pose.x == -100 && ball_pose.y == -100) {
+        RCLCPP_WARN(this->get_logger(), "No ball");
+        response->detect = false;
+        return;
+    }
+
+    // save response
+    response->detect = true;
+    response->x = ball_pose.x;
+    response->y = ball_pose.y;
+
+    RCLCPP_INFO(this->get_logger(), "Closest ball is (x, y)=(%f, %f), %d", ball_pose.x, ball_pose.y, response->detect);
 }
 
 void DBSCAN::BallDetect::lidarCallback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
@@ -108,7 +132,6 @@ geometry_msgs::msg::Pose2D DBSCAN::BallDetect::detect() {
     if(ball_clusters.size() == 0) return dummy_ball_pose; 
     // caculate ball position
     std::vector<DBSCAN::Circle> ball_position;
-    ball_position.resize(ball_clusters.size());
     for (std::pair<int, std::vector<DBSCAN::Point>> &_ball: ball_clusters) {
         DBSCAN::Circle c = Circle(_ball.second);
         // check ball on field
@@ -116,6 +139,7 @@ geometry_msgs::msg::Pose2D DBSCAN::BallDetect::detect() {
         if(this->isBallOnField(field_, c)) ball_position.push_back(Circle(_ball.second));
     }
     // find closest ball
+    if (ball_position.size() == 0) return dummy_ball_pose;
     geometry_msgs::msg::Pose2D closest_ball = DBSCAN::BallDetect::findClosestBall(ball_position);
     // print rviz2
     sensor_msgs::msg::PointCloud2 ball_point_cloud = DBSCAN::BallDetect::circle2PointCloud2(ball_position);
