@@ -4,6 +4,8 @@
 #include <geometry_msgs/msg/pose2_d.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 
+using namespace std::chrono_literals; 
+
 class RotateNode: public rclcpp::Node {
     public:
         explicit RotateNode(const rclcpp::NodeOptions & options = rclcpp::NodeOptions()): Node("rotate_node", options) {
@@ -24,7 +26,12 @@ class RotateNode: public rclcpp::Node {
             );
 
             velPub_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
-            timer_ = this->create_wall_timer(std::chrono::milliseconds(100), std::bind(&RotateNode::control, this));
+            timer_ = rclcpp::create_timer(
+                this,
+                this->get_clock(),
+                100ms,
+                std::bind(&RotateNode::control, this)
+            );
         
             this->max_speed_    = 0.5;
             this->slow_speed_   = 0.4;

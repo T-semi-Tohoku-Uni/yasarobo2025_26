@@ -117,6 +117,10 @@ echo 'export IGN_GAZEBO_RESOURCE_PATH=~/ros_ws/src/yasarobo2025_26/models/' >> ~
 ```bash
 echo 'export WITH_SIM=1' >> ~/.bashrc
 ``` 
+GPUがついていないパソコンで実行する場合は、次のコマンドを実行
+```bash
+echo 'LIBGL_ALWAYS_SOFTWARE=1' >> ~/.bashrc
+```
 
 ### 実機で実行する場合
 手元のパソコンにrvizの出力などを表示させるために、ドメインやipを設定します（ラズパイ、手元のパソコンの両方で実行）

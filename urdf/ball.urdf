@@ -2,7 +2,7 @@
   <link name="ball_link">
     <visual>
       <geometry>
-        <sphere radius="0.065"/>
+        <sphere radius="0.0325"/>
       </geometry>
       <material name="blue">
         <color rgba="0.2 0.2 1 1"/>
