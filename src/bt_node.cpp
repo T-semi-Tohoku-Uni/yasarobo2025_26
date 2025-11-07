@@ -31,7 +31,7 @@ namespace ActionNodes {
         actRotate_ = rclcpp_action::create_client<inrof2025_ros_type::action::Rotate> (this, "rotate");
     };
 
-    void BTNode::send_pose(double x, double y) {
+    void BTNode::send_pose(double x, double y, double theta) {
         // check action server available
         while (!this->srvGenRoute_->wait_for_service(1s))
         {
@@ -42,6 +42,7 @@ namespace ActionNodes {
         auto request = std::make_shared<inrof2025_ros_type::srv::GenRoute::Request>();
         request->x = x;
         request->y = y;
+        request->theta = theta;
 
         srvGenRoute_->async_send_request(request);
     }
