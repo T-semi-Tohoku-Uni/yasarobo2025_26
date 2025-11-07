@@ -39,6 +39,19 @@ if (BUILD_WITH_SIM)
   find_package(gazebo_msgs REQUIRED)
 endif()
 
+add_library(ros_lib SHARED
+  src/field.cpp
+)
+target_include_directories(ros_lib
+  PUBLIC
+  "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
+  "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+ament_target_dependencies(ros_lib
+  "rclcpp"
+  "OpenCV"
+)
+install(TARGETS ros_lib DESTINATION lib/${PROJECT_NAME})
+
 # library link utility
 function(dependencies target)
   ament_target_dependencies(${target} 
@@ -72,6 +85,7 @@ function(dependencies target)
     ${YAML_CPP_LIBRARIES}
     nanoflann::nanoflann
     Eigen3::Eigen
+    ros_lib
   )
 endfunction()
 
