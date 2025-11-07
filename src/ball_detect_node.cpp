@@ -57,8 +57,8 @@ void DBSCAN::BallDetect::ballPoseCallback(
     const std::shared_ptr<inrof2025_ros_type::srv::BallPose::Request> request,
     const std::shared_ptr<inrof2025_ros_type::srv::BallPose::Response> response
 ) {
-    geometry_msgs::msg::Pose2D ball_pose = DBSCAN::BallDetect::detect();
-    if (ball_pose.x == -100 && ball_pose.y == -100) {
+    std::optional<geometry_msgs::msg::Pose2D> ball_pose = DBSCAN::BallDetect::detect();
+    if (!ball_pose) {
         RCLCPP_WARN(this->get_logger(), "No ball");
         response->detect = false;
         return;
@@ -66,10 +66,10 @@ void DBSCAN::BallDetect::ballPoseCallback(
 
     // save response
     response->detect = true;
-    response->x = ball_pose.x;
-    response->y = ball_pose.y;
+    response->x = ball_pose.value().x;
+    response->y = ball_pose.value().y;
 
-    RCLCPP_INFO(this->get_logger(), "Closest ball is (x, y)=(%f, %f), %d", ball_pose.x, ball_pose.y, response->detect);
+    RCLCPP_INFO(this->get_logger(), "Closest ball is (x, y)=(%f, %f)", response->x, response->y);
 }
 
 void DBSCAN::BallDetect::lidarCallback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
@@ -86,16 +86,10 @@ void DBSCAN::BallDetect::poseCallback(const geometry_msgs::msg::Pose2D::SharedPt
     }
 }
 
-geometry_msgs::msg::Pose2D DBSCAN::BallDetect::detect() {
-    // declare dummy_ball_pose
-    // TODO: もうちょいいい方法ほしいな
-    geometry_msgs::msg::Pose2D dummy_ball_pose;
-    dummy_ball_pose.x = -100;
-    dummy_ball_pose.y = -100;
-
+std::optional<geometry_msgs::msg::Pose2D> DBSCAN::BallDetect::detect() {
     if (!scan_) {
         RCLCPP_WARN(this->get_logger(), "scan_ is empty, so skip detect function");
-        return dummy_ball_pose;
+        return std::nullopt; // no ball
     }
 
     /*
@@ -129,7 +123,7 @@ geometry_msgs::msg::Pose2D DBSCAN::BallDetect::detect() {
         decision target ball
     */
     // if ball_cluster is empty, continue searching ball
-    if(ball_clusters.size() == 0) return dummy_ball_pose; 
+    if(ball_clusters.size() == 0) return std::nullopt; // no ball
     // caculate ball position
     std::vector<DBSCAN::Circle> ball_position;
     for (std::pair<int, std::vector<DBSCAN::Point>> &_ball: ball_clusters) {
@@ -139,8 +133,8 @@ geometry_msgs::msg::Pose2D DBSCAN::BallDetect::detect() {
         if(this->isBallOnField(field_, c)) ball_position.push_back(Circle(_ball.second));
     }
     // find closest ball
-    if (ball_position.size() == 0) return dummy_ball_pose;
-    geometry_msgs::msg::Pose2D closest_ball = DBSCAN::BallDetect::findClosestBall(ball_position);
+    std::optional<geometry_msgs::msg::Pose2D> closest_ball = DBSCAN::BallDetect::findClosestBall(ball_position);
+    if (!closest_ball) return std::nullopt; // no ball
     // print rviz2
     sensor_msgs::msg::PointCloud2 ball_point_cloud = DBSCAN::BallDetect::circle2PointCloud2(ball_position);
     this->pubBallShape_->publish(ball_point_cloud);
@@ -148,10 +142,12 @@ geometry_msgs::msg::Pose2D DBSCAN::BallDetect::detect() {
     return closest_ball;
 }
 
-geometry_msgs::msg::Pose2D DBSCAN::BallDetect::findClosestBall(
+std::optional<geometry_msgs::msg::Pose2D> DBSCAN::BallDetect::findClosestBall(
     std::vector<DBSCAN::Circle> &ball
 ) {
     geometry_msgs::msg::Pose2D closest_ball;
+
+    if (ball.size() == 0) return std::nullopt;
 
     if (!pose_) {
         RCLCPP_WARN(this->get_logger(), "pose topic is empty");

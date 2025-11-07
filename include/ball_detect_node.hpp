@@ -90,7 +90,7 @@ namespace DBSCAN {
     class BallDetect: public rclcpp::Node {
         public:
             BallDetect(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
-            geometry_msgs::msg::Pose2D detect();
+            std::optional<geometry_msgs::msg::Pose2D> detect();
 
         private:
             // callback
@@ -126,7 +126,7 @@ namespace DBSCAN {
             );
 
             // search
-            geometry_msgs::msg::Pose2D findClosestBall(
+            std::optional<geometry_msgs::msg::Pose2D> findClosestBall(
                 std::vector<DBSCAN::Circle> &ball
             );
 
