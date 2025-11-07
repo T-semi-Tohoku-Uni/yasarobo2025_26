@@ -14,6 +14,8 @@
 #include <optional>
 #include <opencv2/opencv.hpp>
 #include <yaml-cpp/yaml.h>
+#include <rclcpp_action/rclcpp_action.hpp>
+#include <inrof2025_ros_type/srv/ball_pose.hpp>
 
 namespace DBSCAN {
     enum ClusterID {
@@ -137,6 +139,12 @@ namespace DBSCAN {
 
             bool isBallOnField(DBSCAN::Field &f, DBSCAN::Circle &c);
 
+            // service server callback
+            void ballPoseCallback(
+                const std::shared_ptr<inrof2025_ros_type::srv::BallPose::Request> request,
+                const std::shared_ptr<inrof2025_ros_type::srv::BallPose::Response> response
+            );
+
             // Lidar
             sensor_msgs::msg::LaserScan::SharedPtr scan_;
             rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr subLider_;
@@ -179,6 +187,9 @@ namespace DBSCAN {
 
             // subscriber
             rclcpp::Subscription<geometry_msgs::msg::Pose2D>::SharedPtr subPose_;
+
+            // detact action server
+            rclcpp::Service<inrof2025_ros_type::srv::BallPose>::SharedPtr srv_ball_pose_;
     };
 }
 

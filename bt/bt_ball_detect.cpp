@@ -3,11 +3,11 @@
 
 
 ActionNodes::BallDetect::BallDetect(
-    const std::string& name, 
+    const std::string& name,
     const BT::NodeConfig& config, 
     std::shared_ptr<ActionNodes::BTNode> ros_node
-):
-    BT::SyncActionNode(name, config),
+): 
+    SyncActionNode(name, config),
     ros_node_(ros_node) {};
 
 BT::PortsList ActionNodes::BallDetect::providedPorts() {
@@ -19,11 +19,10 @@ BT::PortsList ActionNodes::BallDetect::providedPorts() {
 
 BT::NodeStatus ActionNodes::BallDetect::tick() {
     double x, y;
-    this->ros_node_->ball_detect(&x, &y);
-
+    bool is_detect = this->ros_node_->ball_detect(&x, &y);
+    if (!is_detect) return BT::NodeStatus::FAILURE;
     setOutput("x", x);
     setOutput("y", y);
-
     return BT::NodeStatus::SUCCESS;
 }
 
