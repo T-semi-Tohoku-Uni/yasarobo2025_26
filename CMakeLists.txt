@@ -33,7 +33,6 @@ find_package(inrof2025_ros_type REQUIRED)
 find_package(nanoflann REQUIRED)
 find_package(backward_ros REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_path(nanoflann_INCLUDE_DIRS "nanoflann.hpp")
 
 if (BUILD_WITH_SIM)
   find_package(gazebo_ros REQUIRED)
