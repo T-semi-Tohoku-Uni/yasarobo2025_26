@@ -40,7 +40,10 @@ def generate_launch_description():
 
     # rosbag
     bag_dir = os.path.expanduser("/misc/usb/ros_bags")
+    if not os.path.exists("/misc/usb") or not os.access("/misc/usb", os.W_OK):
+        bag_dir = os.path.expanduser("~/ros_bags")
     os.makedirs(bag_dir, exist_ok=True)
+
     ros_bag = ExecuteProcess(
         cmd=['ros2', 'bag', 'record', '-a', '-o', os.path.join(bag_dir, datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))],
         output='screen'
