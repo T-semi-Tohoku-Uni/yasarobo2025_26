@@ -17,12 +17,12 @@ namespace path {
                 this->declare_parameter<std::float_t>("initial_x", 0.25);
                 this->declare_parameter<std::float_t>("initial_y", 0.25);
                 this->declare_parameter<std::float_t>("initial_theta", M_PI/2);
-                this->declare_parameter<std::float_t>("sample_parameter",5);
+                this->declare_parameter<std::float_t>("sample_parameter",5.0);
 
                 double initial_x = this->get_parameter("initial_x").as_double();
                 double initial_y = this->get_parameter("initial_y").as_double();
                 double initial_theta = this->get_parameter("initial_theta").as_double();
-                double sample_parameter_ = this->get_parameter("sample_parameter").as_double();
+                sample_parameter_ = this->get_parameter("sample_parameter").as_double();
 
                 this->curOdom_.x = initial_x;
                 this->curOdom_.y = initial_y;
