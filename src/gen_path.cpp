@@ -223,10 +223,9 @@ namespace path {
             }
 
             pubSamplePath_->publish(sampled_path); 
-            
+
             auto smoothed_path = splineSmoothEigen(sampled_path);
             pubPath_->publish(smoothed_path);
-            
 
 
             nav_msgs::msg::Path pathMsg;
@@ -251,7 +250,7 @@ namespace path {
                 pathMsg.poses.push_back(std::move(pose));
             }
             
-            pubPath_->publish(pathMsg);
+            //pubPath_->publish(pathMsg);
         }
 
         void readMap() {
