@@ -3,12 +3,15 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <geometry_msgs/msg/pose2_d.hpp>
+#include "geometry_msgs/msg/pose_stamped.hpp"
 #include <mutex>
+#include <vector>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <inrof2025_ros_type/action/follow.hpp>
 #include <inrof2025_ros_type/action/rotate.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2/LinearMath/Quaternion.h>
+#include "visualization_msgs/msg/marker.hpp"
 
 using namespace std::chrono_literals; 
 
@@ -73,6 +76,11 @@ class FollowNode: public rclcpp::Node {
                 100ms,
                 std::bind(&FollowNode::controlLoop, this)
             );
+
+            rclcpp::QoS markerQos(rclcpp::KeepLast(10));
+            marker_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("waypoint_marker", markerQos);
+
+
             target_pub_ = this->create_publisher<geometry_msgs::msg::Pose2D>("target_pose", 10);
             action_server_ = rclcpp_action::create_server<inrof2025_ros_type::action::Follow>(
                 this,
@@ -84,6 +92,7 @@ class FollowNode: public rclcpp::Node {
         }
 
         std::shared_ptr<rclcpp_action::ServerGoalHandle<inrof2025_ros_type::action::Follow>> goal_handle_;
+        
 
     private:
         // action server callback
@@ -181,6 +190,42 @@ class FollowNode: public rclcpp::Node {
             //normalize angle to [-pi, pi]
             while (theta_error > M_PI) theta_error -= 2*M_PI;
             while (theta_error < -M_PI) theta_error += 2*M_PI;
+
+
+
+
+           // --- ★ここから修正版：RVizに表示するためのMarker publish ---
+visualization_msgs::msg::Marker marker;
+marker.header.frame_id = "map"; // TFに合わせる
+marker.header.stamp = this->get_clock()->now();
+marker.ns = "waypoint_marker";
+marker.id = 0; // ← 常に同じIDを使うことで「上書き表示」できる！
+marker.type = visualization_msgs::msg::Marker::SPHERE;
+marker.action = visualization_msgs::msg::Marker::ADD;
+
+marker.pose.position.x = path_[current_waypoint_index_].pose.position.x;
+marker.pose.position.y = path_[current_waypoint_index_].pose.position.y;
+marker.pose.position.z = 0.0;
+marker.pose.orientation.w = 1.0;
+
+// 点の大きさ
+marker.scale.x = 0.15;
+marker.scale.y = 0.15;
+marker.scale.z = 0.15;
+
+// 色：赤
+marker.color.r = 1.0;
+marker.color.g = 0.0;
+marker.color.b = 0.0;
+marker.color.a = 1.0;
+
+// lifetimeを少し短くして上書き更新を確実にする
+marker.lifetime = rclcpp::Duration::from_seconds(0.2);
+
+marker_pub_->publish(marker);
+// --- ★ここまで修正版 ---
+
+
 
 
         
@@ -363,6 +408,7 @@ class FollowNode: public rclcpp::Node {
         rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
         rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_pub_;
         rclcpp::Publisher<geometry_msgs::msg::Pose2D>::SharedPtr target_pub_;
+        rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub_;
         rclcpp::Subscription<geometry_msgs::msg::Pose2D>::SharedPtr pose_sub_;
         rclcpp::TimerBase::SharedPtr timer_;
         std::vector<geometry_msgs::msg::PoseStamped> path_;
