@@ -18,7 +18,7 @@ def generate_launch_description():
     y = 0.25
     z = 0.30
     theta = math.pi/2
-    frequency = 5.0
+    frequency = 20.0
 
 
     # cpu simulation setting
