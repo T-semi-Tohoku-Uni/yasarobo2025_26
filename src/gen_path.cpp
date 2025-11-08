@@ -126,12 +126,8 @@ namespace path {
             for (int i = 0; i < N; ++i) {
                u(i) = static_cast<double>(i) / double(N - 1);
             }
-            /*
-            std::vector<double> u(N);
-            for (int i = 0; i < N; i++)
-                u[i] = double(i) / (N-1);
-            */
-            const int degree = 3; // cubic spline
+ 
+            const int degree = 3; // 3次元のspline
             // 注意: 点数 N は degree+1 以上であること
             if (N <= degree) return input;
 
@@ -142,9 +138,9 @@ namespace path {
 
             int dense = N * 5;
             for (int i = 0; i <= dense; i++) {
-                //double t = double(i) / dense;
+                
                 double t = static_cast<double>(i) / dense; // 0..1
-                //Vec2 v = spline(t);
+                
                 Eigen::Vector2d pv = spline(t); // p(t)
 
                 geometry_msgs::msg::PoseStamped pose;
@@ -235,8 +231,8 @@ namespace path {
 
                 sampled_path.poses.push_back(std::move(pose));
             }
-
-            {
+            
+            {/*最後の点もサンプリングに含める*/
                 auto [u, v] = path.back();
                 geometry_msgs::msg::PoseStamped pose;
                 pose.header = sampled_path.header;
@@ -246,8 +242,10 @@ namespace path {
                 pose.pose.orientation.w = 1.0;
                 sampled_path.poses.push_back(std::move(pose));
             }
+            /*サンプリングしたパスの点を配信*/
             pubSamplePath_->publish(sampled_path); 
 
+            /*スプライン補間したパスを配信*/
             auto smoothed_path = splineSmoothEigen(sampled_path);
             pubPath_->publish(smoothed_path);
 
