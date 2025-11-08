@@ -22,7 +22,7 @@ namespace path {
                 double initial_x = this->get_parameter("initial_x").as_double();
                 double initial_y = this->get_parameter("initial_y").as_double();
                 double initial_theta = this->get_parameter("initial_theta").as_double();
-                sample_parameter_ = this->get_parameter("sample_parameter").as_double();
+                double sample_parameter_ = this->get_parameter("sample_parameter").as_double();
 
                 this->curOdom_.x = initial_x;
                 this->curOdom_.y = initial_y;
@@ -165,7 +165,7 @@ namespace path {
             double sy = curOdom_.y;
             double gx = goalOdom_.x;
             double gy = goalOdom_.y;
-            double frequency = sample_parameter;
+            double frequency = sample_parameter_;
 
             std::priority_queue<Cell, std::vector<Cell>, std::greater<Cell>> q;
             std::vector<std::vector<double>> distances(
