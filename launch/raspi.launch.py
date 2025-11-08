@@ -189,7 +189,7 @@ def generate_launch_description():
             "lookahead_distance": 0.10,
             "max_linear_tolerance": 0.07,
             "max_reaching_distance": 0.04,
-            "max_theta_tolerance": 0.20,
+            "max_theta_tolerance": 1.00,
             "max_reaching_theta": 0.10,
             "Kp_linear": 0.80,
             "Ki_linear": 0.00,

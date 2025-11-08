@@ -11,9 +11,7 @@
                           theta="3.14"/>
         </Delay>
         <follow_route/>
-        <rotate theta="3.14"/>
         <vacume_on on="0"/>
-        <rotate theta="0"/>
       </Sequence>
       <KeepRunningUntilFailure>
         <Sequence>
@@ -21,7 +19,6 @@
                           y="1.8"
                           theta="-1.57"/>
           <follow_route/>
-          <rotate theta="-1.57"/>
           <IfThenElse>
             <ball_detect x="{x}"
                          y="{y}"/>
@@ -42,7 +39,6 @@
                           y="2.0"
                           theta="0"/>
           <follow_route/>
-          <rotate theta="0"/>
         </Sequence>
       </KeepRunningUntilFailure>
     </Sequence>
