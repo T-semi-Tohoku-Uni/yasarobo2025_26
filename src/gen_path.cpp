@@ -17,10 +17,12 @@ namespace path {
                 this->declare_parameter<std::float_t>("initial_x", 0.25);
                 this->declare_parameter<std::float_t>("initial_y", 0.25);
                 this->declare_parameter<std::float_t>("initial_theta", M_PI/2);
+                this->declare_parameter<std::float_t>("sample_parameter",5);
 
                 double initial_x = this->get_parameter("initial_x").as_double();
                 double initial_y = this->get_parameter("initial_y").as_double();
                 double initial_theta = this->get_parameter("initial_theta").as_double();
+                double frequency = this->get_parameter("sample_parameter").as_double();
 
                 this->curOdom_.x = initial_x;
                 this->curOdom_.y = initial_y;
@@ -213,13 +215,12 @@ namespace path {
 
             std::reverse(path.begin(), path.end());
 
-            /*点を50個おきにサンプリングする*/
+            /*点をfrequency個おきにサンプリングする*/
             nav_msgs::msg::Path sampled_path;
             sampled_path.header.frame_id = "map";
             sampled_path.header.stamp = this->now();
 
-            int sampling_num = 50;
-            for (size_t i = 0; i < path.size();  i += sampling_num)
+            for (size_t i = 0; i < path.size();  i += frequency)
             {
                 auto [u, v] = path[i];
 
@@ -233,7 +234,7 @@ namespace path {
 
                 sampled_path.poses.push_back(std::move(pose));
             }
-            
+
             {
                 auto [u, v] = path.back();
                 geometry_msgs::msg::PoseStamped pose;
