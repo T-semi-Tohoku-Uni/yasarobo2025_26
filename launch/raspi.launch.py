@@ -187,11 +187,16 @@ def generate_launch_description():
             "max_linear_speed": 0.13,
             "max_angular_speed": 0.5,
             "lookahead_distance": 0.10,
+            "max_linear_tolerance": 0.07,
+            "max_reaching_distance": 0.04,
+            "max_theta_tolerance": 0.20,
+            "max_reaching_theta": 0.10,
             "Kp_linear": 0.80,
             "Ki_linear": 0.00,
             "Kd_linear": 0.00,
-            "max_linear_tolerance": 0.08,
-            "max_reaching_distance": 0.02,
+            "Kp_angular": 1.00,
+            "Ki_angular": 0.00,
+            "Kd_angular": 0.00
         }]
     )
 
