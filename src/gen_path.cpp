@@ -213,12 +213,13 @@ namespace path {
 
             std::reverse(path.begin(), path.end());
 
-            /*点を5個おきにサンプリングする*/
+            /*点を50個おきにサンプリングする*/
             nav_msgs::msg::Path sampled_path;
             sampled_path.header.frame_id = "map";
             sampled_path.header.stamp = this->now();
 
-            for (size_t i = 0; i < path.size(); i += 5)
+            int sampling_num = 50;
+            for (size_t i = 0; i < path.size();  i += sampling_num)
             {
                 auto [u, v] = path[i];
 
