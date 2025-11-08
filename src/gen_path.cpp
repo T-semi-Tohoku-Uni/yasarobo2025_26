@@ -35,7 +35,11 @@ namespace path {
                 rclcpp::QoS pathQos = rclcpp::QoS(rclcpp::KeepLast(10))
                                   .reliable()
                                   .transient_local();
+                rclcpp::QoS test_pathQos = rclcpp::QoS(rclcpp::KeepLast(10))
+                                  .reliable()
+                                  .transient_local();
                 pubPath_ = create_publisher<nav_msgs::msg::Path>("route", pathQos);
+                pubSamplePath_ = create_publisher<nav_msgs::msg::Path>("test_route", test_pathQos);
 
 
                 // initialize subscriber
@@ -157,19 +161,16 @@ namespace path {
             std::reverse(path.begin(), path.end());
 
             /*点を5個おきにサンプリングする*/
-            nav_msgs::msg::Path samplePath(const nav_msgs::msg::Path &input_path)
+            
+            nav_msgs::msg::Path sampled_path;
+            sampled_path.header = path.header;  // headerは引き継ぐ
+            for (size_t i = 0; i < path.poses.size(); i += 5)
             {
-                nav_msgs::msg::Path sampled_path;
-                sampled_path.header = input_path.header;  // headerは引き継ぐ
-
-                const int step = 5;
-                for (size_t i = 0; i < input_path.poses.size(); i += step)
-                {
-                    sampled_path.poses.push_back(input_path.poses[i]);
-                }
-
-                return sampled_path;
+                sampled_path.poses.push_back(path.poses[i]);
             }
+
+            pubSamplePath_->publish(sampled_path); 
+            
 
 
             nav_msgs::msg::Path pathMsg;
@@ -284,6 +285,7 @@ namespace path {
         cv::Mat mapImg_;
         cv::Mat distField_;
         rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pubPath_;
+        rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pubSamplePath_;        
         rclcpp::Subscription<geometry_msgs::msg::Pose2D>::SharedPtr subOdom_;
         geometry_msgs::msg::Pose2D curOdom_;
         geometry_msgs::msg::Pose2D goalOdom_;
