@@ -6,6 +6,8 @@
 #include <geometry_msgs/msg/pose2_d.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <inrof2025_ros_type/srv/gen_route.hpp>
+#include <unsupported/Eigen/Splines>
+#include <Eigen/Dense>
 
 namespace path {
     class PathGenerator: public rclcpp::Node {
@@ -15,10 +17,12 @@ namespace path {
                 this->declare_parameter<std::float_t>("initial_x", 0.25);
                 this->declare_parameter<std::float_t>("initial_y", 0.25);
                 this->declare_parameter<std::float_t>("initial_theta", M_PI/2);
+                this->declare_parameter<std::float_t>("sample_parameter",5.0);
 
                 double initial_x = this->get_parameter("initial_x").as_double();
                 double initial_y = this->get_parameter("initial_y").as_double();
                 double initial_theta = this->get_parameter("initial_theta").as_double();
+                sample_parameter_ = this->get_parameter("sample_parameter").as_double();
 
                 this->curOdom_.x = initial_x;
                 this->curOdom_.y = initial_y;
@@ -35,7 +39,11 @@ namespace path {
                 rclcpp::QoS pathQos = rclcpp::QoS(rclcpp::KeepLast(10))
                                   .reliable()
                                   .transient_local();
+                rclcpp::QoS test_pathQos = rclcpp::QoS(rclcpp::KeepLast(10))
+                                  .reliable()
+                                  .transient_local();
                 pubPath_ = create_publisher<nav_msgs::msg::Path>("route", pathQos);
+                pubSamplePath_ = create_publisher<nav_msgs::msg::Path>("test_route", test_pathQos);
 
 
                 // initialize subscriber
@@ -100,12 +108,60 @@ namespace path {
 
             generator();
         }
+        
+        nav_msgs::msg::Path splineSmoothEigen(const nav_msgs::msg::Path &input) {
+            using Spline2d = Eigen::Spline<double, 2>;
+            using Vec2 = Eigen::Matrix<double, 2, 1>;
+
+            const int N = input.poses.size();
+            if (N < 4) return input;
+
+            Eigen::Matrix<double, 2, Eigen::Dynamic> points(2, N);
+            for (int i = 0; i < N; i++) {
+                points(0, i) = input.poses[i].pose.position.x;
+                points(1, i) = input.poses[i].pose.position.y;
+            }
+
+            Eigen::RowVectorXd u(N);
+            for (int i = 0; i < N; ++i) {
+               u(i) = static_cast<double>(i) / double(N - 1);
+            }
+ 
+            const int degree = 3; // 3次元のspline
+            // 注意: 点数 N は degree+1 以上であること
+            if (N <= degree) return input;
+
+            Spline2d spline = Eigen::SplineFitting<Spline2d>::Interpolate(points, degree, u);
+
+            nav_msgs::msg::Path smooth;
+            smooth.header = input.header;
+
+            int dense = N * 5;
+            for (int i = 0; i <= dense; i++) {
+                
+                double t = static_cast<double>(i) / dense; // 0..1
+                
+                Eigen::Vector2d pv = spline(t); // p(t)
+
+                geometry_msgs::msg::PoseStamped pose;
+                pose.header = smooth.header;
+                pose.pose.position.x = pv.x();
+                pose.pose.position.y = pv.y();
+                pose.pose.position.z = 0;
+                pose.pose.orientation.w = 1.0;
+
+                smooth.poses.push_back(pose);
+            }
+
+            return smooth;
+        }
 
         void generator() {
             double sx = curOdom_.x;
             double sy = curOdom_.y;
             double gx = goalOdom_.x;
             double gy = goalOdom_.y;
+            double frequency = sample_parameter_;
 
             std::priority_queue<Cell, std::vector<Cell>, std::greater<Cell>> q;
             std::vector<std::vector<double>> distances(
@@ -156,6 +212,44 @@ namespace path {
 
             std::reverse(path.begin(), path.end());
 
+            /*点をfrequency個おきにサンプリングする*/
+            nav_msgs::msg::Path sampled_path;
+            sampled_path.header.frame_id = "map";
+            sampled_path.header.stamp = this->now();
+
+            for (size_t i = 0; i < path.size();  i += frequency)
+            {
+                auto [u, v] = path[i];
+
+                geometry_msgs::msg::PoseStamped pose;
+                pose.header = sampled_path.header;
+
+                pose.pose.position.x = (u + 0.5) * mapResolution_;
+                pose.pose.position.y = (static_cast<double>(mapHeight_ - v - 1) + 0.5) * mapResolution_;
+                pose.pose.position.z = 0.0;
+                pose.pose.orientation.w = 1.0;
+
+                sampled_path.poses.push_back(std::move(pose));
+            }
+            
+            {/*最後の点もサンプリングに含める*/
+                auto [u, v] = path.back();
+                geometry_msgs::msg::PoseStamped pose;
+                pose.header = sampled_path.header;
+                pose.pose.position.x = (u + 0.5) * mapResolution_;
+                pose.pose.position.y = (static_cast<double>(mapHeight_ - v - 1) + 0.5) * mapResolution_;
+                pose.pose.position.z = 0.0;
+                pose.pose.orientation.w = 1.0;
+                sampled_path.poses.push_back(std::move(pose));
+            }
+            /*サンプリングしたパスの点を配信*/
+            pubSamplePath_->publish(sampled_path); 
+
+            /*スプライン補間したパスを配信*/
+            auto smoothed_path = splineSmoothEigen(sampled_path);
+            pubPath_->publish(smoothed_path);
+
+
             nav_msgs::msg::Path pathMsg;
             pathMsg.header.frame_id = "map";
             pathMsg.header.stamp    = this->now();
@@ -178,7 +272,7 @@ namespace path {
                 pathMsg.poses.push_back(std::move(pose));
             }
             
-            pubPath_->publish(pathMsg);
+            //pubPath_->publish(pathMsg);
         }
 
         void readMap() {
@@ -261,6 +355,7 @@ namespace path {
             { 1, -1},   // 左下      (south-west)
             { 1,  1}    // 右下      (south-east)
         }};
+        double sample_parameter_;
         std::string mapDir_;
         std::double_t mapResolution_;
         std::int32_t mapWidth_, mapHeight_;
@@ -268,6 +363,7 @@ namespace path {
         cv::Mat mapImg_;
         cv::Mat distField_;
         rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pubPath_;
+        rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pubSamplePath_;        
         rclcpp::Subscription<geometry_msgs::msg::Pose2D>::SharedPtr subOdom_;
         geometry_msgs::msg::Pose2D curOdom_;
         geometry_msgs::msg::Pose2D goalOdom_;

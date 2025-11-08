@@ -18,6 +18,7 @@ def generate_launch_description():
     y = 0.25
     z = 0.30
     theta = math.pi/2
+    frequency = 25.0
 
 
     # cpu simulation setting
@@ -178,6 +179,7 @@ def generate_launch_description():
                 "initial_x": x,
                 "initial_y": y,
                 "initial_theta": theta,
+                "sample_parameter": frequency,
             },
         ],
         remappings=[('clock', '/world/yasarobo/clock')],
