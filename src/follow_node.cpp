@@ -79,7 +79,10 @@ class FollowNode: public rclcpp::Node {
 
             rclcpp::QoS markerQos(rclcpp::KeepLast(10));
             marker_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("waypoint_marker", markerQos);
-
+            rclcpp::QoS poseArrowQos(rclcpp::KeepLast(10));
+            pose_arrow_pub_= this->create_publisher<visualization_msgs::msg::Marker>("pose_arrow_marker", poseArrowQos);
+            rclcpp::QoS cmdVelArrowQos(rclcpp::KeepLast(10));
+            cmd_vel_arrow_pub = this->create_publisher<visualization_msgs::msg::Marker>("cmd_vel_arrow_marker", cmdVelArrowQos);
 
             target_pub_ = this->create_publisher<geometry_msgs::msg::Pose2D>("target_pose", 10);
             action_server_ = rclcpp_action::create_server<inrof2025_ros_type::action::Follow>(
@@ -190,9 +193,8 @@ class FollowNode: public rclcpp::Node {
             //normalize angle to [-pi, pi]
             while (theta_error > M_PI) theta_error -= 2*M_PI;
             while (theta_error < -M_PI) theta_error += 2*M_PI;
-
-
-
+        
+            printWayPointArrow(path_[current_waypoint_index_].pose, path_[path_.size()-1].pose);
 
            // --- ★ここから修正版：RVizに表示するためのMarker publish ---
             visualization_msgs::msg::Marker marker;
@@ -323,6 +325,8 @@ class FollowNode: public rclcpp::Node {
                     linear_speed_cmd_x = clipped_v_x_f;
                     linear_speed_cmd_y = clipped_v_y_f;
 
+                    printCmdVelArrow(linear_speed_cmd_x, linear_speed_cmd_y, clipped_v_x_f, clipped_v_y_f);
+
                     
                     //publish feedback
                     auto feedback_msg = std::make_shared<inrof2025_ros_type::action::Follow::Feedback>();
@@ -333,7 +337,100 @@ class FollowNode: public rclcpp::Node {
                 }
 
         }
-         
+
+        void printWayPointArrow(geometry_msgs::msg::Pose waypoint_pose, geometry_msgs::msg::Pose goal_pose) {
+            visualization_msgs::msg::Marker arrow;
+
+            // pub waypoint pose
+            arrow.header.frame_id = "map";
+            arrow.ns = "way_point_arrow";
+            arrow.id = 0;
+            arrow.type = visualization_msgs::msg::Marker::ARROW;
+            arrow.action = visualization_msgs::msg::Marker::ADD;
+            arrow.pose = waypoint_pose;
+            arrow.scale.x = 0.08;
+            arrow.scale.y = 0.04;
+            arrow.scale.z = 0.04;
+
+            arrow.color.r = 0.0f;
+            arrow.color.g = 0.0f;
+            arrow.color.b = 1.0f;
+            arrow.color.a = 1.0f;
+            pose_arrow_pub_ -> publish(arrow);
+
+            // pub goal pose
+            arrow.header.frame_id = "map";
+            arrow.ns = "goal_point_arrow";
+            arrow.id = 0;
+            arrow.type = visualization_msgs::msg::Marker::ARROW;
+            arrow.action = visualization_msgs::msg::Marker::ADD;
+            arrow.pose = goal_pose;
+            arrow.scale.x = 0.08;
+            arrow.scale.y = 0.04;
+            arrow.scale.z = 0.04;
+
+            arrow.color.r = 0.0f;
+            arrow.color.g = 1.0f;
+            arrow.color.b = 0.0f;
+            arrow.color.a = 1.0f;
+            pose_arrow_pub_ -> publish(arrow);
+        }
+
+        void printCmdVelArrow(double vx, double vy, double cliped_vx, double cliped_vy) {
+            // convert pose2d to pose
+            geometry_msgs::msg::Pose pose;
+            pose.position.x = pose_.x;
+            pose.position.y = pose_.y;
+            pose.position.z = 0.0;
+            tf2::Quaternion q;
+            double yaw;
+            if (std::abs(vx) < 1e-6 && std::abs(vy) < 1e-6) {
+                yaw = 0;
+            } else {
+                yaw = std::atan2(vy, vx);
+            }
+            q.setRPY(0, 0, yaw);
+            pose.orientation.x = q.x();
+            pose.orientation.y = q.y();
+            pose.orientation.z = q.z();
+            pose.orientation.w = q.w();
+
+            // pub raw cmd vel 
+            visualization_msgs::msg::Marker arrow;
+            arrow.header.frame_id = "map";
+            arrow.ns = "cmd_vel";
+            arrow.id = 0;
+            arrow.type = visualization_msgs::msg::Marker::ARROW;
+            arrow.action = visualization_msgs::msg::Marker::ADD;
+            arrow.pose = pose;
+            arrow.scale.x = std::hypot(vx, vy);
+            arrow.scale.y = 0.04;
+            arrow.scale.z = 0.04;
+
+            arrow.color.r = 0.0f;
+            arrow.color.g = 0.0f;
+            arrow.color.b = 1.0f;
+            arrow.color.a = 0.5f;
+            cmd_vel_arrow_pub->publish(arrow);
+
+            // pub cliped cmd_vel
+            arrow.header.frame_id = "map";
+            arrow.ns = "cliped_cmd_vel";
+            arrow.id = 0;
+            arrow.type = visualization_msgs::msg::Marker::ARROW;
+            arrow.action = visualization_msgs::msg::Marker::ADD;
+            arrow.pose = pose;
+            arrow.scale.x = std::hypot(cliped_vx, cliped_vy);
+            arrow.scale.y = 0.04;
+            arrow.scale.z = 0.04;
+
+            arrow.color.r = 0.0f;
+            arrow.color.g = 1.0f;
+            arrow.color.b = 0.0f;
+            arrow.color.a = 1.0f;
+            cmd_vel_arrow_pub->publish(arrow);
+        }
+
 
         MotorVel forwardKinematics(float vx, float vy, float vtheta) {
                 MotorVel motor_vel;
@@ -409,6 +506,8 @@ class FollowNode: public rclcpp::Node {
         rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_pub_;
         rclcpp::Publisher<geometry_msgs::msg::Pose2D>::SharedPtr target_pub_;
         rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub_;
+        rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr pose_arrow_pub_;
+        rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr cmd_vel_arrow_pub;
         rclcpp::Subscription<geometry_msgs::msg::Pose2D>::SharedPtr pose_sub_;
         rclcpp::TimerBase::SharedPtr timer_;
         std::vector<geometry_msgs::msg::PoseStamped> path_;
