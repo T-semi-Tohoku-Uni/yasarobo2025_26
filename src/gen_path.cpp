@@ -169,7 +169,7 @@ namespace path {
                 pose.pose.position.y = (static_cast<double>(mapHeight_ - gc - 1) + 0.5) * mapResolution_;
                 pose.pose.position.z = 0.0;
 
-                // 進行方向の yaw を持たせても良いが，ここでは単位クォータニオン
+                // 進行方向の yaw を持たせる
                 pose.pose.orientation.w = 1.0;
 
 
