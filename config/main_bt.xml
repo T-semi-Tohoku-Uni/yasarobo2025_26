@@ -34,7 +34,6 @@
             </Sequence>
             <AlwaysSuccess/>
           </IfThenElse>
-          <rotate theta="3.14"/>
           <generate_route x="0.3"
                           y="2.0"
                           theta="0"/>
@@ -59,10 +58,6 @@
       <input_port name="y">TODO</input_port>
       <input_port name="theta"
                   default="0.0"/>
-    </Action>
-    <Action ID="rotate"
-            editable="true">
-      <input_port name="theta"/>
     </Action>
     <Action ID="vacume_on"
             editable="true">
