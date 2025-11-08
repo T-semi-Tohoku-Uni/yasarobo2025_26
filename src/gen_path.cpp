@@ -232,7 +232,7 @@ namespace path {
                 pose.pose.orientation.w = 1.0;
 
                 sampled_path.poses.push_back(std::move(pose));
-                if (!input_path.poses.empty())
+                if (!path.poses.empty())
                     sampled_path.poses.push_back(input_path.poses.back());
             }
 
