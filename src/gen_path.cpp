@@ -232,10 +232,18 @@ namespace path {
                 pose.pose.orientation.w = 1.0;
 
                 sampled_path.poses.push_back(std::move(pose));
-                if (!path.poses.empty())
-                    sampled_path.poses.push_back(input_path.poses.back());
             }
-
+            
+            {
+                auto [u, v] = path.back();
+                geometry_msgs::msg::PoseStamped pose;
+                pose.header = sampled_path.header;
+                pose.pose.position.x = (u + 0.5) * mapResolution_;
+                pose.pose.position.y = (static_cast<double>(mapHeight_ - v - 1) + 0.5) * mapResolution_;
+                pose.pose.position.z = 0.0;
+                pose.pose.orientation.w = 1.0;
+                sampled_path.poses.push_back(std::move(pose));
+            }
             pubSamplePath_->publish(sampled_path); 
 
             auto smoothed_path = splineSmoothEigen(sampled_path);
