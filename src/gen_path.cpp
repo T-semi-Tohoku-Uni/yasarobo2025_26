@@ -165,7 +165,7 @@ namespace path {
             double sy = curOdom_.y;
             double gx = goalOdom_.x;
             double gy = goalOdom_.y;
-            double frequency = path.sample_parameter;
+            double frequency = sample_parameter;
 
             std::priority_queue<Cell, std::vector<Cell>, std::greater<Cell>> q;
             std::vector<std::vector<double>> distances(
