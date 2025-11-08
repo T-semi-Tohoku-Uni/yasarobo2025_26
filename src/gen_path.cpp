@@ -156,6 +156,22 @@ namespace path {
 
             std::reverse(path.begin(), path.end());
 
+            /*点を5個おきにサンプリングする*/
+            nav_msgs::msg::Path samplePath(const nav_msgs::msg::Path &input_path)
+            {
+                nav_msgs::msg::Path sampled_path;
+                sampled_path.header = input_path.header;  // headerは引き継ぐ
+
+                const int step = 5;
+                for (size_t i = 0; i < input_path.poses.size(); i += step)
+                {
+                    sampled_path.poses.push_back(input_path.poses[i]);
+                }
+
+                return sampled_path;
+            }
+
+
             nav_msgs::msg::Path pathMsg;
             pathMsg.header.frame_id = "map";
             pathMsg.header.stamp    = this->now();
