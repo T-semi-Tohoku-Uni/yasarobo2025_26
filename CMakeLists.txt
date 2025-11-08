@@ -61,7 +61,6 @@ function(dependencies target)
     PUBLIC
       "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
       "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
-      ${nanoflann_INCLUDE_DIRS}
   )
 
   if (BUILD_WITH_SIM)
@@ -71,6 +70,7 @@ function(dependencies target)
   endif()
   target_link_libraries(${target} 
     ${YAML_CPP_LIBRARIES}
+    nanoflann::nanoflann
     Eigen3::Eigen
   )
 endfunction()
