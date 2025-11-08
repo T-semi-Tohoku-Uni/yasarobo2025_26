@@ -195,35 +195,35 @@ class FollowNode: public rclcpp::Node {
 
 
            // --- ★ここから修正版：RVizに表示するためのMarker publish ---
-visualization_msgs::msg::Marker marker;
-marker.header.frame_id = "map"; // TFに合わせる
-marker.header.stamp = this->get_clock()->now();
-marker.ns = "waypoint_marker";
-marker.id = 0; // ← 常に同じIDを使うことで「上書き表示」できる！
-marker.type = visualization_msgs::msg::Marker::SPHERE;
-marker.action = visualization_msgs::msg::Marker::ADD;
+            visualization_msgs::msg::Marker marker;
+            marker.header.frame_id = "map"; // TFに合わせる
+            marker.header.stamp = this->get_clock()->now();
+            marker.ns = "waypoint_marker";
+            marker.id = 0; // ← 常に同じIDを使うことで「上書き表示」できる！
+            marker.type = visualization_msgs::msg::Marker::SPHERE;
+            marker.action = visualization_msgs::msg::Marker::ADD;
 
-marker.pose.position.x = path_[current_waypoint_index_].pose.position.x;
-marker.pose.position.y = path_[current_waypoint_index_].pose.position.y;
-marker.pose.position.z = 0.0;
-marker.pose.orientation.w = 1.0;
+            marker.pose.position.x = path_[current_waypoint_index_].pose.position.x;
+            marker.pose.position.y = path_[current_waypoint_index_].pose.position.y;
+            marker.pose.position.z = 0.0;
+            marker.pose.orientation.w = 1.0;
 
-// 点の大きさ
-marker.scale.x = 0.15;
-marker.scale.y = 0.15;
-marker.scale.z = 0.15;
+            // 点の大きさ
+            marker.scale.x = 0.15;
+            marker.scale.y = 0.15;
+            marker.scale.z = 0.15;
 
-// 色：赤
-marker.color.r = 1.0;
-marker.color.g = 0.0;
-marker.color.b = 0.0;
-marker.color.a = 1.0;
+            // 色：赤
+            marker.color.r = 1.0;
+            marker.color.g = 0.0;
+            marker.color.b = 0.0;
+            marker.color.a = 1.0;
 
-// lifetimeを少し短くして上書き更新を確実にする
-marker.lifetime = rclcpp::Duration::from_seconds(0.2);
+            // lifetimeを少し短くして上書き更新を確実にする
+            marker.lifetime = rclcpp::Duration::from_seconds(0.2);
 
-marker_pub_->publish(marker);
-// --- ★ここまで修正版 ---
+            marker_pub_->publish(marker);
+            // --- ★ここまで修正版 ---
 
 
 
