@@ -7,7 +7,7 @@
 #include <std_msgs/msg/bool.hpp>
 #include <inrof2025_ros_type/srv/gen_route.hpp>
 #include <unsupported/Eigen/Splines>
-#include <nav_msgs/msg/path.hpp>
+
 
 namespace path {
     class PathGenerator: public rclcpp::Node {
@@ -106,6 +106,46 @@ namespace path {
 
             generator();
         }
+        
+        nav_msgs::msg::Path splineSmoothEigen(const nav_msgs::msg::Path &input) {
+            using Spline2d = Eigen::Spline<double, 2>;
+            using Vec2 = Eigen::Matrix<double, 2, 1>;
+
+            const int N = input.poses.size();
+            if (N < 4) return input;
+
+            Eigen::Matrix<double, 2, Eigen::Dynamic> points(2, N);
+            for (int i = 0; i < N; i++) {
+                points(0, i) = input.poses[i].pose.position.x;
+                points(1, i) = input.poses[i].pose.position.y;
+            }
+
+            std::vector<double> u(N);
+            for (int i = 0; i < N; i++)
+                u[i] = double(i) / (N-1);
+
+            Spline2d spline = Eigen::SplineFitting<Spline2d>::Interpolate(points, 3, u);
+
+            nav_msgs::msg::Path smooth;
+            smooth.header = input.header;
+
+            int dense = N * 5;
+            for (int i = 0; i <= dense; i++) {
+                double t = double(i) / dense;
+                Vec2 v = spline(t);
+
+                geometry_msgs::msg::PoseStamped pose;
+                pose.header = smooth.header;
+                pose.pose.position.x = v.x();
+                pose.pose.position.y = v.y();
+                pose.pose.position.z = 0;
+                pose.pose.orientation.w = 1.0;
+
+                smooth.poses.push_back(pose);
+            }
+
+            return smooth;
+        }
 
         void generator() {
             double sx = curOdom_.x;
@@ -183,6 +223,9 @@ namespace path {
             }
 
             pubSamplePath_->publish(sampled_path); 
+            
+            auto smoothed_path = splineSmoothEigen(sampled_path);
+            pubPath_->publish(smoothed_path);
             
 
 
