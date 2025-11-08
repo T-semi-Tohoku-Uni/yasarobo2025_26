@@ -24,7 +24,7 @@ class FollowNode: public rclcpp::Node {
             this->declare_parameter<double>("lookahead_distance", 0.05);
             this->declare_parameter<double>("max_linear_speed", 0.2);
             this->declare_parameter<double>("max_theta_speed", 2.0);
-            this->declare_parameter<double>("Kp_linear", 0.10);
+            this->declare_parameter<double>("Kp_linear", 0.80);
             this->declare_parameter<double>("Ki_linear", 0.00);
             this->declare_parameter<double>("Kd_linear", 0.00);
             this->declare_parameter<double>("Kp_theta", 0.40);
