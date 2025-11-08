@@ -7,7 +7,7 @@
 #include <std_msgs/msg/bool.hpp>
 #include <inrof2025_ros_type/srv/gen_route.hpp>
 #include <unsupported/Eigen/Splines>
-
+#include <Eigen/Dense>
 
 namespace path {
     class PathGenerator: public rclcpp::Node {
@@ -120,24 +120,35 @@ namespace path {
                 points(1, i) = input.poses[i].pose.position.y;
             }
 
+            Eigen::RowVectorXd u(N);
+            for (int i = 0; i < N; ++i) {
+               u(i) = static_cast<double>(i) / double(N - 1);
+            }
+            /*
             std::vector<double> u(N);
             for (int i = 0; i < N; i++)
                 u[i] = double(i) / (N-1);
+            */
+            const int degree = 3; // cubic spline
+            // 注意: 点数 N は degree+1 以上であること
+            if (N <= degree) return input;
 
-            Spline2d spline = Eigen::SplineFitting<Spline2d>::Interpolate(points, 3, u);
+            Spline2d spline = Eigen::SplineFitting<Spline2d>::Interpolate(points, degree, u);
 
             nav_msgs::msg::Path smooth;
             smooth.header = input.header;
 
             int dense = N * 5;
             for (int i = 0; i <= dense; i++) {
-                double t = double(i) / dense;
-                Vec2 v = spline(t);
+                //double t = double(i) / dense;
+                double t = static_cast<double>(i) / dense; // 0..1
+                //Vec2 v = spline(t);
+                Eigen::Vector2d pv = spline(t); // p(t)
 
                 geometry_msgs::msg::PoseStamped pose;
                 pose.header = smooth.header;
-                pose.pose.position.x = v.x();
-                pose.pose.position.y = v.y();
+                pose.pose.position.x = pv.x();
+                pose.pose.position.y = pv.y();
                 pose.pose.position.z = 0;
                 pose.pose.orientation.w = 1.0;
 
