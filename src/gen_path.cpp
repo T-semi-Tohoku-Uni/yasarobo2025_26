@@ -6,6 +6,8 @@
 #include <geometry_msgs/msg/pose2_d.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <inrof2025_ros_type/srv/gen_route.hpp>
+#include <unsupported/Eigen/Splines>
+#include <nav_msgs/msg/path.hpp>
 
 namespace path {
     class PathGenerator: public rclcpp::Node {
