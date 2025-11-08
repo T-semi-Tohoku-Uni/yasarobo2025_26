@@ -161,12 +161,23 @@ namespace path {
             std::reverse(path.begin(), path.end());
 
             /*点を5個おきにサンプリングする*/
-            
             nav_msgs::msg::Path sampled_path;
-            sampled_path.header = path.header;  // headerは引き継ぐ
-            for (size_t i = 0; i < path.poses.size(); i += 5)
+            sampled_path.header.frame_id = "map";
+            sampled_path.header.stamp = this->now();
+
+            for (size_t i = 0; i < path.size(); i += 5)
             {
-                sampled_path.poses.push_back(path.poses[i]);
+                auto [u, v] = path[i];
+
+                geometry_msgs::msg::PoseStamped pose;
+                pose.header = sampled_path.header;
+
+                pose.pose.position.x = (u + 0.5) * mapResolution_;
+                pose.pose.position.y = (static_cast<double>(mapHeight_ - v - 1) + 0.5) * mapResolution_;
+                pose.pose.position.z = 0.0;
+                pose.pose.orientation.w = 1.0;
+
+                sampled_path.poses.push_back(std::move(pose));
             }
 
             pubSamplePath_->publish(sampled_path); 
