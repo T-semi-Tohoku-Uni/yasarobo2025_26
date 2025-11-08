@@ -13,7 +13,7 @@ namespace ActionNodes {
             explicit BTNode(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
             void send_pose(double x, double y);
             bool isRuning();
-            void ball_detect(double *x, double *y);
+            bool ball_detect(double *x, double *y);
             void send_vacume_on(bool on);
             void send_start_follow();
             void goalResponseCallback(rclcpp_action::ClientGoalHandle<inrof2025_ros_type::action::Follow>::SharedPtr goal_handle);

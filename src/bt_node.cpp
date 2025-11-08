@@ -26,7 +26,7 @@ namespace ActionNodes {
         // create service client
         srvGenRoute_ = this->create_client<inrof2025_ros_type::srv::GenRoute>("generate_route");
         srvVacume_ = this->create_client<inrof2025_ros_type::srv::Vacume>("/srv/vacume");
-        srvBall_ = this->create_client<inrof2025_ros_type::srv::BallPose> ("ball_pose");
+        srvBall_ = this->create_client<inrof2025_ros_type::srv::BallPose> ("ball_detect");
         actFollow_ = rclcpp_action::create_client<inrof2025_ros_type::action::Follow> (this, "follow");
         actRotate_ = rclcpp_action::create_client<inrof2025_ros_type::action::Rotate> (this, "rotate");
     };
@@ -50,7 +50,7 @@ namespace ActionNodes {
         return isRun_;
     }
 
-    void BTNode::ball_detect(double *x, double *y) {
+    bool BTNode::ball_detect(double *x, double *y) {
         while(!srvBall_->wait_for_service(1s)) {
             if (!rclcpp::ok()) break;
             RCLCPP_WARN(this->get_logger(), "srvBall_ not available");
@@ -68,8 +68,10 @@ namespace ActionNodes {
             auto response = result_future.get();
             *x = response->x;
             *y = response->y;
+            return response->detect;
         } else {
-
+            RCLCPP_WARN(this->get_logger(), "spin until future is fail");
+            return false;
         }
     }
 
