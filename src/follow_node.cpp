@@ -171,7 +171,7 @@ class FollowNode: public rclcpp::Node {
             double roll, pitch, yaw;
             tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
 
-            
+            //goal yaw
             tf2::Quaternion q_goal(
                 path_[path_.size() - 1].pose.orientation.x,
                 path_[path_.size() - 1].pose.orientation.y,
@@ -187,12 +187,16 @@ class FollowNode: public rclcpp::Node {
             //error calculation theta
             double target_theta = yaw;
             double theta_error = target_theta - pose_.theta;
+
             //normalize angle to [-pi, pi]
             while (theta_error > M_PI) theta_error -= 2*M_PI;
             while (theta_error < -M_PI) theta_error += 2*M_PI;
+            while (theta_goal > M_PI) theta_goal -= 2*M_PI;
+            while (theta_goal < -M_PI) theta_goal += 2*M_PI;
+            while (target_theta > M_PI) target_theta -= 2*M_PI;
+            while (target_theta < -M_PI) target_theta += 2*M_PI;
 
-
-
+            
 
            // --- ★ここから修正版：RVizに表示するためのMarker publish ---
             visualization_msgs::msg::Marker marker;
