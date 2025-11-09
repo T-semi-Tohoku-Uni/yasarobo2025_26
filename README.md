@@ -173,3 +173,12 @@ colcon build --packages-select yasarobo2025_26 --symlink-install
 source install/setup.bash
 ros2 launch yasarobo2025_26 simulation.launch.py
 ```
+
+##　テスト
+launch test
+```bash
+cd 
+cd ros_ws
+source install/setup.bash
+launch_test src/yasarobo2025_26/test/test_integration.py
+```

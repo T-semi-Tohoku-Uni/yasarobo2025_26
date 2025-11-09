@@ -16,7 +16,6 @@ jobs:
         shell: bash
 
     env:
-      GAZEBO_MODEL_PATH: ${GITHUB_WORKSPACE}/ros_ws/install/yasarobo2925_26/share/yasarobo2925_26/models:${GAZEBO_MODEL_PATH}
       WITH_SIM: 1
 
     steps:
@@ -90,3 +89,24 @@ jobs:
             source /opt/ros/humble/setup.bash
             cd ros_ws
             colcon build
+
+      - name: launch test
+        run: |
+            cd ros_ws
+            sudo apt-get install -y ros-humble-ros-gz
+            source /opt/ros/humble/setup.bash
+            source install/setup.bash
+            
+            sudo apt-get install -y xvfb
+            export DISPLAY=:99
+            Xvfb :99 -screen 0 1280x1024x24 &
+            XVFB_PID=$!
+            echo "Started Xvfb with PID $XVFB_PID"
+            sleep 2
+            
+            export IGN_GAZEBO_RESOURCE_PATH=$GITHUB_WORKSPACE/ros_ws/src/yasarobo2025_26/models/
+            export LIBGL_ALWAYS_SOFTWARE=1
+            launch_test src/yasarobo2025_26/test/test_integration.py
+
+            echo "Killing Xvfb and leftover Gazebo processes..."
+            kill $XVFB_PID || true
