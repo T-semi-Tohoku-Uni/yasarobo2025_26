@@ -48,7 +48,7 @@ namespace ActionNodes {
         srvBallRoute_->async_send_request(request);
     }
 
-    void BTNode::send_pose(double x, double y) {
+    void BTNode::send_pose(double x, double y, double theta) {
         // check action server available
         while (!this->srvGenRoute_->wait_for_service(1s))
         {
