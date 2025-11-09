@@ -21,9 +21,38 @@ typedef struct MotorVel {
         float v3;
     } MotorVel;
 
+
+
+class PIDController {
+    public:
+        PIDController() = default;
+        PIDController(double Kp, double Ki, double Kd, double dt)
+        : Kp_(Kp), Ki_(Ki), Kd_(Kd), prev_error_(0.0), integral_(0.0), dt_(dt) {}
+
+        double compute(double setpoint, double measured_value) {
+            double error = setpoint - measured_value;
+            integral_ += error * dt_;
+            double derivative = (error - prev_error_) / dt_;
+            prev_error_ = error;
+            return Kp_ * error + Ki_ * integral_ + Kd_ * derivative;
+        }
+
+    private:
+        double Kp_;
+        double Ki_;
+        double Kd_;
+        double dt_;
+        double prev_error_;
+        double integral_;
+};
+
+
 class FollowNode: public rclcpp::Node {
     public:
         explicit FollowNode(const rclcpp::NodeOptions & options = rclcpp::NodeOptions()): Node("follow_node", options) {
+            double Kp_linear, Ki_linear, Kd_linear;
+            double Kp_theta, Ki_theta, Kd_theta;
+            double dt = 0.1; 
             this->declare_parameter<double>("lookahead_distance", 0.05);
             this->declare_parameter<double>("max_linear_speed", 0.2);
             this->declare_parameter<double>("max_theta_speed", 2.0);
@@ -53,6 +82,9 @@ class FollowNode: public rclcpp::Node {
 
 
 
+            linear_PID_x_ = PIDController(Kp_linear, Ki_linear, Kd_linear, dt);
+            linear_PID_y_ = PIDController(Kp_linear, Ki_linear, Kd_linear, dt);
+            omega_PID_ = PIDController(Kp_theta, Ki_theta, Kd_theta, dt);
 
 
 
@@ -248,61 +280,16 @@ class FollowNode: public rclcpp::Node {
                 }
 
             } else {
-                    double dt = 0.1;
+                    
 
 
                     //PID control for linear speed
-                    static double linear_error_prev_dx = 0.0;
-                    static double linear_error_derivative_x_prev = 0.0;
-                    double linear_error_derivative_x = dx - linear_error_prev_dx;
-                    double linear_error_derivative_dx = linear_error_derivative_x - linear_error_derivative_x_prev;
-                    
-                    double linear_speed_cmd_dx = Kp_linear * linear_error_derivative_x
-                                               + Ki_linear * dx * dt
-                                               + Kd_linear * linear_error_derivative_dx / dt;
-
-                    static double linear_speed_cmd_x = 0.0;
-                    linear_speed_cmd_x += linear_speed_cmd_dx;
-
-                    linear_error_prev_dx = dx;
-                    linear_error_derivative_x_prev = linear_error_derivative_x;
-
-
-
-                    static double linear_error_prev_dy = 0.0;
-                    static double linear_error_derivative_y_prev = 0.0;
-                    double linear_error_derivative_y = dy - linear_error_prev_dy;
-                    double linear_error_derivative_dy = linear_error_derivative_y - linear_error_derivative_y_prev;
-                    
-
-                    double linear_speed_cmd_dy = Kp_linear * linear_error_derivative_y
-                                               + Ki_linear * dy * dt
-                                               + Kd_linear * linear_error_derivative_dy / dt;
-
-                    static double linear_speed_cmd_y = 0.0; 
-                    linear_speed_cmd_y += linear_speed_cmd_dy; 
-
-                    
-                    linear_error_prev_dy = dy;
-                    linear_error_derivative_y_prev = linear_error_derivative_y;
-
-
-
+                    double linear_speed_cmd_x = linear_PID_x_.compute(path_[current_waypoint_index_].pose.position.x, pose_.x);
+                    double linear_speed_cmd_y = linear_PID_y_.compute(path_[current_waypoint_index_].pose.position.y, pose_.y);
                     
                     //PID control for theta speed
-                    static double theta_error_prev = 0.0;
-                    static double theta_error_integral = 0.0;
-
-                    double theta_error_derivative = (theta_error - theta_error_prev) / dt;
-                    theta_error_integral += theta_error * dt;
-
-                    double theta_speed_cmd = Kp_theta * theta_error
-                                             + Ki_theta * theta_error_integral
-                                             + Kd_theta * theta_error_derivative; 
-                    theta_error_prev = theta_error;
-
+                    double theta_speed_cmd = omega_PID_.compute(target_theta, pose_.theta);
     
-
 
                     geometry_msgs::msg::Twist linear_speed;
                     linear_speed.linear.x = cos(pose_.theta) * linear_speed_cmd_x + sin(pose_.theta) * linear_speed_cmd_y;
@@ -321,9 +308,6 @@ class FollowNode: public rclcpp::Node {
                     double clipped_v_x_f = cos(pose_.theta) * clipped_v_x_r - sin(pose_.theta) * clipped_v_y_r;
                     double clipped_v_y_f = sin(pose_.theta) * clipped_v_x_r + cos(pose_.theta) * clipped_v_y_r; 
 
-
-                    linear_speed_cmd_x = clipped_v_x_f;
-                    linear_speed_cmd_y = clipped_v_y_f;
 
                     printCmdVelArrow(linear_speed_cmd_x, linear_speed_cmd_y, clipped_v_x_f, clipped_v_y_f);
 
@@ -513,16 +497,11 @@ class FollowNode: public rclcpp::Node {
         std::vector<geometry_msgs::msg::PoseStamped> path_;
         std::mutex mutex_;
         geometry_msgs::msg::Pose2D pose_;
+
+        //PID control
+        PIDController linear_PID_x_, linear_PID_y_, omega_PID_;
+
         
-
-
-        // PID gains
-        double Kp_linear;
-        double Ki_linear;
-        double Kd_linear;
-        double Kp_theta;
-        double Ki_theta;
-        double Kd_theta;
 
         //tolerance and reaching distance
         double max_linear_tolerance;
