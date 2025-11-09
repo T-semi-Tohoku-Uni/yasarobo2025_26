@@ -242,6 +242,13 @@ def generate_launch_description():
         remappings=[('clock', '/world/yasarobo/clock')],
     )
 
+    ball_path_node = Node(
+        package="yasarobo2025_26",
+        executable="ball_path_node",
+        output="screen",
+        remappings=[('clock', '/world/yasarobo/clock')],
+    )
+
     # spawn ball on field
     ball_spawn_entity_list = []
     ball_x_min = 0.98
@@ -249,7 +256,7 @@ def generate_launch_description():
     ball_y_min = 0.60
     ball_y_max = 1.80
     for i_x in range(2):
-        for i_y in range(1):
+        for i_y in range(2,3,1):
             region_x_min = ball_x_min + (ball_x_max-ball_x_min)*i_x/2
             region_x_max = ball_x_min + (ball_x_max-ball_x_min)*(i_x+1)/2
             region_y_min = ball_y_min + (ball_y_max-ball_y_min)*i_y/4
@@ -294,5 +301,6 @@ def generate_launch_description():
         bt_node,
         vacume_node,
         detect_node,
+        ball_path_node,
         *ball_spawn_entity_list
     ])
