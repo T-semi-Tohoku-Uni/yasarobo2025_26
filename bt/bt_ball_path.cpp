@@ -30,7 +30,7 @@ BT::NodeStatus ActionNodes::BallPath::tick() {
 
     double x = tmp_x.value();
     double y = tmp_y.value();
-    
+
     if (this->ros_node_ == nullptr) RCLCPP_INFO(this->ros_node_->get_logger(), "null ptr");
 
     this->ros_node_->send_ball_pose(x, y);
