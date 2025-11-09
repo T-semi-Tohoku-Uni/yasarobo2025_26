@@ -10,8 +10,11 @@ namespace yasarobo2025_26{
 
 
         srv_gen_route_ = this->create_service<inrof2025_ros_type::srv::GenRoute>(
-        "generate_ball_path", std::bind(&BallPathNode::genBallPath, this, std::placeholders::_1, std::placeholders::_2)
+            "generate_ball_path", std::bind(&BallPathNode::genBallPath, this, std::placeholders::_1, std::placeholders::_2)
         );
+
+        rclcpp::QoS poseArrowQos(rclcpp::KeepLast(10));
+        pose_arrow_pub_= this->create_publisher<visualization_msgs::msg::Marker>("pose_arrow_marker", poseArrowQos);
 
         this->declare_parameter<int>("num_points_", 10);
         this->get_parameter("num_points_", num_points_);
@@ -51,21 +54,6 @@ namespace yasarobo2025_26{
         goal_pose.pose.position.y = request->y;
 
         double theta = 0.0;
-        
-        //create path
-        for (int i=0; i<=num_points_; ++i){
-            double t = static_cast<double>(i) / num_points_;
-            geometry_msgs::msg::PoseStamped p;
-            p.header = path_msg.header;
-            p.pose.position.x = start_pose.pose.position.x + t * (goal_pose.pose.position.x - start_pose.pose.position.x);
-            p.pose.position.y = start_pose.pose.position.y + t * (goal_pose.pose.position.y - start_pose.pose.position.y);
-
-            tf2::Quaternion q;
-            q.setRPY(0, 0, theta);
-            p.pose.orientation = tf2::toMsg(q);
-
-            path_msg.poses.push_back(p);
-        }
 
         //calculate theta
         double dx = goal_pose.pose.position.x - start_pose.pose.position.x;
@@ -86,6 +74,42 @@ namespace yasarobo2025_26{
         else{
             theta = atan2(dy, dx);
         }
+
+        theta = theta - 2*M_PI/3;
+
+        //create path
+        for (int i=0; i<=num_points_; ++i){
+            double t = static_cast<double>(i) / num_points_;
+            geometry_msgs::msg::PoseStamped p;
+            p.header = path_msg.header;
+            p.pose.position.x = start_pose.pose.position.x + t * (goal_pose.pose.position.x - start_pose.pose.position.x);
+            p.pose.position.y = start_pose.pose.position.y + t * (goal_pose.pose.position.y - start_pose.pose.position.y);
+
+            tf2::Quaternion q;
+            q.setRPY(0, 0, theta);
+            p.pose.orientation = tf2::toMsg(q);
+
+            path_msg.poses.push_back(p);
+        }
+
+        visualization_msgs::msg::Marker arrow;
+        geometry_msgs::msg::Pose goal_robot_pose;
+
+        // pub waypoint pose
+        arrow.header.frame_id = "map";
+        arrow.ns = "goal_point_arrow";
+        arrow.id = 0;
+        arrow.type = visualization_msgs::msg::Marker::ARROW;
+        arrow.action = visualization_msgs::msg::Marker::ADD;
+        arrow.pose = path_msg.poses[path_msg.poses.size()-1].pose;
+        arrow.scale.x = 0.08;
+        arrow.scale.y = 0.04;
+        arrow.scale.z = 0.04;
+        arrow.color.r = 0.0f;
+        arrow.color.g = 0.0f;
+        arrow.color.b = 1.0f;
+        arrow.color.a = 1.0f;
+        pose_arrow_pub_ -> publish(arrow);
 
         path_pub_->publish(path_msg);
     };

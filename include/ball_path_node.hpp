@@ -7,6 +7,7 @@
 #include <geometry_msgs/msg/twist.hpp>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <visualization_msgs/msg/marker.hpp>
 
 namespace yasarobo2025_26{
     class BallPathNode:public rclcpp::Node{
@@ -25,6 +26,6 @@ namespace yasarobo2025_26{
 
             int num_points_;
             rclcpp::Service<inrof2025_ros_type::srv::GenRoute>::SharedPtr srv_gen_route_;
-
+            rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr pose_arrow_pub_;
     };
 }
