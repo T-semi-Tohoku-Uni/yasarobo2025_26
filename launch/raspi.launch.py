@@ -10,6 +10,8 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.actions import IncludeLaunchDescription
 from launch.substitutions import PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
+from launch.event_handlers import OnProcessExit, OnProcessStart
+import datetime
 
 import os
 import xacro
@@ -35,6 +37,14 @@ def generate_launch_description():
         "map.yaml"
     )
     lifecycle_nodes = ['map_server']
+
+    # rosbag
+    bag_dir = os.path.expanduser("/misc/usb/ros_bags")
+    os.makedirs(bag_dir, exist_ok=True)
+    ros_bag = ExecuteProcess(
+        cmd=['ros2', 'bag', 'record', '-a', '-o', os.path.join(bag_dir, datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))],
+        output='screen'
+    )
 
     node_robot_state_publisher = Node(
         package='robot_state_publisher',
@@ -187,11 +197,16 @@ def generate_launch_description():
             "max_linear_speed": 0.13,
             "max_angular_speed": 0.5,
             "lookahead_distance": 0.10,
+            "max_linear_tolerance": 0.07,
+            "max_reaching_distance": 0.04,
+            "max_theta_tolerance": 1.00,
+            "max_reaching_theta": 0.10,
             "Kp_linear": 0.80,
             "Ki_linear": 0.00,
             "Kd_linear": 0.00,
-            "max_linear_tolerance": 0.08,
-            "max_reaching_distance": 0.02,
+            "Kp_angular": 1.00,
+            "Ki_angular": 0.00,
+            "Kd_angular": 0.00
         }]
     )
 
@@ -207,6 +222,14 @@ def generate_launch_description():
         output="screen"
     )
 
+    ball_path_node = Node(
+        package="yasarobo2025_26",
+        executable="ball_path_node",
+        output="screen",
+        remappings=[('clock', '/world/yasarobo/clock')],
+    )
+
+
     detect_node = Node(
         package="yasarobo2025_26",
         executable="ball_detect_node",
@@ -221,23 +244,31 @@ def generate_launch_description():
         }]
     )
 
-    # cmd_velをキャッチして、uartに流すプログラムが必要
     return LaunchDescription([
-        node_robot_state_publisher,
-        map_server_cmd,
-        start_lifecycle_manager_cmd,
-        static_from_map_to_odom,
-        mcl_node,
-        joy_node,
-        joy2Vel_node,
-        vel_feedback_node,
-        ldlidar_node,
-        static_ldlidar_tf,
-        gen_path,
-        follow_node,
-        vacume_node,
-        bt_node,
-        rotate_node,
-        detect_node
-        # static_from_odom_to_basefootprint
+        SetEnvironmentVariable(name='RCUTILS_COLORIZED_OUTPUT', value='1'),
+        ros_bag,
+        RegisterEventHandler(
+            event_handler=OnProcessStart(
+                target_action=ros_bag,
+                on_start=[
+                    node_robot_state_publisher,
+                    map_server_cmd,
+                    start_lifecycle_manager_cmd,
+                    static_from_map_to_odom,
+                    mcl_node,
+                    joy_node,
+                    joy2Vel_node,
+                    vel_feedback_node,
+                    ldlidar_node,
+                    static_ldlidar_tf,
+                    gen_path,
+                    follow_node,
+                    vacume_node,
+                    bt_node,
+                    rotate_node,
+                    ball_path_node,
+                    detect_node
+                ]
+            )
+        )
     ])

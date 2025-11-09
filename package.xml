@@ -28,6 +28,7 @@
   <depend>tf2_geometry_msgs</depend>
   <depend>laser_geometry</depend>
   <depend>inrof2025_ros_type</depend>
+  <depend>backward_ros</depend>
   
   <build_depend>xacro</build_depend>
   <exec_depend>xacro</exec_depend>

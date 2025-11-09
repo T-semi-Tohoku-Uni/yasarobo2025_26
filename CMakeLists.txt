@@ -31,6 +31,8 @@ find_package(tf2_sensor_msgs REQUIRED)
 find_package(behaviortree_cpp REQUIRED)
 find_package(inrof2025_ros_type REQUIRED)
 find_package(nanoflann REQUIRED)
+find_package(backward_ros REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 if (BUILD_WITH_SIM)
   find_package(gazebo_ros REQUIRED)
@@ -56,16 +58,21 @@ function(dependencies target)
   )
 
   target_include_directories(${target}
-  PUBLIC
-  "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
-  "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+    PUBLIC
+      "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
+      "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
+  )
 
   if (BUILD_WITH_SIM)
     ament_target_dependencies(${target} 
       "gazebo_msgs"
     )
   endif()
-  target_link_libraries(${target} ${YAML_CPP_LIBRARIES} nanoflann::nanoflann) 
+  target_link_libraries(${target} 
+    ${YAML_CPP_LIBRARIES}
+    nanoflann::nanoflann
+    Eigen3::Eigen
+  )
 endfunction()
 
 function(ros_node_executable target)
@@ -82,6 +89,7 @@ add_library(bt_lib SHARED
   bt/bt_generate_route.cpp
   bt/bt_follow_route.cpp
   bt/bt_rotate.cpp
+  bt/bt_ball_path.cpp
   # add bt/bt_..._.cpp
 )
 target_include_directories(bt_lib
@@ -114,6 +122,7 @@ ros_node_executable(dummy_vacume_uart)
 ros_node_executable(mcl_node)
 ros_node_executable(vel_feedback_node)
 ros_node_executable(ball_detect_node)
+ros_node_executable(ball_path_node)
 
 install(DIRECTORY include/ DESTINATION include/${PROJECT_NAME})
 install(DIRECTORY launch worlds models urdf config map meshes

@@ -11,6 +11,7 @@
 #include <behaviortree_cpp/behavior_tree.h>
 #include <behaviortree_cpp/bt_factory.h>
 #include <behaviortree_cpp/loggers/groot2_publisher.h>
+#include <bt_ball_path.hpp>
 #include "../include/bt_node.hpp"
 #include "../include/bt_vacume_on.hpp"
 #include "../include/bt_ball_detect.hpp"
@@ -26,12 +27,28 @@ namespace ActionNodes {
         // create service client
         srvGenRoute_ = this->create_client<inrof2025_ros_type::srv::GenRoute>("generate_route");
         srvVacume_ = this->create_client<inrof2025_ros_type::srv::Vacume>("/srv/vacume");
-        srvBall_ = this->create_client<inrof2025_ros_type::srv::BallPose> ("ball_pose");
+        srvBall_ = this->create_client<inrof2025_ros_type::srv::BallPose> ("ball_detect");
+        srvBallRoute_ = this->create_client<inrof2025_ros_type::srv::GenRoute>("generate_ball_path");
         actFollow_ = rclcpp_action::create_client<inrof2025_ros_type::action::Follow> (this, "follow");
         actRotate_ = rclcpp_action::create_client<inrof2025_ros_type::action::Rotate> (this, "rotate");
     };
 
-    void BTNode::send_pose(double x, double y) {
+    void BTNode::send_ball_pose(double x, double y) {
+        // check action server available
+        while (!this->srvBallRoute_->wait_for_service(1s))
+        {
+            if (!rclcpp::ok()) break;
+            RCLCPP_WARN(this->get_logger(), "srvBallRoute_ not available");
+        }
+
+        auto request = std::make_shared<inrof2025_ros_type::srv::GenRoute::Request>();
+        request->x = x;
+        request->y = y;
+
+        srvBallRoute_->async_send_request(request);
+    }
+
+    void BTNode::send_pose(double x, double y, double theta) {
         // check action server available
         while (!this->srvGenRoute_->wait_for_service(1s))
         {
@@ -42,6 +59,7 @@ namespace ActionNodes {
         auto request = std::make_shared<inrof2025_ros_type::srv::GenRoute::Request>();
         request->x = x;
         request->y = y;
+        request->theta = theta;
 
         srvGenRoute_->async_send_request(request);
     }
@@ -50,7 +68,7 @@ namespace ActionNodes {
         return isRun_;
     }
 
-    void BTNode::ball_detect(double *x, double *y) {
+    bool BTNode::ball_detect(double *x, double *y) {
         while(!srvBall_->wait_for_service(1s)) {
             if (!rclcpp::ok()) break;
             RCLCPP_WARN(this->get_logger(), "srvBall_ not available");
@@ -68,8 +86,10 @@ namespace ActionNodes {
             auto response = result_future.get();
             *x = response->x;
             *y = response->y;
+            return response->detect;
         } else {
-
+            RCLCPP_WARN(this->get_logger(), "spin until future is fail");
+            return false;
         }
     }
 
@@ -198,6 +218,12 @@ int main(int argc, char* argv[]) {
             return std::make_unique<ActionNodes::BallDetect>(name, config, ros_node);
         };
     factory.registerBuilder<ActionNodes::BallDetect>("ball_detect", builder_ball_detect);
+
+    BT::NodeBuilder builder_ball_path = 
+        [ros_node](const std::string& name, const NodeConfiguration& config) {
+            return std::make_unique<ActionNodes::BallPath>(name, config, ros_node);
+        };
+    factory.registerBuilder<ActionNodes::BallPath>("ball_path", builder_ball_path);
 
     std::string package_path = ament_index_cpp::get_package_share_directory("yasarobo2025_26");
     factory.registerBehaviorTreeFromFile(package_path + "/config/main_bt.xml");
