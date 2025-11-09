@@ -3,10 +3,15 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <geometry_msgs/msg/pose2_d.hpp>
+#include "geometry_msgs/msg/pose_stamped.hpp"
 #include <mutex>
+#include <vector>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <inrof2025_ros_type/action/follow.hpp>
 #include <inrof2025_ros_type/action/rotate.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <tf2/LinearMath/Quaternion.h>
+#include "visualization_msgs/msg/marker.hpp"
 
 using namespace std::chrono_literals; 
 
@@ -16,27 +21,70 @@ typedef struct MotorVel {
         float v3;
     } MotorVel;
 
+
+
+class PIDController {
+    public:
+        PIDController() = default;
+        PIDController(double Kp, double Ki, double Kd, double dt)
+        : Kp_(Kp), Ki_(Ki), Kd_(Kd), prev_error_(0.0), integral_(0.0), dt_(dt) {}
+
+        double compute(double setpoint, double measured_value) {
+            double error = setpoint - measured_value;
+            integral_ += error * dt_;
+            double derivative = (error - prev_error_) / dt_;
+            prev_error_ = error;
+            return Kp_ * error + Ki_ * integral_ + Kd_ * derivative;
+        }
+
+    private:
+        double Kp_;
+        double Ki_;
+        double Kd_;
+        double dt_;
+        double prev_error_;
+        double integral_;
+};
+
+
 class FollowNode: public rclcpp::Node {
     public:
         explicit FollowNode(const rclcpp::NodeOptions & options = rclcpp::NodeOptions()): Node("follow_node", options) {
+            double Kp_linear, Ki_linear, Kd_linear;
+            double Kp_theta, Ki_theta, Kd_theta;
+            double dt = 0.1; 
             this->declare_parameter<double>("lookahead_distance", 0.05);
             this->declare_parameter<double>("max_linear_speed", 0.2);
             this->declare_parameter<double>("max_theta_speed", 2.0);
-            this->declare_parameter<double>("Kp_linear", 0.10);
+            this->declare_parameter<double>("Kp_linear", 0.80);
             this->declare_parameter<double>("Ki_linear", 0.00);
             this->declare_parameter<double>("Kd_linear", 0.00);
+            this->declare_parameter<double>("Kp_theta", 0.40);
+            this->declare_parameter<double>("Ki_theta", 0.00);
+            this->declare_parameter<double>("Kd_theta", 0.00);
             this->declare_parameter<double>("max_linear_tolerance", 0.08);
             this->declare_parameter<double>("max_reaching_distance", 0.02);
+            this->declare_parameter<double>("max_theta_tolerance", 0.3);
+            this->declare_parameter<double>("max_reaching_theta", 0.1);
             this->get_parameter("lookahead_distance", lookahead_distance_);
             this->get_parameter("max_linear_speed", max_linear_speed_);
             this->get_parameter("max_theta_speed", max_theta_speed_);
             this->get_parameter("Kp_linear", Kp_linear);
             this->get_parameter("Ki_linear", Ki_linear);
             this->get_parameter("Kd_linear", Kd_linear);
+            this->get_parameter("Kp_theta", Kp_theta);
+            this->get_parameter("Kt_theta", Ki_theta);
+            this->get_parameter("Kd_theta", Kd_theta);
             this->get_parameter("max_linear_tolerance", max_linear_tolerance);
             this->get_parameter("max_reaching_distance", max_reaching_distance);
+            this->get_parameter("max_theta_tolerance", max_theta_tolerance);
+            this->get_parameter("max_reaching_theta", max_reaching_theta);
 
 
+
+            linear_PID_x_ = PIDController(Kp_linear, Ki_linear, Kd_linear, dt);
+            linear_PID_y_ = PIDController(Kp_linear, Ki_linear, Kd_linear, dt);
+            omega_PID_ = PIDController(Kp_theta, Ki_theta, Kd_theta, dt);
 
 
 
@@ -60,6 +108,14 @@ class FollowNode: public rclcpp::Node {
                 100ms,
                 std::bind(&FollowNode::controlLoop, this)
             );
+
+            rclcpp::QoS markerQos(rclcpp::KeepLast(10));
+            marker_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("waypoint_marker", markerQos);
+            rclcpp::QoS poseArrowQos(rclcpp::KeepLast(10));
+            pose_arrow_pub_= this->create_publisher<visualization_msgs::msg::Marker>("pose_arrow_marker", poseArrowQos);
+            rclcpp::QoS cmdVelArrowQos(rclcpp::KeepLast(10));
+            cmd_vel_arrow_pub = this->create_publisher<visualization_msgs::msg::Marker>("cmd_vel_arrow_marker", cmdVelArrowQos);
+
             target_pub_ = this->create_publisher<geometry_msgs::msg::Pose2D>("target_pose", 10);
             action_server_ = rclcpp_action::create_server<inrof2025_ros_type::action::Follow>(
                 this,
@@ -71,6 +127,7 @@ class FollowNode: public rclcpp::Node {
         }
 
         std::shared_ptr<rclcpp_action::ServerGoalHandle<inrof2025_ros_type::action::Follow>> goal_handle_;
+        
 
     private:
         // action server callback
@@ -119,15 +176,6 @@ class FollowNode: public rclcpp::Node {
                 return;
             }
 
-            //PID gains
-            
-            //double Kp_theta= 1.00;
-            //double Ki_theta= 0.00;
-            //double Kd_theta= 0.00;
-
-            //decide tolerance range
-            double lookahead_distance = 1.0; //m
-            //double max_theta_tolerance = 0.05;  //rad
 
             // publish goal position
             geometry_msgs::msg::Pose2D target_pose;
@@ -137,7 +185,7 @@ class FollowNode: public rclcpp::Node {
 
             target_pub_ ->publish(target_pose);
 
-            //error calculation
+            //error calculation linear
             double dx = path_[current_waypoint_index_].pose.position.x - pose_.x;
             double dy = path_[current_waypoint_index_].pose.position.y - pose_.y;
             double d2 = dx*dx + dy*dy;
@@ -145,22 +193,83 @@ class FollowNode: public rclcpp::Node {
             double linear_goal_x = path_[path_.size() -1].pose.position.x - pose_.x;
             double linear_goal_y = path_[path_.size() -1].pose.position.y - pose_.y;
             double linear_goal_distance = std::hypot(linear_goal_x, linear_goal_y);
-            //double target_theta = atan2(dy, dx);
-            //double theta_error = target_theta - pose_.theta;
-            //normalize angle to [-pi, pi]
-            //while (theta_error > M_PI) theta_error -= 2*M_PI;
-            //while (theta_error < -M_PI) theta_error += 2*M_PI;
 
-            // RCLCPP_INFO(this->get_logger(), "%lf %lf", dx, dy);
+
+            //quoternion to yaw
+            tf2::Quaternion q(
+                path_[current_waypoint_index_].pose.orientation.x,
+                path_[current_waypoint_index_].pose.orientation.y,
+                path_[current_waypoint_index_].pose.orientation.z,
+                path_[current_waypoint_index_].pose.orientation.w
+            );
+
+            double roll, pitch, yaw;
+            tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+
+            
+            tf2::Quaternion q_goal(
+                path_[path_.size() - 1].pose.orientation.x,
+                path_[path_.size() - 1].pose.orientation.y,
+                path_[path_.size() - 1].pose.orientation.z,
+                path_[path_.size() - 1].pose.orientation.w
+            );
+
+            double roll_goal, pitch_goal, yaw_goal;
+            tf2::Matrix3x3(q_goal).getRPY(roll_goal, pitch_goal, yaw_goal);
+
+            double theta_goal = yaw_goal - pose_.theta;
+
+            //error calculation theta
+            double target_theta = yaw;
+            double theta_error = target_theta - pose_.theta;
+            //normalize angle to [-pi, pi]
+            while (theta_error > M_PI) theta_error -= 2*M_PI;
+            while (theta_error < -M_PI) theta_error += 2*M_PI;
+        
+            printWayPointArrow(path_[current_waypoint_index_].pose, path_[path_.size()-1].pose);
+
+           // --- ★ここから修正版：RVizに表示するためのMarker publish ---
+            visualization_msgs::msg::Marker marker;
+            marker.header.frame_id = "map"; // TFに合わせる
+            marker.header.stamp = this->get_clock()->now();
+            marker.ns = "waypoint_marker";
+            marker.id = 0; // ← 常に同じIDを使うことで「上書き表示」できる！
+            marker.type = visualization_msgs::msg::Marker::SPHERE;
+            marker.action = visualization_msgs::msg::Marker::ADD;
+
+            marker.pose.position.x = path_[current_waypoint_index_].pose.position.x;
+            marker.pose.position.y = path_[current_waypoint_index_].pose.position.y;
+            marker.pose.position.z = 0.0;
+            marker.pose.orientation.w = 1.0;
+
+            // 点の大きさ
+            marker.scale.x = 0.15;
+            marker.scale.y = 0.15;
+            marker.scale.z = 0.15;
+
+            // 色：赤
+            marker.color.r = 1.0;
+            marker.color.g = 0.0;
+            marker.color.b = 0.0;
+            marker.color.a = 1.0;
+
+            // lifetimeを少し短くして上書き更新を確実にする
+            marker.lifetime = rclcpp::Duration::from_seconds(0.2);
+
+            marker_pub_->publish(marker);
+            // --- ★ここまで修正版 ---
+
+
+
 
         
-            if (max_linear_tolerance > linear_error){ //&& max_theta_tolerance > std::abs(theta_error)) {
-                if (current_waypoint_index_ < (int)path_.size() -1){ //&&  linear_error < lookahead_distance_ / 2.0 ) {
+            if (max_linear_tolerance > linear_error){  // && max_theta_tolerance > std::abs(theta_error)) { 
+                if (current_waypoint_index_ < (int)path_.size() -1){
                     //move to next waypoint
                     current_waypoint_index_++;
                 } 
 
-                if (linear_goal_distance < max_reaching_distance) {
+                if (linear_goal_distance < max_reaching_distance){ //&& theta_goal < max_reaching_theta) {
                     //goal reached
                     RCLCPP_INFO(this->get_logger(), "Goal reached.");
                     publishZero();
@@ -171,119 +280,21 @@ class FollowNode: public rclcpp::Node {
                 }
 
             } else {
-                    double dt = 0.1;
-
-                    // //PID control for linear speed
-                    // static double linear_error_prev_dx = 0.0;
-                    // //static double linear_error_integral_x = 0.0;
-                    // //linear_error_integral_x += dx * dt;
-                    // // double linear_error_derivative_x = (dx - linear_error_prev_dx) / dt;
                     
-                    // double linear_speed_cmd_x = Kp_linear * dx
-                    //                         + Ki_linear * linear_error_integral_x
-                    //                         + Kd_linear * linear_error_derivative_x;
-                    // linear_error_prev_dx = dx;
-
-                    //RCLCPP_INFO(this->get_logger(), "dx: %.4f dy: %.4f", dx, dy);
-
 
 
                     //PID control for linear speed
-                    static double linear_error_prev_dx = 0.0;
-                    static double linear_error_derivative_x_prev = 0.0;
-                    //static double linear_error_integral_x = 0.0;
-                    //linear_error_integral_x += dx * dt;
-                    double linear_error_derivative_x = dx - linear_error_prev_dx;
-                    double linear_error_derivative_dx = linear_error_derivative_x - linear_error_derivative_x_prev;
+                    double linear_speed_cmd_x = linear_PID_x_.compute(path_[current_waypoint_index_].pose.position.x, pose_.x);
+                    double linear_speed_cmd_y = linear_PID_y_.compute(path_[current_waypoint_index_].pose.position.y, pose_.y);
                     
-                    double linear_speed_cmd_dx = Kp_linear * linear_error_derivative_x
-                                               + Ki_linear * dx * dt
-                                               + Kd_linear * linear_error_derivative_dx / dt;
-
-                    static double linear_speed_cmd_x = 0.0;
-                    linear_speed_cmd_x += linear_speed_cmd_dx;
-
-                    linear_error_prev_dx = dx;
-                    linear_error_derivative_x_prev = linear_error_derivative_x;
-
-                    //RCLCPP_INFO(this->get_logger(), "dx: %.4f dy: %.4f", dx, dy);
-
-
-
-
-                    static double linear_error_prev_dy = 0.0;
-                    static double linear_error_derivative_y_prev = 0.0;
-                    //static double linear_error_integral_y = 0.0;
-                    //linear_error_integral_y += dy * dt;
-                    double linear_error_derivative_y = dy - linear_error_prev_dy;
-                    double linear_error_derivative_dy = linear_error_derivative_y - linear_error_derivative_y_prev;
-                    
-
-                    double linear_speed_cmd_dy = Kp_linear * linear_error_derivative_y
-                                               + Ki_linear * dy * dt
-                                               + Kd_linear * linear_error_derivative_dy / dt;
-
-                    static double linear_speed_cmd_y = 0.0; 
-                    linear_speed_cmd_y += linear_speed_cmd_dy; 
-
-                    // RCLCPP_INFO(this->get_logger(), "%lf %lf %lf", dy, dy * dt, linear_speed_cmd_dy);
-
-                    linear_error_prev_dy = dy;
-                    linear_error_derivative_y_prev = linear_error_derivative_y;
-
-
-                    // RCLCPP_INFO(this->get_logger(), "speed_x, speed_y:%.2f  %.2f", linear_speed_cmd_dx, linear_speed_cmd_dy);
-
-                    //RCLCPP_INFO(this->get_logger(), "pose:", "%.4f %.4f ", pose_.x, pose_.y);
-                    //RCLCPP_INFO(this->get_logger(), "path:", "%.4f %.4f ", path_[current_waypoint_index_].pose.position.x, path_[current_waypoint_index_].pose.position.y);
-                    //RCLCPP_INFO(this->get_logger(), "dx, dy:", "%.4f %.4f ", dx, dy);
-                    //RCLCPP_INFO(this->get_logger(), "linear cmd: %.4f %.4f ", linear_speed_cmd_x, linear_speed_cmd_y);
-                    
-
                     //PID control for theta speed
-                    //static double theta_error_prev = 0.0;
-                    ////static double theta_error_integral = 0.0;
-
-                    //double theta_error_derivative = (theta_error - theta_error_prev)/dt;
-                    ////theta_error_integral += theta_error * dt;
-                    //double theta_speed_cmd_d = Kp_theta * theta_error_derivative 
-                    //                       + Ki_theta * theta_error * dt
-                    //                       + Kd_theta * theta_error_derivative / dt; 
-                    //theta_error_prev = theta_error;
-
-                    //static double theta_speed_cmd_ = 0.0; 
-                    //theta_speed_cmd_ += theta_speed_cmd_d; 
-
-                    //apply speed limits                    
-                    // if (linear_speed_cmd_x > max_linear_speed_) linear_speed_cmd_x = max_linear_speed_;
-                    // if (linear_speed_cmd_x < -max_linear_speed_) linear_speed_cmd_x = -max_linear_speed_;
-                    // if (linear_speed_cmd_y > max_linear_speed_) linear_speed_cmd_y = max_linear_speed_;
-                    // if (linear_speed_cmd_y < -max_linear_speed_) linear_speed_cmd_y = -max_linear_speed_;
-                    //if (theta_speed_cmd > max_theta_speed_) theta_speed_cmd = max_theta_speed_;
-                    //if (theta_speed_cmd < -max_theta_speed_) theta_speed_cmd = -max_theta_speed_;
-
-
+                    double theta_speed_cmd = omega_PID_.compute(target_theta, pose_.theta);
     
-
-
-                    //日本語のやつはchatGPT
-                    // theta_error は [-pi, pi] に正規化済み
-                    //double linear_speed_cmd_limited = linear_speed_cmd_x; 
-
-
-                    // ロボットが後ろ向きの場合は線速度を反転
-                    //if (std::abs(theta_error) > M_PI_2) {  
-                    //    linear_speed_cmd_limited = -linear_speed_cmd;
-                        // 角度も補正（theta_error を π の範囲内にして回転方向を逆に）
-                    //    if (theta_error > 0) theta_error -= M_PI;
-                    //    else theta_error += M_PI;
-                    //}
-
 
                     geometry_msgs::msg::Twist linear_speed;
                     linear_speed.linear.x = cos(pose_.theta) * linear_speed_cmd_x + sin(pose_.theta) * linear_speed_cmd_y;
                     linear_speed.linear.y = -sin(pose_.theta) * linear_speed_cmd_x + cos(pose_.theta) * linear_speed_cmd_y;
-
+                    linear_speed.angular.z = theta_speed_cmd;
 
                     //apply speed limits 
                     geometry_msgs::msg::Twist clipped_v = clip(linear_speed);
@@ -293,25 +304,14 @@ class FollowNode: public rclcpp::Node {
                     double clipped_v_x_r = clipped_v.linear.x;
                     double clipped_v_y_r = clipped_v.linear.y;
 
-                    // RCLCPP_INFO(this->get_logger(), "%.2f, %.2f", linear_speed.linear.x, linear_speed.linear.y);
-
+     
                     double clipped_v_x_f = cos(pose_.theta) * clipped_v_x_r - sin(pose_.theta) * clipped_v_y_r;
                     double clipped_v_y_f = sin(pose_.theta) * clipped_v_x_r + cos(pose_.theta) * clipped_v_y_r; 
 
 
-                    linear_speed_cmd_x = clipped_v_x_f;
-                    linear_speed_cmd_y = clipped_v_y_f;
+                    printCmdVelArrow(linear_speed_cmd_x, linear_speed_cmd_y, clipped_v_x_f, clipped_v_y_f);
 
-
-                    //cmd.angular.z = Kp_theta * theta_error + Ki_theta*theta_error_integral + Kd_theta*theta_error_derivative;
-
-
-                    // // send cmd
-                    // geometry_msgs::msg::Twist cmd;
-                    // cmd.linear.x = linear_speed_cmd;
-                    // cmd.angular.z = theta_speed_cmd;
-                    // cmd_pub_->publish(linear_speed);
-
+                    
                     //publish feedback
                     auto feedback_msg = std::make_shared<inrof2025_ros_type::action::Follow::Feedback>();
                     feedback_msg->x = pose_.x;
@@ -321,7 +321,100 @@ class FollowNode: public rclcpp::Node {
                 }
 
         }
-         
+
+        void printWayPointArrow(geometry_msgs::msg::Pose waypoint_pose, geometry_msgs::msg::Pose goal_pose) {
+            visualization_msgs::msg::Marker arrow;
+
+            // pub waypoint pose
+            arrow.header.frame_id = "map";
+            arrow.ns = "way_point_arrow";
+            arrow.id = 0;
+            arrow.type = visualization_msgs::msg::Marker::ARROW;
+            arrow.action = visualization_msgs::msg::Marker::ADD;
+            arrow.pose = waypoint_pose;
+            arrow.scale.x = 0.08;
+            arrow.scale.y = 0.04;
+            arrow.scale.z = 0.04;
+
+            arrow.color.r = 0.0f;
+            arrow.color.g = 0.0f;
+            arrow.color.b = 1.0f;
+            arrow.color.a = 1.0f;
+            pose_arrow_pub_ -> publish(arrow);
+
+            // pub goal pose
+            arrow.header.frame_id = "map";
+            arrow.ns = "goal_point_arrow";
+            arrow.id = 0;
+            arrow.type = visualization_msgs::msg::Marker::ARROW;
+            arrow.action = visualization_msgs::msg::Marker::ADD;
+            arrow.pose = goal_pose;
+            arrow.scale.x = 0.08;
+            arrow.scale.y = 0.04;
+            arrow.scale.z = 0.04;
+
+            arrow.color.r = 0.0f;
+            arrow.color.g = 1.0f;
+            arrow.color.b = 0.0f;
+            arrow.color.a = 1.0f;
+            pose_arrow_pub_ -> publish(arrow);
+        }
+
+        void printCmdVelArrow(double vx, double vy, double cliped_vx, double cliped_vy) {
+            // convert pose2d to pose
+            geometry_msgs::msg::Pose pose;
+            pose.position.x = pose_.x;
+            pose.position.y = pose_.y;
+            pose.position.z = 0.0;
+            tf2::Quaternion q;
+            double yaw;
+            if (std::abs(vx) < 1e-6 && std::abs(vy) < 1e-6) {
+                yaw = 0;
+            } else {
+                yaw = std::atan2(vy, vx);
+            }
+            q.setRPY(0, 0, yaw);
+            pose.orientation.x = q.x();
+            pose.orientation.y = q.y();
+            pose.orientation.z = q.z();
+            pose.orientation.w = q.w();
+
+            // pub raw cmd vel 
+            visualization_msgs::msg::Marker arrow;
+            arrow.header.frame_id = "map";
+            arrow.ns = "cmd_vel";
+            arrow.id = 0;
+            arrow.type = visualization_msgs::msg::Marker::ARROW;
+            arrow.action = visualization_msgs::msg::Marker::ADD;
+            arrow.pose = pose;
+            arrow.scale.x = std::hypot(vx, vy);
+            arrow.scale.y = 0.04;
+            arrow.scale.z = 0.04;
+
+            arrow.color.r = 0.0f;
+            arrow.color.g = 0.0f;
+            arrow.color.b = 1.0f;
+            arrow.color.a = 0.5f;
+            cmd_vel_arrow_pub->publish(arrow);
+
+            // pub cliped cmd_vel
+            arrow.header.frame_id = "map";
+            arrow.ns = "cliped_cmd_vel";
+            arrow.id = 0;
+            arrow.type = visualization_msgs::msg::Marker::ARROW;
+            arrow.action = visualization_msgs::msg::Marker::ADD;
+            arrow.pose = pose;
+            arrow.scale.x = std::hypot(cliped_vx, cliped_vy);
+            arrow.scale.y = 0.04;
+            arrow.scale.z = 0.04;
+
+            arrow.color.r = 0.0f;
+            arrow.color.g = 1.0f;
+            arrow.color.b = 0.0f;
+            arrow.color.a = 1.0f;
+            cmd_vel_arrow_pub->publish(arrow);
+        }
+
 
         MotorVel forwardKinematics(float vx, float vy, float vtheta) {
                 MotorVel motor_vel;
@@ -396,22 +489,25 @@ class FollowNode: public rclcpp::Node {
         rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
         rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_pub_;
         rclcpp::Publisher<geometry_msgs::msg::Pose2D>::SharedPtr target_pub_;
+        rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub_;
+        rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr pose_arrow_pub_;
+        rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr cmd_vel_arrow_pub;
         rclcpp::Subscription<geometry_msgs::msg::Pose2D>::SharedPtr pose_sub_;
         rclcpp::TimerBase::SharedPtr timer_;
         std::vector<geometry_msgs::msg::PoseStamped> path_;
         std::mutex mutex_;
         geometry_msgs::msg::Pose2D pose_;
+
+        //PID control
+        PIDController linear_PID_x_, linear_PID_y_, omega_PID_;
+
         
-
-
-        // PID gains
-        double Kp_linear;
-        double Ki_linear;
-        double Kd_linear;
 
         //tolerance and reaching distance
         double max_linear_tolerance;
+        double max_theta_tolerance;
         double max_reaching_distance;
+        double max_reaching_theta;
 
         // waypoint index
         int current_waypoint_index_;    

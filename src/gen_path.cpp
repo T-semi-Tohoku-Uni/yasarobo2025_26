@@ -8,6 +8,9 @@
 #include <inrof2025_ros_type/srv/gen_route.hpp>
 #include <unsupported/Eigen/Splines>
 #include <Eigen/Dense>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
 
 namespace path {
     class PathGenerator: public rclcpp::Node {
@@ -44,6 +47,11 @@ namespace path {
                                   .transient_local();
                 pubPath_ = create_publisher<nav_msgs::msg::Path>("route", pathQos);
                 pubSamplePath_ = create_publisher<nav_msgs::msg::Path>("test_route", test_pathQos);
+
+                rclcpp::QoS markerQos = rclcpp::QoS(rclcpp::KeepLast(10))
+                                  .reliable()
+                                  .transient_local();
+                pubMarker_ = create_publisher<visualization_msgs::msg::MarkerArray>("path_orientations", markerQos);
 
 
                 // initialize subscriber
@@ -84,7 +92,7 @@ namespace path {
             // TODO lock
             curOdom_.x = msgs.x;
             curOdom_.y = msgs.y;
-            curOdom_.theta = 0.0; // null ok
+            curOdom_.theta = msgs.theta; // null ok
         }
 
         // void poseCallback(inrof2025_ros_type::srv::GenRoute srvs) {
@@ -104,7 +112,7 @@ namespace path {
             RCLCPP_INFO(this->get_logger(), "%.4f %.4f", request->x, request->y);
             goalOdom_.x = request->x;
             goalOdom_.y = request->y;
-            goalOdom_.theta = 0.0;
+            goalOdom_.theta = request->theta;
 
             generator();
         }
@@ -254,25 +262,51 @@ namespace path {
             pathMsg.header.frame_id = "map";
             pathMsg.header.stamp    = this->now();
 
-            for (auto [gr, gc] : path) {
+            for (size_t i=0; i<path.size(); i++) {
+                int gr = path[i].first;
+                int gc = path[i].second;
+
                 geometry_msgs::msg::PoseStamped pose;
                 pose.header = pathMsg.header;
 
-                // OccupancyGrid のセル → ワールド座標（セル中心にオフセット）
                 pose.pose.position.x = (gr + 0.5) * mapResolution_;
                 pose.pose.position.y = (static_cast<double>(mapHeight_ - gc - 1) + 0.5) * mapResolution_;
                 pose.pose.position.z = 0.0;
 
-                // 進行方向の yaw を持たせても良いが，ここでは単位クォータニオン
-                pose.pose.orientation.w = 1.0;
+                tf2::Quaternion q;
+                if (i+30 > path.size()) {
+                    q.setRPY(0, 0, goalOdom_.theta);
+                } else {
+                    q.setRPY(0, 0, curOdom_.theta);
+                }
+                pose.pose.orientation = tf2::toMsg(q);
+                pathMsg.poses.push_back(pose);
+            }
 
+            visualization_msgs::msg::MarkerArray markerArray;
+            for (size_t i=0; i<pathMsg.poses.size(); i+=10) {
+                visualization_msgs::msg::Marker arrow;
+                arrow.header = pathMsg.header;
+                arrow.ns = "path_orientations";
+                arrow.id = static_cast<int>(i);
+                arrow.type = visualization_msgs::msg::Marker::ARROW;
+                arrow.action = visualization_msgs::msg::Marker::ADD;
+                arrow.pose = pathMsg.poses[i].pose;
+                arrow.scale.x = 0.05;  // 矢印の長さ
+                arrow.scale.y = 0.01; // 矢印の太さ
+                arrow.scale.z = 0.01; // 矢印の頭のサイズ
 
-                // RCLCPP_INFO(this->get_logger(), "%.4f %.4f", pose.pose.position.x, pose.pose.position.y);
-                
-                pathMsg.poses.push_back(std::move(pose));
+                // 矢印の色（RGBA）
+                arrow.color.r = 1.0f;
+                arrow.color.g = 0.0f;
+                arrow.color.b = 0.0f;
+                arrow.color.a = 1.0f;
+                markerArray.markers.push_back(arrow);
             }
             
             //pubPath_->publish(pathMsg);
+            pubPath_->publish(pathMsg);
+            pubMarker_->publish(markerArray);
         }
 
         void readMap() {
@@ -364,6 +398,7 @@ namespace path {
         cv::Mat distField_;
         rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pubPath_;
         rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pubSamplePath_;        
+        rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pubMarker_;
         rclcpp::Subscription<geometry_msgs::msg::Pose2D>::SharedPtr subOdom_;
         geometry_msgs::msg::Pose2D curOdom_;
         geometry_msgs::msg::Pose2D goalOdom_;
