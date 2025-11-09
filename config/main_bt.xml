@@ -23,9 +23,8 @@
             <ball_detect x="{x}"
                          y="{y}"/>
             <Sequence>
-              <generate_route x="{x}"
-                              y="{y}"
-                              theta="0"/>
+              <ball_path x="{x}"
+                         y="{y}"/>
               <follow_route/>
               <generate_route x="1.34"
                               y="1.8"
@@ -51,6 +50,11 @@
             editable="true">
       <output_port name="x"/>
       <output_port name="y"/>
+    </Action>
+    <Action ID="ball_path"
+            editable="true">
+      <input_port name="x"/>
+      <input_port name="y"/>
     </Action>
     <Action ID="follow_route"
             editable="true"/>
