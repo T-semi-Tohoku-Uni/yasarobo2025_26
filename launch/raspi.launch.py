@@ -222,6 +222,14 @@ def generate_launch_description():
         output="screen"
     )
 
+    ball_path_node = Node(
+        package="yasarobo2025_26",
+        executable="ball_path_node",
+        output="screen",
+        remappings=[('clock', '/world/yasarobo/clock')],
+    )
+
+
     detect_node = Node(
         package="yasarobo2025_26",
         executable="ball_detect_node",
@@ -258,6 +266,7 @@ def generate_launch_description():
                     vacume_node,
                     bt_node,
                     rotate_node,
+                    ball_path_node,
                     detect_node
                 ]
             )

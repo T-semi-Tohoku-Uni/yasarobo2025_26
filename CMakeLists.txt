@@ -89,6 +89,7 @@ add_library(bt_lib SHARED
   bt/bt_generate_route.cpp
   bt/bt_follow_route.cpp
   bt/bt_rotate.cpp
+  bt/bt_ball_path.cpp
   # add bt/bt_..._.cpp
 )
 target_include_directories(bt_lib
@@ -121,6 +122,7 @@ ros_node_executable(dummy_vacume_uart)
 ros_node_executable(mcl_node)
 ros_node_executable(vel_feedback_node)
 ros_node_executable(ball_detect_node)
+ros_node_executable(ball_path_node)
 
 install(DIRECTORY include/ DESTINATION include/${PROJECT_NAME})
 install(DIRECTORY launch worlds models urdf config map meshes
