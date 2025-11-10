@@ -12,6 +12,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2/LinearMath/Quaternion.h>
 #include "visualization_msgs/msg/marker.hpp"
+#include <functional>
 
 using namespace std::chrono_literals; 
 
@@ -26,11 +27,14 @@ typedef struct MotorVel {
 class PIDController {
     public:
         PIDController() = default;
-        PIDController(double Kp, double Ki, double Kd, double dt)
-        : Kp_(Kp), Ki_(Ki), Kd_(Kd), prev_error_(0.0), integral_(0.0), dt_(dt) {}
+        PIDController(double Kp, double Ki, double Kd, double dt, std::function<double(double)> normalize_func = nullptr)
+        : Kp_(Kp), Ki_(Ki), Kd_(Kd), prev_error_(0.0), integral_(0.0), dt_(dt), normalize_func_(normalize_func) {}
 
         double compute(double setpoint, double measured_value) {
             double error = setpoint - measured_value;
+            if (normalize_func_) {
+                error = normalize_func_(error);
+            }
             integral_ += error * dt_;
             double derivative = (error - prev_error_) / dt_;
             prev_error_ = error;
@@ -44,6 +48,7 @@ class PIDController {
         double dt_;
         double prev_error_;
         double integral_;
+        std::function<double(double)> normalize_func_;
 };
 
 
@@ -84,7 +89,11 @@ class FollowNode: public rclcpp::Node {
 
             linear_PID_x_ = PIDController(Kp_linear, Ki_linear, Kd_linear, dt);
             linear_PID_y_ = PIDController(Kp_linear, Ki_linear, Kd_linear, dt);
-            omega_PID_ = PIDController(Kp_theta, Ki_theta, Kd_theta, dt);
+            omega_PID_ = PIDController(Kp_theta, Ki_theta, Kd_theta, dt, [](double e){
+                while (e > M_PI) e -= 2*M_PI;
+                while (e < -M_PI) e += 2*M_PI;
+                return e;
+            });
 
 
 
@@ -221,11 +230,6 @@ class FollowNode: public rclcpp::Node {
 
             //error calculation theta
             double target_theta = yaw;
-            double theta_error = target_theta - pose_.theta;
-            //normalize angle to [-pi, pi]
-            while (theta_error > M_PI) theta_error -= 2*M_PI;
-            while (theta_error < -M_PI) theta_error += 2*M_PI;
-        
             printWayPointArrow(path_[current_waypoint_index_].pose, path_[path_.size()-1].pose);
 
            // --- ★ここから修正版：RVizに表示するためのMarker publish ---
