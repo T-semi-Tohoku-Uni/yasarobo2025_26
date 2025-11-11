@@ -217,7 +217,10 @@ class FollowNode: public rclcpp::Node {
             double roll, pitch, yaw;
             tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
 
-            
+            double theta_error = yaw - pose_.theta;
+            while (theta_error > M_PI) theta_error -= 2*M_PI;
+            while (theta_error < -M_PI) theta_error += 2*M_PI;
+
             tf2::Quaternion q_goal(
                 path_[path_.size() - 1].pose.orientation.x,
                 path_[path_.size() - 1].pose.orientation.y,
@@ -266,16 +269,16 @@ class FollowNode: public rclcpp::Node {
             // --- ★ここまで修正版 ---
 
 
-
+            
 
         
-            if (max_linear_tolerance > linear_error){  // && max_theta_tolerance > std::abs(theta_error)) { 
+            if ((max_linear_tolerance > linear_error)){  //&& max_reaching_theta > std::abs(theta_error)) { 
                 if (current_waypoint_index_ < (int)path_.size() -1){
                     //move to next waypoint
                     current_waypoint_index_ = current_waypoint_index_ + x_;
                 } 
 
-                if (linear_goal_distance < max_reaching_distance){ //&& theta_goal < max_reaching_theta) {
+                if ((linear_goal_distance < max_reaching_distance) && theta_goal < max_reaching_theta) {
                     //goal reached
                     RCLCPP_INFO(this->get_logger(), "Goal reached.");
                     publishZero();
