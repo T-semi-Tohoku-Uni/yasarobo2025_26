@@ -46,7 +46,6 @@ namespace path {
                                   .reliable()
                                   .transient_local();
                 pubPath_ = create_publisher<nav_msgs::msg::Path>("route", pathQos);
-                pubSamplePath_ = create_publisher<nav_msgs::msg::Path>("test_route", test_pathQos);
 
                 rclcpp::QoS markerQos = rclcpp::QoS(rclcpp::KeepLast(10))
                                   .reliable()
@@ -156,7 +155,9 @@ namespace path {
                 pose.pose.position.x = pv.x();
                 pose.pose.position.y = pv.y();
                 pose.pose.position.z = 0;
-                pose.pose.orientation.w = 1.0;
+
+                int idx = std::round(t * (N - 1));
+                pose.pose.orientation = input.poses[idx].pose.orientation;
 
                 smooth.poses.push_back(pose);
             }
@@ -235,7 +236,14 @@ namespace path {
                 pose.pose.position.x = (u + 0.5) * mapResolution_;
                 pose.pose.position.y = (static_cast<double>(mapHeight_ - v - 1) + 0.5) * mapResolution_;
                 pose.pose.position.z = 0.0;
-                pose.pose.orientation.w = 1.0;
+                
+                tf2::Quaternion q;
+                if (i+30 > path.size()) {
+                    q.setRPY(0, 0, goalOdom_.theta);
+                } else {
+                    q.setRPY(0, 0, curOdom_.theta);
+                }
+                pose.pose.orientation = tf2::toMsg(q);
 
                 sampled_path.poses.push_back(std::move(pose));
             }
@@ -247,51 +255,27 @@ namespace path {
                 pose.pose.position.x = (u + 0.5) * mapResolution_;
                 pose.pose.position.y = (static_cast<double>(mapHeight_ - v - 1) + 0.5) * mapResolution_;
                 pose.pose.position.z = 0.0;
-                pose.pose.orientation.w = 1.0;
+
+                tf2::Quaternion q;
+                q.setRPY(0, 0, goalOdom_.theta);
+                pose.pose.orientation = tf2::toMsg(q);
+
                 sampled_path.poses.push_back(std::move(pose));
             }
-            /*サンプリングしたパスの点を配信*/
-            pubSamplePath_->publish(sampled_path); 
 
             /*スプライン補間したパスを配信*/
             auto smoothed_path = splineSmoothEigen(sampled_path);
             pubPath_->publish(smoothed_path);
 
-
-            nav_msgs::msg::Path pathMsg;
-            pathMsg.header.frame_id = "map";
-            pathMsg.header.stamp    = this->now();
-
-            for (size_t i=0; i<path.size(); i++) {
-                int gr = path[i].first;
-                int gc = path[i].second;
-
-                geometry_msgs::msg::PoseStamped pose;
-                pose.header = pathMsg.header;
-
-                pose.pose.position.x = (gr + 0.5) * mapResolution_;
-                pose.pose.position.y = (static_cast<double>(mapHeight_ - gc - 1) + 0.5) * mapResolution_;
-                pose.pose.position.z = 0.0;
-
-                tf2::Quaternion q;
-                if (i+30 > path.size()) {
-                    q.setRPY(0, 0, goalOdom_.theta);
-                } else {
-                    q.setRPY(0, 0, curOdom_.theta);
-                }
-                pose.pose.orientation = tf2::toMsg(q);
-                pathMsg.poses.push_back(pose);
-            }
-
             visualization_msgs::msg::MarkerArray markerArray;
-            for (size_t i=0; i<pathMsg.poses.size(); i+=10) {
+            for (size_t i=0; i<smoothed_path.poses.size(); i+=10) {
                 visualization_msgs::msg::Marker arrow;
-                arrow.header = pathMsg.header;
+                arrow.header = smoothed_path.header;
                 arrow.ns = "path_orientations";
                 arrow.id = static_cast<int>(i);
                 arrow.type = visualization_msgs::msg::Marker::ARROW;
                 arrow.action = visualization_msgs::msg::Marker::ADD;
-                arrow.pose = pathMsg.poses[i].pose;
+                arrow.pose = smoothed_path.poses[i].pose;
                 arrow.scale.x = 0.05;  // 矢印の長さ
                 arrow.scale.y = 0.01; // 矢印の太さ
                 arrow.scale.z = 0.01; // 矢印の頭のサイズ
@@ -304,8 +288,6 @@ namespace path {
                 markerArray.markers.push_back(arrow);
             }
             
-            //pubPath_->publish(pathMsg);
-            pubPath_->publish(pathMsg);
             pubMarker_->publish(markerArray);
         }
 
@@ -397,7 +379,6 @@ namespace path {
         cv::Mat mapImg_;
         cv::Mat distField_;
         rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pubPath_;
-        rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pubSamplePath_;        
         rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pubMarker_;
         rclcpp::Subscription<geometry_msgs::msg::Pose2D>::SharedPtr subOdom_;
         geometry_msgs::msg::Pose2D curOdom_;
