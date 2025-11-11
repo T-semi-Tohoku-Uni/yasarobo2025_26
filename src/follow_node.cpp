@@ -12,6 +12,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2/LinearMath/Quaternion.h>
 #include "visualization_msgs/msg/marker.hpp"
+#include <functional>
 
 using namespace std::chrono_literals; 
 
@@ -26,11 +27,14 @@ typedef struct MotorVel {
 class PIDController {
     public:
         PIDController() = default;
-        PIDController(double Kp, double Ki, double Kd, double dt)
-        : Kp_(Kp), Ki_(Ki), Kd_(Kd), prev_error_(0.0), integral_(0.0), dt_(dt) {}
+        PIDController(double Kp, double Ki, double Kd, double dt, std::function<double(double)> normalize_func = nullptr)
+        : Kp_(Kp), Ki_(Ki), Kd_(Kd), prev_error_(0.0), integral_(0.0), dt_(dt), normalize_func_(normalize_func) {}
 
         double compute(double setpoint, double measured_value) {
             double error = setpoint - measured_value;
+            if (normalize_func_) {
+                error = normalize_func_(error);
+            }
             integral_ += error * dt_;
             double derivative = (error - prev_error_) / dt_;
             prev_error_ = error;
@@ -44,6 +48,7 @@ class PIDController {
         double dt_;
         double prev_error_;
         double integral_;
+        std::function<double(double)> normalize_func_;
 };
 
 
@@ -66,6 +71,7 @@ class FollowNode: public rclcpp::Node {
             this->declare_parameter<double>("max_reaching_distance", 0.02);
             this->declare_parameter<double>("max_theta_tolerance", 0.3);
             this->declare_parameter<double>("max_reaching_theta", 0.1);
+            this->declare_parameter<int>("x", 2);
             this->get_parameter("lookahead_distance", lookahead_distance_);
             this->get_parameter("max_linear_speed", max_linear_speed_);
             this->get_parameter("max_theta_speed", max_theta_speed_);
@@ -79,12 +85,17 @@ class FollowNode: public rclcpp::Node {
             this->get_parameter("max_reaching_distance", max_reaching_distance);
             this->get_parameter("max_theta_tolerance", max_theta_tolerance);
             this->get_parameter("max_reaching_theta", max_reaching_theta);
+            this->get_parameter("x", x_);
 
 
 
             linear_PID_x_ = PIDController(Kp_linear, Ki_linear, Kd_linear, dt);
             linear_PID_y_ = PIDController(Kp_linear, Ki_linear, Kd_linear, dt);
-            omega_PID_ = PIDController(Kp_theta, Ki_theta, Kd_theta, dt);
+            omega_PID_ = PIDController(Kp_theta, Ki_theta, Kd_theta, dt, [](double e){
+                while (e > M_PI) e -= 2*M_PI;
+                while (e < -M_PI) e += 2*M_PI;
+                return e;
+            });
 
 
 
@@ -206,7 +217,10 @@ class FollowNode: public rclcpp::Node {
             double roll, pitch, yaw;
             tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
 
-            
+            double theta_error = yaw - pose_.theta;
+            while (theta_error > M_PI) theta_error -= 2*M_PI;
+            while (theta_error < -M_PI) theta_error += 2*M_PI;
+
             tf2::Quaternion q_goal(
                 path_[path_.size() - 1].pose.orientation.x,
                 path_[path_.size() - 1].pose.orientation.y,
@@ -221,11 +235,6 @@ class FollowNode: public rclcpp::Node {
 
             //error calculation theta
             double target_theta = yaw;
-            double theta_error = target_theta - pose_.theta;
-            //normalize angle to [-pi, pi]
-            while (theta_error > M_PI) theta_error -= 2*M_PI;
-            while (theta_error < -M_PI) theta_error += 2*M_PI;
-        
             printWayPointArrow(path_[current_waypoint_index_].pose, path_[path_.size()-1].pose);
 
            // --- ★ここから修正版：RVizに表示するためのMarker publish ---
@@ -260,16 +269,16 @@ class FollowNode: public rclcpp::Node {
             // --- ★ここまで修正版 ---
 
 
-
+            
 
         
-            if (max_linear_tolerance > linear_error){  // && max_theta_tolerance > std::abs(theta_error)) { 
+            if ((max_linear_tolerance > linear_error)){  //&& max_reaching_theta > std::abs(theta_error)) { 
                 if (current_waypoint_index_ < (int)path_.size() -1){
                     //move to next waypoint
-                    current_waypoint_index_++;
+                    current_waypoint_index_ = current_waypoint_index_ + x_;
                 } 
 
-                if (linear_goal_distance < max_reaching_distance){ //&& theta_goal < max_reaching_theta) {
+                if ((linear_goal_distance < max_reaching_distance) && theta_goal < max_reaching_theta) {
                     //goal reached
                     RCLCPP_INFO(this->get_logger(), "Goal reached.");
                     publishZero();
@@ -511,6 +520,7 @@ class FollowNode: public rclcpp::Node {
 
         // waypoint index
         int current_waypoint_index_;    
+        int x_;
         
         // rotate action server
         rclcpp_action::Server<inrof2025_ros_type::action::Rotate>::SharedPtr action_rotate_server_;
