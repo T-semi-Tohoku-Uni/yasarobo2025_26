@@ -71,6 +71,7 @@ class FollowNode: public rclcpp::Node {
             this->declare_parameter<double>("max_reaching_distance", 0.02);
             this->declare_parameter<double>("max_theta_tolerance", 0.3);
             this->declare_parameter<double>("max_reaching_theta", 0.1);
+            this->declare_parameter<int>("x", 2);
             this->get_parameter("lookahead_distance", lookahead_distance_);
             this->get_parameter("max_linear_speed", max_linear_speed_);
             this->get_parameter("max_theta_speed", max_theta_speed_);
@@ -84,6 +85,7 @@ class FollowNode: public rclcpp::Node {
             this->get_parameter("max_reaching_distance", max_reaching_distance);
             this->get_parameter("max_theta_tolerance", max_theta_tolerance);
             this->get_parameter("max_reaching_theta", max_reaching_theta);
+            this->get_parameter("x", x_);
 
 
 
@@ -270,7 +272,7 @@ class FollowNode: public rclcpp::Node {
             if (max_linear_tolerance > linear_error){  // && max_theta_tolerance > std::abs(theta_error)) { 
                 if (current_waypoint_index_ < (int)path_.size() -1){
                     //move to next waypoint
-                    current_waypoint_index_++;
+                    current_waypoint_index_ = current_waypoint_index_ + x_;
                 } 
 
                 if (linear_goal_distance < max_reaching_distance){ //&& theta_goal < max_reaching_theta) {
@@ -515,6 +517,7 @@ class FollowNode: public rclcpp::Node {
 
         // waypoint index
         int current_waypoint_index_;    
+        int x_;
         
         // rotate action server
         rclcpp_action::Server<inrof2025_ros_type::action::Rotate>::SharedPtr action_rotate_server_;

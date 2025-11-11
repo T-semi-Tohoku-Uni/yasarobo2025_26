@@ -206,7 +206,8 @@ def generate_launch_description():
             "Kd_linear": 0.00,
             "Kp_angular": 1.00,
             "Ki_angular": 0.00,
-            "Kd_angular": 0.00
+            "Kd_angular": 0.00,
+            "x":2
         }]
     )
 
