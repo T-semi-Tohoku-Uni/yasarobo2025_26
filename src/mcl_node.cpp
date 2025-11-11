@@ -48,21 +48,20 @@ namespace yasarobo2025_26 {
         mapWidth_ = mapImg_.cols;
         mapHeight_ = mapImg_.rows;
 
-        cv::Mat mapImg = mapImg_.clone();
         for (int v = 0; v < mapHeight_; v++ ) {
             for (int u = 0; u < mapWidth_; u++ ) {
-                uchar val = mapImg.at<uchar>(v, u);
-                if (val == 0) {
-                    mapImg.at<uchar>(v, u) = 0;
+                uchar val = mapImg_.at<uchar>(v, u);
+                if (val >= 239) {
+                    mapImg_.at<uchar>(v, u) = 1;
                 } else {
-                    mapImg.at<uchar>(v, u) = 1;
+                    mapImg_.at<uchar>(v, u) = 0;
                 }
             }
         }
 
         cv::Mat distFieldF(mapHeight_, mapWidth_, CV_32FC1);
         cv::Mat distFieldD(mapHeight_, mapWidth_, CV_64FC1);
-        cv::distanceTransform(mapImg, distFieldF, cv::DIST_L2, 5);
+        cv::distanceTransform(mapImg_, distFieldF, cv::DIST_L2, 5);
 
         for (int v = 0; v < mapHeight_; v++ ) {
             for (int u = 0; u < mapWidth_; u++ ) {
