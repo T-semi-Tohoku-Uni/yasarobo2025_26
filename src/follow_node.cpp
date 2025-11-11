@@ -273,10 +273,12 @@ class FollowNode: public rclcpp::Node {
 
         
             if ((max_linear_tolerance > linear_error)){  //&& max_reaching_theta > std::abs(theta_error)) { 
-                if (current_waypoint_index_ < (int)path_.size() -1){
+                if (current_waypoint_index_+x_ < (int)path_.size() -1){
                     //move to next waypoint
                     current_waypoint_index_ = current_waypoint_index_ + x_;
-                } 
+                } else if (current_waypoint_index_ < static_cast<int>(path_.size() - 1)) {
+                    current_waypoint_index_ = static_cast<int>(path_.size() - 1);
+                }
 
                 if ((linear_goal_distance < max_reaching_distance) && theta_goal < max_reaching_theta) {
                     //goal reached
