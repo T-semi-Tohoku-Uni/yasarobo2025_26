@@ -21,11 +21,13 @@ namespace path {
                 this->declare_parameter<std::float_t>("initial_y", 0.25);
                 this->declare_parameter<std::float_t>("initial_theta", M_PI/2);
                 this->declare_parameter<std::float_t>("sample_parameter",5.0);
+                this->declare_parameter<std::float_t>("robot_radius", 0.1);
 
                 double initial_x = this->get_parameter("initial_x").as_double();
                 double initial_y = this->get_parameter("initial_y").as_double();
                 double initial_theta = this->get_parameter("initial_theta").as_double();
                 sample_parameter_ = this->get_parameter("sample_parameter").as_double();
+                robot_radius_ = this->get_parameter("robot_radius").as_double();
 
                 this->curOdom_.x = initial_x;
                 this->curOdom_.y = initial_y;
@@ -390,6 +392,7 @@ namespace path {
             { 1,  1}    // 右下      (south-east)
         }};
         double sample_parameter_;
+        std::double_t robot_radius_;
         std::string mapDir_;
         std::double_t mapResolution_;
         std::int32_t mapWidth_, mapHeight_;
