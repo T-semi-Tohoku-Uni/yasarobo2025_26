@@ -91,7 +91,8 @@ namespace mcl {
                 this->declare_parameter<std::double_t>("zMax", 0.0);
                 this->declare_parameter<std::double_t>("zRand", 1.0);
                 this->declare_parameter<std::double_t>("unknownLambda",0.1);
-                
+                this->declare_parameter<std::double_t>("obstacleThreshold", 0.8); // デフォルトの閾値を 0.8 に設定
+
                 particleNum_ = this->get_parameter("particleNum").as_int();
                 double initial_x = this->get_parameter("initial_x").as_double();
                 double initial_y = this->get_parameter("initial_y").as_double();
@@ -109,6 +110,7 @@ namespace mcl {
                 this->zMax_ = this->get_parameter("zMax").as_double();
                 this->zRand_ = this->get_parameter("zRand").as_double();
                 this->unknownLambda_ = this->get_parameter("unknownLambda").as_double();
+                this->obstacleThreshold_ = this->get_parameter("obstacleThreshold").as_double();
 
                 particles_.resize(particleNum_);
 
@@ -151,6 +153,7 @@ namespace mcl {
                     "/cmd_vel_feedback", cmdVelQos, std::bind(&MCL::cmdVelCallback, this, std::placeholders::_1)
                 );
                 auto laserScanQos = rclcpp::SensorDataQoS();
+                filteredScanPub_ = this->create_publisher<sensor_msgs::msg::LaserScan>("/filtered_scan", laserScanQos);
                 subLayerScan_ = create_subscription<sensor_msgs::msg::LaserScan>(
                     "/ldlidar_node/scan", laserScanQos, std::bind(&MCL::laserScanCallback, this, std::placeholders::_1)
                 );
@@ -290,6 +293,7 @@ namespace mcl {
                 resampleParticles();//パーティクルの偏りを見る
                 printTrajectoryOnRviz2();
                 printObstaclesParticlesOnRviz2(*scan_);
+                publishFilteredScan(*scan_);
             }
 
             //パーティクルを再度配置する
@@ -636,14 +640,42 @@ namespace mcl {
                 sensor_msgs::PointCloud2Iterator<uint8_t>  iter_b(obstaclesCloud_, "b");
 
                 int i = 0;
+                
+                // 基準となるロボットのポーズ (最終推定値)
+                geometry_msgs::msg::Pose2D estimated_pose = mclPose_;
 
                 for (const Obstaclespointclowd &o: obstacles_) {
-                    std::double_t angle = scan.angle_min + ((std::double_t)(i))*scan.angle_increment +  particles_[maxLikelihoodParticleIdx_].getTheta();
                     std::double_t range = scan.ranges[i];
-                    *iter_x = mclPose_.x + range * cos(angle);
-                    *iter_y = mclPose_.y + range * sin(angle);
-                    *iter_z = 0;
 
+                    // 無効なスキャン値のチェック
+                    if (std::isnan(range) || range < scan.range_min || range > scan.range_max) {
+                        *iter_x = 0; // 無効な点は原点にでも置く
+                        *iter_y = 0;
+                        *iter_z = 0;
+                    } else {
+                        // 1. LIDARセンサー座標系での角度を計算
+                        std::double_t theta_lidar;
+                        if (is_sim_) {
+                            theta_lidar = scan.angle_min + ((std::double_t)(i))*scan.angle_increment;
+                        } else {
+                            // caculateLikelihoodFieldModelと同じ補正を適用
+                            theta_lidar = scan.angle_min + ((std::double_t)(i))*scan.angle_increment - 3.0*M_PI/2.0;
+                        }
+
+                        // 2. lidarpose2uv を使って、LIDARオフセットとロボットポーズを考慮した
+                        //    map座標系での X, Y を計算する
+                        double x_world, y_world;
+                        int u_map, v_map; // ピクセル座標 (ここでは使わない)
+                        
+                        lidarpose2uv(range, theta_lidar, estimated_pose, &x_world, &y_world, &u_map, &v_map);
+
+                        // 3. 計算された正しいmap座標をポイントクラウドに設定
+                        *iter_x = x_world;
+                        *iter_y = y_world;
+                        *iter_z = 0; // Zは0
+                    }
+
+                    // 障害物らしさ (Weight) に基づいて色を決定
                     *iter_r = 0;
                     *iter_g = int(o.getobstaclesW()*255);
                     *iter_b = 0;
@@ -651,13 +683,16 @@ namespace mcl {
                     ++iter_x, ++iter_y, ++iter_z;
                     ++iter_r; ++iter_g; ++iter_b;
                     ++i;
-                    std::uint8_t w = int(o.getobstaclesW()*255);
-                    RCLCPP_INFO(this->get_logger(),"%d",w);
+                    
+                    // ↓ このログはデバッグ中にコンソールを埋め尽くす可能性があるので注意
+                    // std::uint8_t w = int(o.getobstaclesW()*255);
+                    // RCLCPP_INFO(this->get_logger(),"%d",w);
                 }
 
                 obstaclesParticleMarker_->publish(obstaclesCloud_);
 
             }
+
 
             void printParticlesMakerOnRviz2() {
                 sensor_msgs::msg::PointCloud2 cloud_;
@@ -714,6 +749,53 @@ namespace mcl {
                 pubPath_->publish(path_);
             }
 
+            //フィルタリングした後のデータを送る
+            void publishFilteredScan(sensor_msgs::msg::LaserScan scan) {
+                
+                // 1. 新しいLaserScanメッセージ(のユニークポインタ)を作成
+                auto filtered_scan = std::make_unique<sensor_msgs::msg::LaserScan>();
+
+                // 2. 元スキャンのメタデータをすべてコピー
+                // (header, 角度, 時間, 範囲の最小/最大)
+                filtered_scan->header = scan.header;
+                filtered_scan->angle_min = scan.angle_min;
+                filtered_scan->angle_max = scan.angle_max;
+                filtered_scan->angle_increment = scan.angle_increment;
+                filtered_scan->time_increment = scan.time_increment;
+                filtered_scan->scan_time = scan.scan_time;
+                filtered_scan->range_min = scan.range_min;
+                filtered_scan->range_max = scan.range_max;
+
+                // 3. ranges 配列のサイズを元スキャンに合わせる
+                filtered_scan->ranges.resize(scan.ranges.size());
+
+                // 4. 全ての障害物確率をチェック
+                for (std::size_t i = 0; i < obstacles_.size(); ++i) {
+                    
+                    const std::double_t original_range = scan.ranges[i];
+
+                    // チェック1: 元のレンジが有効か？
+                    bool is_valid_range = !std::isnan(original_range) && 
+                                           original_range >= scan.range_min && 
+                                           original_range <= scan.range_max;
+                    
+                    // チェック2: 障害物としての閾値を超えているか？
+                    bool is_obstacle = obstacles_[i].getobstaclesW() > obstacleThreshold_;
+
+                    // 有効なレンジで、かつ障害物閾値を超えている点のみ、元の距離をコピー
+                    if (is_valid_range && is_obstacle) {
+                        filtered_scan->ranges[i] = original_range;
+                    } 
+                    // それ以外の点（障害物でない、または元々無効な点）は無効値にする
+                    else {
+                        filtered_scan->ranges[i] = std::numeric_limits<double>::infinity();
+                    }
+                }
+
+                // 5. フィルタリングされたLaserScanメッセージをパブリッシュ
+                filteredScanPub_->publish(std::move(filtered_scan));
+            }
+
 
 
 
@@ -739,6 +821,10 @@ namespace mcl {
             std::vector<Obstaclespointclowd> obstacles_;
             rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr obstaclesParticleMarker_;
             std::double_t unknownLambda_;
+
+            // フィルタリングした後のlidardata
+            rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr filteredScanPub_;
+            std::double_t obstacleThreshold_;
 
 
             // likelihood
