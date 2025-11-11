@@ -192,6 +192,7 @@ def generate_launch_description():
             "Kp_linear": 1.0,
             "Ki_linear": 0.01,
             "Kd_linear": 0.0,
+            "x":1
         },
         ],
         remappings=[('clock', '/world/yasarobo/clock')],
