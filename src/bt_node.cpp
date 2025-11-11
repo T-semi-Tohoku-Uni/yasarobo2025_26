@@ -61,7 +61,19 @@ namespace ActionNodes {
         request->y = y;
         request->theta = theta;
 
-        srvGenRoute_->async_send_request(request);
+        auto result_future = srvGenRoute_->async_send_request(request);
+
+        if (rclcpp::spin_until_future_complete(
+            this->get_node_base_interface(),
+            result_future,
+            std::chrono::seconds(1)
+        ) == rclcpp::FutureReturnCode::SUCCESS) {
+            RCLCPP_INFO(this->get_logger(), "BTNode::send_pose completed");
+            return;
+        } else {
+            RCLCPP_INFO(this->get_logger(), "BTNode::send_pose Failed");
+            return;
+        }
     }
 
     bool BTNode::isRuning() {
@@ -86,6 +98,7 @@ namespace ActionNodes {
             auto response = result_future.get();
             *x = response->x;
             *y = response->y;
+            RCLCPP_INFO(this->get_logger(), "BTNode::ball_detect completed");
             return response->detect;
         } else {
             RCLCPP_WARN(this->get_logger(), "spin until future is fail");
