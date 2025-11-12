@@ -71,6 +71,11 @@ namespace yasarobo2025_26 {
         }
 
         distance_field_ = distFieldD.clone();
+
+        win_u_max = 60;
+        win_u_max = 60 + 28 + 1;
+        win_v_min = 90;
+        win_v_max = 90 + 90;
     }
 
     double Field::getMapResolution() {
@@ -82,8 +87,55 @@ namespace yasarobo2025_26 {
         v = mapHeight_ - 1 - (std::int32_t)(y / mapResolution_);
     }
 
-    double Field::getWallDistance(int u, int v) {
-        return static_cast<double>(distance_field_.at<double>(v, u));
+    bool Field::isOnField(int u, int v) {
+        if (u < 0 || v < 0 || u >= mapWidth_ || v >= mapHeight_) return false;
+        if (mapImg_.at<uchar>(v, u) == 0) return false;
+        // return true;
+        return true;
+    }
+
+    int Field::computeOutCode(int u, int v) {
+        int code = 0;
+        if (v > win_v_max) code |= 8;
+        if (v < win_v_min) code |= 4;
+        if (u > win_u_max) code |= 2;
+        if (u < win_u_min) code |= 1;
+        return code;
+    }
+
+    double Field::getWallDistance(int u_pose, int v_pose, int u_layser, int v_layser) {
+        int code1 = Field::computeOutCode(u_pose, v_pose);
+        int code2 = Field::computeOutCode(u_layser, v_layser);
+
+        if ((code1 | code2) == 0) return static_cast<double>(distance_field_.at<double>(v_layser, u_layser)); // 内部
+        if (code1 & code2) return static_cast<double>(distance_field_.at<double>(v_layser, u_layser));  // 交わっていない
+
+        double x_pose = static_cast<double>(u_pose);
+        double y_pose = static_cast<double>(v_pose);
+        double x_layser = static_cast<double>(u_layser);
+        double y_layser = static_cast<double>(v_layser);
+
+        double x_min = static_cast<double>(win_u_min);
+        double x_max = static_cast<double>(win_u_max);
+        double y_min = static_cast<double>(win_v_min);
+        double y_max = static_cast<double>(win_v_max);
+        
+        // 交わっている場合
+        if (code1 & 0b1000) { // x top
+            x_pose = x_pose + ((x_layser-x_pose)/(y_layser-y_pose))*(y_max-y_pose);
+            y_pose = y_max;
+        } else if (code1 & 0b0100) { // x bottom
+            x_pose = x_pose + ((x_layser-x_pose)/(y_layser-y_pose))*(y_min-y_pose);
+            y_pose = y_min;
+        } else if (code1 & 0b0010) { // y top
+            y_pose = y_pose + ((y_layser-y_pose)/(x_layser-x_pose))*(x_max-x_pose);
+            x_pose = x_max;
+        } else if (code1 & 0b0001) { // y bottom
+            y_pose = y_pose + ((y_layser-y_pose)/(x_layser-x_pose))*(x_min-x_pose);
+            x_pose = x_min;
+        }
+
+        return std::hypot(x_pose-x_layser, y_pose-y_layser)*mapResolution_;
     }
 }
 
@@ -291,11 +343,14 @@ namespace yasarobo2025_26 {
             double x = x_lidar*cos(robot_theta) - y_lidar*sin(robot_theta) + particle_pose.pose.position.x;
             double y = x_lidar*sin(robot_theta) + y_lidar*cos(robot_theta) + particle_pose.pose.position.y;
 
-            int u, v;
-            field_.xy2uv(x, y, u, v);
+            int u_layser, v_layser;
+            field_.xy2uv(x, y, u_layser, v_layser);
 
-            if (0 <= u && u < field_.mapWidth_ && 0 <= v && v < field_.mapHeight_) {
-                double d = field_.getWallDistance(u, v);
+            int u_pose, v_pose;
+            field_.xy2uv(mcl_pose_.pose.position.x, mcl_pose_.pose.position.y, u_pose, v_pose);
+
+            if (field_.isOnField(u_layser, v_layser)) {
+                double d = field_.getWallDistance(u_pose, v_pose, u_layser, v_layser);
                 double p_hit = normConst * exp(-(d*d)/(2.0*var))*field_.mapResolution_;
                 double p = z_hit_*p_hit + z_rand_*p_rand;
                 if (p > 1.0) p = 1.0;

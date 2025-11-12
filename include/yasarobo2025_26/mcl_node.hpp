@@ -32,12 +32,21 @@ namespace yasarobo2025_26 {
             Field(std::string map_dir);
             double getMapResolution();
             void xy2uv(double x, double y, int& u, int& v);
-            double getWallDistance(int u, int v);
+            double getWallDistance(int u_pose, int v_pose, int u_layser, int v_layser);
+            bool isOnField(int u, int v);
             double mapHeight_, mapWidth_;
             double mapResolution_;
         private:
             cv::Mat mapImg_;
             cv::Mat distance_field_;
+
+            int win_u_min, win_u_max, win_v_min, win_v_max;
+            // const int INSIDE = 0b0000;
+            // const int LEFT   = 0b0001;
+            // const int RIGHT  = 0b0010;
+            // const int BOTTOM = 0b0100;
+            // const int TOP    = 0b1000;
+            int computeOutCode(int u, int v);
     };
 }
 
