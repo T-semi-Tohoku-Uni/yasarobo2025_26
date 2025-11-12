@@ -72,7 +72,7 @@ namespace yasarobo2025_26 {
 
         distance_field_ = distFieldD.clone();
 
-        win_u_max = 60;
+        win_u_min = 60;
         win_u_max = 60 + 28 + 1;
         win_v_min = 90;
         win_v_max = 90 + 90;
@@ -347,7 +347,7 @@ namespace yasarobo2025_26 {
             field_.xy2uv(x, y, u_layser, v_layser);
 
             int u_pose, v_pose;
-            field_.xy2uv(mcl_pose_.pose.position.x, mcl_pose_.pose.position.y, u_pose, v_pose);
+            field_.xy2uv(particle_pose.pose.position.x, particle_pose.pose.position.y, u_pose, v_pose);
 
             if (field_.isOnField(u_layser, v_layser)) {
                 double d = field_.getWallDistance(u_pose, v_pose, u_layser, v_layser);
