@@ -153,7 +153,7 @@ namespace yasarobo2025_26 {
         this->declare_parameter<std::float_t>("odomNoise4", 1.0);
         this->declare_parameter<std::double_t>("lfmSigma", 0.03);
         this->declare_parameter<std::string>("mapDir", "src/yasarobo2025_26/map/");
-        this->declare_parameter<std::int32_t>("scanStep", 50);
+        this->declare_parameter<std::int32_t>("scanStep", 5);
         this->declare_parameter<std::double_t>("zRand", 1.0);
         this->declare_parameter<std::double_t>("zHit", 1.0);
         this->declare_parameter<std::float_t>("resampleThreshold", 0.5);
