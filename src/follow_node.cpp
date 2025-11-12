@@ -232,6 +232,8 @@ class FollowNode: public rclcpp::Node {
             tf2::Matrix3x3(q_goal).getRPY(roll_goal, pitch_goal, yaw_goal);
 
             double theta_goal = yaw_goal - pose_.theta;
+            while (theta_goal >= M_2_PI) theta_goal -= M_2_PI;
+            while (theta_goal < 0) theta_goal += M_2_PI;
 
             //error calculation theta
             double target_theta = yaw;
