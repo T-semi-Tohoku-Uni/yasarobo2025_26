@@ -4,7 +4,6 @@
 #include <termios.h>
 #include <error.h>
 #include <geometry_msgs/msg/twist.hpp>
-#include <geometry_msgs/msg/vector3.hpp>
 #include <std_msgs/msg/bool.hpp>
 
 namespace raspi {
@@ -34,7 +33,6 @@ namespace raspi {
                 r_ = 0.14;
                 auto feedbackQ = rclcpp::QoS(rclcpp::KeepLast(10));
                 pub_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel_feedback", feedbackQ);
-                pub_vel_ = this->create_publisher<geometry_msgs::msg::Vector3>("/vel_motor", 10);
                 receive_timer_ = this->create_wall_timer(
                     std::chrono::microseconds(10), std::bind(&CmdVel::receive_vel_callback, this)
                 );
@@ -153,12 +151,6 @@ namespace raspi {
                 u32_bytes[0].value = motor_vel.v1;
                 u32_bytes[1].value = motor_vel.v2;
                 u32_bytes[2].value = motor_vel.v3;
-
-                geometry_msgs::msg::Vector3 vel_motor;
-                vel_motor.x = motor_vel.v1;
-                vel_motor.y = motor_vel.v2;
-                vel_motor.z = motor_vel.v3;
-                pub_vel_->publish(vel_motor);
 
                 for (int i=0; i<3; i++ ) {
                     std::memcpy(
@@ -316,7 +308,6 @@ namespace raspi {
             double dt;
             std::vector<uint8_t> recev_buffer_;
             rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_;
-            rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr pub_vel_;
             rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_;
             rclcpp::TimerBase::SharedPtr receive_timer_;
             rclcpp::TimerBase::SharedPtr control_timer_;
