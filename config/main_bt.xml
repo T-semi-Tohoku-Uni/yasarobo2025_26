@@ -23,6 +23,10 @@
             <ball_detect x="{x}"
                          y="{y}"/>
             <Sequence>
+              <generate_route x="1.34"
+                              y="2.0"
+                              theta="-4.188"/>
+              <follow_route/>
               <vacume_on on="1"/>
               <ball_path x="{x}"
                          y="{y}"/>
