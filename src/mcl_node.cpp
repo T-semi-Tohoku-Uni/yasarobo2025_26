@@ -484,58 +484,13 @@ namespace mcl {
                     }
 
                     double x_odom, y_odom;
-                    int u_layser, v_layser;
-                    lidarpose2uv(r, theta_lidar, pose, &x_odom, &y_odom, &u_layser, &v_layser);
-
-                    int u_pose, v_pose;
-                    xy2uv(mclPose_.x, mclPose_.y, &u_pose, &v_pose);
+                    int u, v;
+                    lidarpose2uv(r, theta_lidar, pose, &x_odom, &y_odom, &u, &v);
 
                     // TODO: isInMap
-                    if (0 <= u_layser && u_layser < mapWidth_ && 0 <= v_layser && v_layser < mapHeight_) {
-                        std::double_t d = (std::double_t)distField_.at<std::double_t>(v_layser, u_layser);
-                        // いつかリファクタリングする
-                        int win_u_min = 60;
-                        int win_u_max = 60 + 28 + 1;
-                        int win_v_min = 90;
-                        int win_v_max = 90 + 90;
-
-                        int code1 = computeOutCode(u_pose, v_pose);
-                        int code2 = computeOutCode(u_layser, v_layser);
-
-                        if ((code1 | code2) == 0) {}// 内部
-                        if (code1 & code2) {}  // 交わっていない
-                        else {
-                            double x_pose = static_cast<double>(u_pose);
-                            double y_pose = static_cast<double>(v_pose);
-                            double x_layser = static_cast<double>(u_layser);
-                            double y_layser = static_cast<double>(v_layser);
-
-                            double x_min = static_cast<double>(win_u_min);
-                            double x_max = static_cast<double>(win_u_max);
-                            double y_min = static_cast<double>(win_v_min);
-                            double y_max = static_cast<double>(win_v_max);
-
-                            // 交わっている場合
-                            if (code1 & 0b1000) { // x top
-                                x_pose = x_pose + ((x_layser-x_pose)/(y_layser-y_pose))*(y_max-y_pose);
-                                y_pose = y_max;
-                            } else if (code1 & 0b0100) { // x bottom
-                                x_pose = x_pose + ((x_layser-x_pose)/(y_layser-y_pose))*(y_min-y_pose);
-                                y_pose = y_min;
-                            } else if (code1 & 0b0010) { // y top
-                                y_pose = y_pose + ((y_layser-y_pose)/(x_layser-x_pose))*(x_max-x_pose);
-                                x_pose = x_max;
-                            } else if (code1 & 0b0001) { // y bottom
-                                y_pose = y_pose + ((y_layser-y_pose)/(x_layser-x_pose))*(x_min-x_pose);
-                                x_pose = x_min;
-                            }
-
-                            d = std::hypot(x_pose-x_layser, y_pose-y_layser)*mapResolution_;
-                        }
-
-                        
-
+                    if (0 <= u && u < mapWidth_ && 0 <= v && v < mapHeight_) {
                         // TODO: 尤度場モデルからdをもってくる
+                        std::double_t d = (std::double_t)distField_.at<std::double_t>(v, u);
                         std::double_t pHit = normConst * exp(-(d*d)/(2.0*var))*mapResolution_; // 確率密度 <=> 確率の変換は要注意
                         std::double_t p = zHit_*pHit + zRand_*pRand;
 
