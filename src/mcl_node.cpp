@@ -104,38 +104,39 @@ namespace yasarobo2025_26 {
     }
 
     double Field::getWallDistance(int u_pose, int v_pose, int u_layser, int v_layser) {
-        int code1 = Field::computeOutCode(u_pose, v_pose);
-        int code2 = Field::computeOutCode(u_layser, v_layser);
+        return static_cast<double>(distance_field_.at<double>(v_layser, u_layser));
+        // int code1 = Field::computeOutCode(u_pose, v_pose);
+        // int code2 = Field::computeOutCode(u_layser, v_layser);
 
-        if ((code1 | code2) == 0) return static_cast<double>(distance_field_.at<double>(v_layser, u_layser)); // 内部
-        if (code1 & code2) return static_cast<double>(distance_field_.at<double>(v_layser, u_layser));  // 交わっていない
+        // if ((code1 | code2) == 0) return static_cast<double>(distance_field_.at<double>(v_layser, u_layser)); // 内部
+        // if (code1 & code2) return static_cast<double>(distance_field_.at<double>(v_layser, u_layser));  // 交わっていない
 
-        double x_pose = static_cast<double>(u_pose);
-        double y_pose = static_cast<double>(v_pose);
-        double x_layser = static_cast<double>(u_layser);
-        double y_layser = static_cast<double>(v_layser);
+        // double x_pose = static_cast<double>(u_pose);
+        // double y_pose = static_cast<double>(v_pose);
+        // double x_layser = static_cast<double>(u_layser);
+        // double y_layser = static_cast<double>(v_layser);
 
-        double x_min = static_cast<double>(win_u_min);
-        double x_max = static_cast<double>(win_u_max);
-        double y_min = static_cast<double>(win_v_min);
-        double y_max = static_cast<double>(win_v_max);
+        // double x_min = static_cast<double>(win_u_min);
+        // double x_max = static_cast<double>(win_u_max);
+        // double y_min = static_cast<double>(win_v_min);
+        // double y_max = static_cast<double>(win_v_max);
         
-        // 交わっている場合
-        if (code1 & 0b1000) { // x top
-            x_pose = x_pose + ((x_layser-x_pose)/(y_layser-y_pose))*(y_max-y_pose);
-            y_pose = y_max;
-        } else if (code1 & 0b0100) { // x bottom
-            x_pose = x_pose + ((x_layser-x_pose)/(y_layser-y_pose))*(y_min-y_pose);
-            y_pose = y_min;
-        } else if (code1 & 0b0010) { // y top
-            y_pose = y_pose + ((y_layser-y_pose)/(x_layser-x_pose))*(x_max-x_pose);
-            x_pose = x_max;
-        } else if (code1 & 0b0001) { // y bottom
-            y_pose = y_pose + ((y_layser-y_pose)/(x_layser-x_pose))*(x_min-x_pose);
-            x_pose = x_min;
-        }
+        // // 交わっている場合
+        // if (code1 & 0b1000) { // x top
+        //     x_pose = x_pose + ((x_layser-x_pose)/(y_layser-y_pose))*(y_max-y_pose);
+        //     y_pose = y_max;
+        // } else if (code1 & 0b0100) { // x bottom
+        //     x_pose = x_pose + ((x_layser-x_pose)/(y_layser-y_pose))*(y_min-y_pose);
+        //     y_pose = y_min;
+        // } else if (code1 & 0b0010) { // y top
+        //     y_pose = y_pose + ((y_layser-y_pose)/(x_layser-x_pose))*(x_max-x_pose);
+        //     x_pose = x_max;
+        // } else if (code1 & 0b0001) { // y bottom
+        //     y_pose = y_pose + ((y_layser-y_pose)/(x_layser-x_pose))*(x_min-x_pose);
+        //     x_pose = x_min;
+        // }
 
-        return std::hypot(x_pose-x_layser, y_pose-y_layser)*mapResolution_;
+        // return std::hypot(x_pose-x_layser, y_pose-y_layser)*mapResolution_;
     }
 }
 
