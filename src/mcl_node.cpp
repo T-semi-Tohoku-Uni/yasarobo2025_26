@@ -75,6 +75,7 @@ namespace mcl {
                 this->declare_parameter<std::double_t>("zHit", 1.0);
                 this->declare_parameter<std::double_t>("zMax", 0.0);
                 this->declare_parameter<std::double_t>("zRand", 1.0);
+                this->declare_parameter<double>("lidar_threshold", 1.0/5.0*M_PI);
                 
                 particleNum_ = this->get_parameter("particleNum").as_int();
                 double initial_x = this->get_parameter("initial_x").as_double();
@@ -92,6 +93,7 @@ namespace mcl {
                 this->zHit_ = this->get_parameter("zHit").as_double();
                 this->zMax_ = this->get_parameter("zMax").as_double();
                 this->zRand_ = this->get_parameter("zRand").as_double();
+                this->get_parameter("lidar_threshold", LIDAR_THTRSHOLD_);
 
                 particles_.resize(particleNum_);
                 pro_.resize(particleNum_);
@@ -545,6 +547,13 @@ namespace mcl {
                         theta_lidar = scan_->angle_min + ((std::double_t)(i))*scan_->angle_increment;
                     } else {
                         theta_lidar = scan_->angle_min + ((std::double_t)(i))*scan_->angle_increment - 3.0*M_PI/2.0;
+
+                        // normalize
+                        if (theta_lidar > M_PI) theta_lidar -= M_2_PI;
+                        if (theta_lidar < -M_PI) theta_lidar += M_2_PI;
+                        
+                        if (theta_lidar < -M_PI_2+this->LIDAR_THTRSHOLD_) continue;
+                        if (theta_lidar >  M_PI_2-this->LIDAR_THTRSHOLD_) continue;
                     }
 
                     int u, v;
@@ -790,6 +799,7 @@ namespace mcl {
             rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr subLayerScan_;
 
             bool is_sim_;
+            double LIDAR_THTRSHOLD_;
 
             // print trajectory on rviz
             rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pubPath_;

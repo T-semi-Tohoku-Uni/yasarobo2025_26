@@ -143,6 +143,7 @@ def generate_launch_description():
             "odomNoise4": 5.0,
             "resampleThreshold": 0.9,
             "scanStep": 5,
+            "lidar_threshold": 3.0/40.0*math.pi,
         }],
     )
 
