@@ -38,7 +38,11 @@ def main():
         Line(ng, Coordinate(50, 50), Coordinate(180, 50)),
         Line(ng, Coordinate(180, 50), Coordinate(180, 230)),
         Line(ng, Coordinate(0, 230), Coordinate(180, 230)),
-        *[Line(ng, Coordinate(x_, 90), Coordinate(x_, 90 + 90)) for x_ in range(60, 60 + 28 + 1)],
+        *[Line(or_not, Coordinate(x_, 90), Coordinate(x_, 90 + 90)) for x_ in range(60, 60 + 28 + 1)],
+        Line(ng, Coordinate(60, 90), Coordinate(60, 90 + 90)),
+        Line(ng, Coordinate(60 + 28 + 1, 90), Coordinate(60 + 28 + 1, 90 + 90)),
+        Line(ng, Coordinate(60, 90), Coordinate(60 + 28 + 1, 90)),
+        Line(ng, Coordinate(60, 90+90), Coordinate(60 + 28 + 1, 90+90)),
         *[Line(or_not, Coordinate(51, y_), Coordinate(180, y_)) for y_ in range(0, 50)]
     ]
 
