@@ -86,6 +86,7 @@ namespace yasarobo2025_26{
         if (distance > shorten_){
             goal_pose.pose.position.x -= shorten_ * ux;
             goal_pose.pose.position.y -= shorten_ * uy;
+            RCLCPP_INFO(this->get_logger(), "shorten path by %.2f m", shorten_);
         }
 
         //create path
