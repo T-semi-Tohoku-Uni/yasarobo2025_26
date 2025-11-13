@@ -45,7 +45,13 @@ namespace ActionNodes {
         request->x = x;
         request->y = y;
 
-        srvBallRoute_->async_send_request(request);
+        auto result_future = srvBallRoute_->async_send_request(request);
+
+        if (rclcpp::spin_until_future_complete(
+                this->get_node_base_interface(),
+                result_future,
+                std::chrono::seconds(1))
+            == rclcpp::FutureReturnCode::SUCCESS) {}
     }
 
     void BTNode::send_pose(double x, double y, double theta) {
