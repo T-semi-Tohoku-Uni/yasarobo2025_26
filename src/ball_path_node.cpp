@@ -17,7 +17,9 @@ namespace yasarobo2025_26{
         pose_arrow_pub_= this->create_publisher<visualization_msgs::msg::Marker>("pose_arrow_marker", poseArrowQos);
 
         this->declare_parameter<int>("num_points_", 10);
+        this->declare_parameter<double>("shorten", 0.04);
         this->get_parameter("num_points_", num_points_);
+        this->get_parameter("shorten", shorten_);
     };
 
     void BallPathNode::poseCallback(const geometry_msgs::msg::Pose2D::SharedPtr msg){
@@ -58,6 +60,9 @@ namespace yasarobo2025_26{
         //calculate theta
         double dx = goal_pose.pose.position.x - start_pose.pose.position.x;
         double dy = goal_pose.pose.position.y - start_pose.pose.position.y;
+        double distance = sqrt(dx*dx + dy*dy);
+        double ux = dx / distance;
+        double uy = dy / distance;
 
         if (dx == 0.0 && dy == 0.0){
             RCLCPP_INFO(this->get_logger(), "start and goal are the same");
@@ -77,6 +82,13 @@ namespace yasarobo2025_26{
 
         theta = theta - 2*M_PI/3;
 
+
+       
+        //shorten path
+        if (distance > shorten_){
+            goal_pose.pose.position.x -= shorten_ * ux;
+            goal_pose.pose.position.y -= shorten_ * uy;
+	}
         //create path
         for (int i=0; i<=num_points_; ++i){
             double t = static_cast<double>(i) / num_points_;
