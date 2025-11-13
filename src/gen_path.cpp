@@ -314,6 +314,36 @@ namespace path {
             pubPath_->publish(pathMsg);
             pubMarker_->publish(markerArray);
         }
+        void publishCostMap() {
+            nav_msgs::msg::OccupancyGrid costmap;
+            costmap.header.frame_id = "map";
+            costmap.header.stamp = this->now();
+            costmap.info.resolution = mapResolution_;
+            costmap.info.width = mapWidth_;
+            costmap.info.height = mapHeight_;
+            costmap.info.origin.position.x = mapOrigin_[0];
+            costmap.info.origin.position.y = mapOrigin_[1];
+            costmap.info.origin.position.z = 0.0;
+            costmap.info.origin.orientation.w = 1.0;
+
+            costmap.data.resize(mapWidth_ * mapHeight_);
+
+            // distField_（CV_64F）を正規化して 0～100 に変換
+            double minVal, maxVal;
+            cv::minMaxLoc(distField_, &minVal, &maxVal);
+            cv::Mat normalized;
+            distField_.convertTo(normalized, CV_8U, 100.0 / (maxVal - minVal), -minVal * 100.0 / (maxVal - minVal));
+
+            for (int v = 0; v < mapHeight_; v++) {
+                for (int u = 0; u < mapWidth_; u++) {
+                    int index = v * mapWidth_ + u;
+                    uint8_t val = normalized.at<uint8_t>(v, u);
+                    costmap.data[index] = static_cast<int8_t>(val); // 0~100
+                }
+            }
+
+            pubCostmap_->publish(costmap);
+        }
 
         void readMap() {
             try {
