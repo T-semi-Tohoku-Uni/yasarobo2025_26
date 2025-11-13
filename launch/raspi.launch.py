@@ -143,6 +143,7 @@ def generate_launch_description():
             "odomNoise4": 5.0,
             "resampleThreshold": 0.9,
             "scanStep": 5,
+            "lidar_threshold": 3.0/40.0*math.pi,
         }],
     )
 
@@ -206,7 +207,8 @@ def generate_launch_description():
             "Kd_linear": 0.00,
             "Kp_angular": 1.00,
             "Ki_angular": 0.00,
-            "Kd_angular": 0.00
+            "Kd_angular": 0.00,
+            "x":2
         }]
     )
 

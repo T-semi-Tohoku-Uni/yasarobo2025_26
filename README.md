@@ -171,5 +171,11 @@ colcon build --packages-select yasarobo2025_26 --symlink-install
 実行
 ```bash
 source install/setup.bash
-ros2 launch yasarobo2025_26 simulation.launch.py
+ros2 launch yasarobo2025_26 cpu_sim.launch.py
+```
+
+（もしグラボ付きのPCで実行する場合）
+```bash
+source install/setup.bash
+ros2 launch yasarobo2025_26 gpu_sim.launch.py
 ```
