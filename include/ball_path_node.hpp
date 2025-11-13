@@ -25,6 +25,7 @@ namespace yasarobo2025_26{
             );
 
             int num_points_;
+            double shorten_;
             rclcpp::Service<inrof2025_ros_type::srv::GenRoute>::SharedPtr srv_gen_route_;
             rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr pose_arrow_pub_;
     };

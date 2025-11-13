@@ -282,7 +282,7 @@ class FollowNode: public rclcpp::Node {
                     current_waypoint_index_ = static_cast<int>(path_.size() - 1);
                 }
 
-                if ((linear_goal_distance < max_reaching_distance) && theta_goal < max_reaching_theta) {
+                if ((linear_goal_distance < max_reaching_distance)){ //&& theta_goal < max_reaching_theta) {
                     //goal reached
                     RCLCPP_INFO(this->get_logger(), "Goal reached.");
                     publishZero();
