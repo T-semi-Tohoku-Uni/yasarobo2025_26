@@ -17,9 +17,9 @@ namespace yasarobo2025_26{
         pose_arrow_pub_= this->create_publisher<visualization_msgs::msg::Marker>("pose_arrow_marker", poseArrowQos);
 
         this->declare_parameter<int>("num_points_", 10);
-        this->declare_parameter<double>("shorten_", 0.04);
+        this->declare_parameter<double>("shorten", 0.04);
         this->get_parameter("num_points_", num_points_);
-        this->get_parameter("shorten_", shorten_);
+        this->get_parameter("shorten", shorten_);
     };
 
     void BallPathNode::poseCallback(const geometry_msgs::msg::Pose2D::SharedPtr msg){
@@ -92,7 +92,7 @@ namespace yasarobo2025_26{
             RCLCPP_INFO(this->get_logger(), "shorten path by %.2f m", shorten_);
         }
 
-        RCLCPP_INFO(this->get_logger(), "goal_pose %2f, %2f, theta: %.2f ", goal_pose.pose.position.x, goal_pose.pose.position.y);
+        RCLCPP_INFO(this->get_logger(), "goal_pose %2f, %2f ", goal_pose.pose.position.x, goal_pose.pose.position.y);
 
         //create path
         for (int i=0; i<=num_points_; ++i){
