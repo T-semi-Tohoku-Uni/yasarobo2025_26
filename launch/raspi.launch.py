@@ -229,6 +229,9 @@ def generate_launch_description():
         executable="ball_path_node",
         output="screen",
         remappings=[('clock', '/world/yasarobo/clock')],
+        parameters=[{
+            "shorten": 0.04
+        }]
     )
 
 
