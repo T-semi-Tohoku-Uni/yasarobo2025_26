@@ -83,17 +83,12 @@ namespace yasarobo2025_26{
         theta = theta - 2*M_PI/3;
 
 
-        RCLCPP_INFO(this->get_logger(), "goal_pose %2f, %2f ", goal_pose.pose.position.x, goal_pose.pose.position.y);
-
+       
         //shorten path
         if (distance > shorten_){
             goal_pose.pose.position.x -= shorten_ * ux;
             goal_pose.pose.position.y -= shorten_ * uy;
-            RCLCPP_INFO(this->get_logger(), "shorten path by %.2f m", shorten_);
-        }
-
-        RCLCPP_INFO(this->get_logger(), "goal_pose %2f, %2f ", goal_pose.pose.position.x, goal_pose.pose.position.y);
-
+	}
         //create path
         for (int i=0; i<=num_points_; ++i){
             double t = static_cast<double>(i) / num_points_;

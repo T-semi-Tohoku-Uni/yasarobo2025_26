@@ -208,7 +208,7 @@ def generate_launch_description():
             "Kp_angular": 1.00,
             "Ki_angular": 0.00,
             "Kd_angular": 0.00,
-            "x":2
+            "x":1
         }]
     )
 
@@ -230,8 +230,8 @@ def generate_launch_description():
         output="screen",
         remappings=[('clock', '/world/yasarobo/clock')],
         parameters=[{
-            "shorten": 0.04,
-            "num_points_": 1000
+            "shorten": 0.15,
+            "num_points_": 10
         }]
     )
 
