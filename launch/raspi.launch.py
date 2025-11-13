@@ -230,7 +230,8 @@ def generate_launch_description():
         output="screen",
         remappings=[('clock', '/world/yasarobo/clock')],
         parameters=[{
-            "shorten": 0.04
+            "shorten": 0.04,
+            "num_points_": 100
         }]
     )
 
