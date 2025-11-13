@@ -354,6 +354,22 @@ namespace path {
                 cv::Mat diff = distFieldD - max_val;   // 要素ごとに引き算
                 cv::Mat absDiff = cv::abs(diff);      // 要素ごとの絶対値
 
+            distField_ = cv::Mat(mapHeight_, mapWidth_, CV_64FC1);
+            const double lethal_cost = std::numeric_limits<double>::infinity(); // 通行不可セルのコスト
+
+            for (int v = 0; v < mapHeight_; v++) {
+                for (int u = 0; u < mapWidth_; u++) {
+                    double d = distField_.at<double>(v, u);
+
+                    // ロボットが通れない領域 → 大きなコストにする
+                   if (d < robot_radius_) {
+                        distField_.at<double>(v, u) = 1e6; // ほぼ通れないコスト
+                    } else {
+                        
+                        distField_.at<double>(v, u) = 1.0 / (d - robot_radius_ + 1e-6);
+                    }
+                }
+            }
 
                 // // 1) 距離場 distFieldD（CV_64F）を 0–255 に正規化して 8bit 化
                 // cv::Mat normDist;
@@ -375,7 +391,7 @@ namespace path {
                 // 4) 画像を保存
                 // cv::imwrite("distField_highlight.png", colorImg);
 
-                distField_ = absDiff.clone();
+                //distField_ = absDiff.clone();
             } catch (const YAML::Exception& e) {
                 RCLCPP_ERROR(this->get_logger(), "%s\n", e.what());
             }
