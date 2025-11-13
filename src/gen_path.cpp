@@ -426,6 +426,7 @@ namespace path {
                 // cv::imwrite("distField_highlight.png", colorImg);
 
                 //distField_ = absDiff.clone();
+                publishCostMap();
             } catch (const YAML::Exception& e) {
                 RCLCPP_ERROR(this->get_logger(), "%s\n", e.what());
             }
