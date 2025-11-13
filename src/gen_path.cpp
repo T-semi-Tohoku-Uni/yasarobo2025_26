@@ -47,8 +47,12 @@ namespace path {
                 rclcpp::QoS test_pathQos = rclcpp::QoS(rclcpp::KeepLast(10))
                                   .reliable()
                                   .transient_local();
+                rclcpp::QoS mapQos = rclcpp::QoS(rclcpp::KeepLast(1))
+                                  .reliable()
+                                  .transient_local();
                 pubPath_ = create_publisher<nav_msgs::msg::Path>("route", pathQos);
                 pubSamplePath_ = create_publisher<nav_msgs::msg::Path>("test_route", test_pathQos);
+                pubCostmap_ = create_publisher<nav_msgs::msg::OccupancyGrid>("costmap", mapQos);
 
                 rclcpp::QoS markerQos = rclcpp::QoS(rclcpp::KeepLast(10))
                                   .reliable()
@@ -416,7 +420,8 @@ namespace path {
         cv::Mat mapImg_;
         cv::Mat distField_;
         rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pubPath_;
-        rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pubSamplePath_;        
+        rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pubSamplePath_; 
+        rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr pubCostmap_;       
         rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pubMarker_;
         rclcpp::Subscription<geometry_msgs::msg::Pose2D>::SharedPtr subOdom_;
         geometry_msgs::msg::Pose2D curOdom_;
