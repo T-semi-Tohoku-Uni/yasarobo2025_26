@@ -393,7 +393,7 @@ namespace path {
 
             for (int v = 0; v < mapHeight_; v++) {
                 for (int u = 0; u < mapWidth_; u++) {
-                    double d = distField_.at<double>(v, u);
+                    double d = distFieldD.at<double>(v, u);
 
                     // ロボットが通れない領域 → 大きなコストにする
                    if (d < robot_radius_) {
