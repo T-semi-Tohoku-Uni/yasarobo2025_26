@@ -18,10 +18,10 @@ import xacro
 import math
 
 def generate_launch_description():
-    x = 0.25
-    y = 0.25
+    x = 1.30
+    y = 1.80
     z = 0.30
-    theata = math.pi / 2
+    theata = -math.pi / 2
 
     package_dir = get_package_share_directory("yasarobo2025_26")
 
@@ -241,9 +241,9 @@ def generate_launch_description():
         executable="ball_detect_node",
         output="screen",
         parameters=[{
-            "eps": 0.050,
+            "eps": 0.020,
             "min_pts": 5,
-            "wall_threshold": 0.20,
+            "wall_threshold": 0.0,
             "diff_threshold": 1e-8,
             "lidar_threshold": 3.0/40.0*math.pi,
             "radius_threshold": 0.05
@@ -268,9 +268,9 @@ def generate_launch_description():
                     ldlidar_node,
                     static_ldlidar_tf,
                     gen_path,
-                    follow_node,
+                    # follow_node,
                     vacume_node,
-                    bt_node,
+                    # bt_node,
                     rotate_node,
                     ball_path_node,
                     detect_node
