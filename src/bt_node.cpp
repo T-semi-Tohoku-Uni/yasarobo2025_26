@@ -18,6 +18,8 @@
 #include "../include/bt_generate_route.hpp"
 #include "../include/bt_follow_route.hpp"
 #include "../include/bt_rotate.hpp"
+#include <bt_get_pose.hpp>
+#include <inrof2025_ros_type/srv/ball_path.hpp>
 
 using namespace std::chrono_literals;
 using namespace BT;
@@ -28,13 +30,13 @@ namespace ActionNodes {
         srvGenRoute_ = this->create_client<inrof2025_ros_type::srv::GenRoute>("generate_route");
         srvVacume_ = this->create_client<inrof2025_ros_type::srv::Vacume>("/srv/vacume");
         srvBall_ = this->create_client<inrof2025_ros_type::srv::BallPose> ("ball_detect");
-        srvBallRoute_ = this->create_client<inrof2025_ros_type::srv::GenRoute>("generate_ball_path");
+        srvBallRoute_ = this->create_client<inrof2025_ros_type::srv::BallPath>("generate_ball_path");
         srvPose_ = this->create_client<inrof2025_ros_type::srv::Pose>("pose");
         actFollow_ = rclcpp_action::create_client<inrof2025_ros_type::action::Follow> (this, "follow");
         actRotate_ = rclcpp_action::create_client<inrof2025_ros_type::action::Rotate> (this, "rotate");
     };
 
-    void BTNode::send_ball_pose(double x, double y) {
+    void BTNode::send_ball_pose(double x, double y, bool is_return) {
         // check action server available
         while (!this->srvBallRoute_->wait_for_service(1s))
         {
@@ -42,9 +44,10 @@ namespace ActionNodes {
             RCLCPP_WARN(this->get_logger(), "srvBallRoute_ not available");
         }
 
-        auto request = std::make_shared<inrof2025_ros_type::srv::GenRoute::Request>();
+        auto request = std::make_shared<inrof2025_ros_type::srv::BallPath::Request>();
         request->x = x;
         request->y = y;
+        request->is_return = is_return;
 
         auto result_future = srvBallRoute_->async_send_request(request);
 
@@ -249,6 +252,12 @@ int main(int argc, char* argv[]) {
             return std::make_unique<ActionNodes::BallPath>(name, config, ros_node);
         };
     factory.registerBuilder<ActionNodes::BallPath>("ball_path", builder_ball_path);
+
+    BT::NodeBuilder builder_get_pose = 
+        [ros_node](const std::string& name, const NodeConfiguration& config) {
+            return std::make_unique<ActionNodes::GetPose>(name, config, ros_node);
+        };
+    factory.registerBuilder<ActionNodes::GetPose>("get_pose", builder_get_pose);
 
     std::string package_path = ament_index_cpp::get_package_share_directory("yasarobo2025_26");
     factory.registerBehaviorTreeFromFile(package_path + "/config/main_bt.xml");

@@ -9,7 +9,7 @@ namespace yasarobo2025_26{
         path_pub_ = create_publisher<nav_msgs::msg::Path>("route", 10);
 
 
-        srv_gen_route_ = this->create_service<inrof2025_ros_type::srv::GenRoute>(
+        srv_gen_route_ = this->create_service<inrof2025_ros_type::srv::BallPath>(
             "generate_ball_path", std::bind(&BallPathNode::genBallPath, this, std::placeholders::_1, std::placeholders::_2)
         );
 
@@ -29,8 +29,8 @@ namespace yasarobo2025_26{
     
 
     void BallPathNode::genBallPath(
-        const std::shared_ptr<inrof2025_ros_type::srv::GenRoute::Request> request,
-        const std::shared_ptr<inrof2025_ros_type::srv::GenRoute::Response> response
+        const std::shared_ptr<inrof2025_ros_type::srv::BallPath::Request> request,
+        const std::shared_ptr<inrof2025_ros_type::srv::BallPath::Response> response
     ){
         RCLCPP_INFO(this->get_logger(), "Generating ball path to (%.2f, %.2f)", request->x, request->y);
         if (!pose_){
@@ -57,7 +57,6 @@ namespace yasarobo2025_26{
 
         double theta = 0.0;
 
-        //calculate theta
         double dx = goal_pose.pose.position.x - start_pose.pose.position.x;
         double dy = goal_pose.pose.position.y - start_pose.pose.position.y;
         double distance = sqrt(dx*dx + dy*dy);
@@ -82,6 +81,9 @@ namespace yasarobo2025_26{
 
         theta = theta - 2*M_PI/3;
 
+        if (request->is_return) {
+            theta = pose_->theta;
+        }
 
        
         //shorten path

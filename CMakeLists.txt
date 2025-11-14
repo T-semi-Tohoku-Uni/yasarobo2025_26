@@ -90,6 +90,7 @@ add_library(bt_lib SHARED
   bt/bt_follow_route.cpp
   bt/bt_rotate.cpp
   bt/bt_ball_path.cpp
+  bt/bt_get_pose.cpp
   # add bt/bt_..._.cpp
 )
 target_include_directories(bt_lib

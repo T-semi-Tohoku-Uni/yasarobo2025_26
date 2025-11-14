@@ -23,6 +23,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <inrof2025_ros_type/srv/ball_pose.hpp>
+#include <inrof2025_ros_type/srv/pose.hpp>
 
 using namespace std::chrono_literals; 
 
@@ -150,8 +151,9 @@ namespace mcl {
                 pubPath_ = create_publisher<nav_msgs::msg::Path>("trajectory", 10);
                 path_.header.frame_id = "map";
                 pubPose_ = create_publisher<geometry_msgs::msg::Pose2D>("pose", 10);
-                srvBallPose_ = this->create_service<inrof2025_ros_type::srv::BallPose>(
-                    "ball_pose", std::bind(&MCL::poseCallback, this, std::placeholders::_1, std::placeholders::_2)
+
+                srvPose_ = this->create_service<inrof2025_ros_type::srv::Pose> (
+                    "pose", std::bind(&MCL::poseCallback, this, std::placeholders::_1, std::placeholders::_2)
                 );
                 
                 // s_odom_ = create_subscription<nav_msgs::msg::Odometry>(
@@ -198,6 +200,16 @@ namespace mcl {
             //     // RCLCPP_INFO(this->get_logger(), "%.3f", yaw_);
                 // RCLCPP_INFO(this->get_logger(), "Yaw (rad): %.3f %.3f %.3f", yaw, msg->twist.twist.angular.z, particles_[0].getTheta());
             // }
+
+            void poseCallback(
+                const std::shared_ptr<inrof2025_ros_type::srv::Pose::Request> request,
+                const std::shared_ptr<inrof2025_ros_type::srv::Pose::Response> response
+            ) {
+                response->x = mclPose_.x;
+                response->y = mclPose_.y;
+                response->theta = mclPose_.theta;
+                RCLCPP_INFO(this->get_logger(), "current pose is %f %f %f", response->x, response->y, response->theta);
+            }
 
             void laserScanCallback(const sensor_msgs::msg::LaserScan::SharedPtr scan) {
                 scan_ = scan;
@@ -530,49 +542,6 @@ namespace mcl {
                 xy2uv(x, y, u, v);
             }
 
-            void poseCallback (
-                const std::shared_ptr<inrof2025_ros_type::srv::BallPose::Request> request,
-                const std::shared_ptr<inrof2025_ros_type::srv::BallPose::Response> response
-            ) {
-                double ball_min_r = INFINITY;
-                double x;
-                double y;
-
-                for (std::size_t i = 0; i < scan_->ranges.size(); i+=scanStep_) {
-                    std::double_t r = scan_->ranges[i];
-                    if (std::isnan(r) || r < scan_->range_min || scan_->range_max < r) continue;
-
-                    std::double_t theta_lidar;
-                    if (is_sim_) {
-                        theta_lidar = scan_->angle_min + ((std::double_t)(i))*scan_->angle_increment;
-                    } else {
-                        theta_lidar = scan_->angle_min + ((std::double_t)(i))*scan_->angle_increment - 3.0*M_PI/2.0;
-
-                        // normalize
-                        if (theta_lidar > M_PI) theta_lidar -= M_2_PI;
-                        if (theta_lidar < -M_PI) theta_lidar += M_2_PI;
-                        
-                        if (theta_lidar < -M_PI_2+this->LIDAR_THTRSHOLD_) continue;
-                        if (theta_lidar >  M_PI_2-this->LIDAR_THTRSHOLD_) continue;
-                    }
-
-                    int u, v;
-                    double x_odom, y_odom;
-                    lidarpose2uv(r, theta_lidar, mclPose_, &x_odom, &y_odom, &u, &v);
-
-                    std::double_t d = (std::double_t)distField_.at<std::double_t>(v, u);
-                    if (d > 0.10 && r < ball_min_r) {
-                        ball_min_r = d;
-
-                        x = x_odom;
-                        y = y_odom;
-                    }
-                }
-
-                response->x = x;
-                response->y = y;
-            }
-
             void publishScanEndpoints()
             {
                 sensor_msgs::msg::PointCloud2 cloud;
@@ -831,6 +800,8 @@ namespace mcl {
 
             // ball
             rclcpp::Service<inrof2025_ros_type::srv::BallPose>::SharedPtr srvBallPose_;
+
+            rclcpp::Service<inrof2025_ros_type::srv::Pose>::SharedPtr srvPose_;
 
             // TODO: delete
             rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr s_odom_;
