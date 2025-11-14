@@ -29,6 +29,7 @@ namespace ActionNodes {
         srvVacume_ = this->create_client<inrof2025_ros_type::srv::Vacume>("/srv/vacume");
         srvBall_ = this->create_client<inrof2025_ros_type::srv::BallPose> ("ball_detect");
         srvBallRoute_ = this->create_client<inrof2025_ros_type::srv::GenRoute>("generate_ball_path");
+        srvPose_ = this->create_client<inrof2025_ros_type::srv::Pose>("pose");
         actFollow_ = rclcpp_action::create_client<inrof2025_ros_type::action::Follow> (this, "follow");
         actRotate_ = rclcpp_action::create_client<inrof2025_ros_type::action::Rotate> (this, "rotate");
     };
@@ -68,6 +69,24 @@ namespace ActionNodes {
         request->theta = theta;
 
         srvGenRoute_->async_send_request(request);
+    }
+
+    inrof2025_ros_type::srv::Pose::Response BTNode::get_pose() {
+        while (!this->srvPose_->wait_for_service(1s)) {
+            if (!rclcpp::ok()) break;
+            RCLCPP_WARN(this->get_logger(), "srvPose not available");
+        }
+
+        auto request = std::make_shared<inrof2025_ros_type::srv::Pose::Request>();
+        auto result_future = srvPose_->async_send_request(request);
+
+        if (
+            rclcpp::spin_until_future_complete(
+                this->get_node_base_interface(),
+                result_future,
+                std::chrono::seconds(1)
+            ) == rclcpp::FutureReturnCode::SUCCESS
+        ) {}
     }
 
     bool BTNode::isRuning() {
