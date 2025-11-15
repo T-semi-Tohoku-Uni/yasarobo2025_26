@@ -29,10 +29,15 @@
               <follow_route/>
               <vacume_on on="1"/>
               <ball_path x="{x}"
-                         y="{y}"/>
+                         y="{y}"
+                         is_return="0"/>
               <follow_route/>
+              <get_pose x="{pse_x}"
+                        y="{pose_y}"
+                        theta="{pose_theta}"/>
               <ball_path x="1.34"
-                         y="1.8"/>
+                         y="1.8"
+                         is_return="1"/>
               <follow_route/>
             </Sequence>
             <generate_route x="1.34"
@@ -60,6 +65,7 @@
             editable="true">
       <input_port name="x"/>
       <input_port name="y"/>
+      <input_port name="is_return"/>
     </Action>
     <Action ID="follow_route"
             editable="true"/>
@@ -69,6 +75,12 @@
       <input_port name="y">TODO</input_port>
       <input_port name="theta"
                   default="0.0"/>
+    </Action>
+    <Action ID="get_pose"
+            editable="true">
+      <output_port name="x"/>
+      <output_port name="y"/>
+      <output_port name="theta"/>
     </Action>
     <Action ID="vacume_on"
             editable="true">

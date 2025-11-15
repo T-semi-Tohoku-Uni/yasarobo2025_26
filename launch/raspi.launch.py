@@ -241,9 +241,9 @@ def generate_launch_description():
         executable="ball_detect_node",
         output="screen",
         parameters=[{
-            "eps": 0.050,
+            "eps": 0.020,
             "min_pts": 5,
-            "wall_threshold": 0.20,
+            "wall_threshold": 0.0,
             "diff_threshold": 1e-8,
             "lidar_threshold": 3.0/40.0*math.pi,
             "radius_threshold": 0.05
