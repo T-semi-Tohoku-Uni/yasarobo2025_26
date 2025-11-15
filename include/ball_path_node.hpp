@@ -1,7 +1,7 @@
 #pragma once
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/pose2_d.hpp>
-#include <inrof2025_ros_type/srv/gen_route.hpp>
+#include <inrof2025_ros_type/srv/ball_path.hpp>
 #include <nav_msgs/msg/path.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/twist.hpp>
@@ -20,13 +20,13 @@ namespace yasarobo2025_26{
             void poseCallback(const geometry_msgs::msg::Pose2D::SharedPtr msg);
             geometry_msgs::msg::Pose2D::SharedPtr pose_;
             void genBallPath(
-                const std::shared_ptr<inrof2025_ros_type::srv::GenRoute::Request> request,
-                const std::shared_ptr<inrof2025_ros_type::srv::GenRoute::Response> response
+                const std::shared_ptr<inrof2025_ros_type::srv::BallPath::Request> request,
+                const std::shared_ptr<inrof2025_ros_type::srv::BallPath::Response> response
             );
 
             int num_points_;
             double shorten_;
-            rclcpp::Service<inrof2025_ros_type::srv::GenRoute>::SharedPtr srv_gen_route_;
+            rclcpp::Service<inrof2025_ros_type::srv::BallPath>::SharedPtr srv_gen_route_;
             rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr pose_arrow_pub_;
     };
 }

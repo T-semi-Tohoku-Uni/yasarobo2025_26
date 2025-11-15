@@ -6,14 +6,17 @@
 #include <inrof2025_ros_type/srv/ball_pose.hpp>
 #include <inrof2025_ros_type/action/follow.hpp>
 #include <inrof2025_ros_type/action/rotate.hpp>
+#include <inrof2025_ros_type/srv/pose.hpp>
+#include <inrof2025_ros_type/srv/ball_path.hpp>
 
 namespace ActionNodes {
     class BTNode: public rclcpp::Node {
         public:
             explicit BTNode(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
             void send_pose(double x, double y, double theta);
-            void send_ball_pose(double x, double y);
+            void send_ball_pose(double x, double y, bool is_return);
             bool isRuning();
+            inrof2025_ros_type::srv::Pose::Response get_pose();
             bool ball_detect(double *x, double *y);
             void send_vacume_on(bool on);
             void send_start_follow();
@@ -35,7 +38,8 @@ namespace ActionNodes {
             rclcpp::Client<inrof2025_ros_type::srv::GenRoute>::SharedPtr srvGenRoute_;
             rclcpp::Client<inrof2025_ros_type::srv::Vacume>::SharedPtr srvVacume_;
             rclcpp::Client<inrof2025_ros_type::srv::BallPose>::SharedPtr srvBall_;
-            rclcpp::Client<inrof2025_ros_type::srv::GenRoute>::SharedPtr srvBallRoute_;
+            rclcpp::Client<inrof2025_ros_type::srv::BallPath>::SharedPtr srvBallRoute_;
+            rclcpp::Client<inrof2025_ros_type::srv::Pose>::SharedPtr srvPose_;
             rclcpp_action::Client<inrof2025_ros_type::action::Follow>::SharedPtr actFollow_;
             rclcpp_action::ClientGoalHandle<inrof2025_ros_type::action::Follow>::SharedPtr currentFollow_;
             rclcpp_action::Client<inrof2025_ros_type::action::Rotate>::SharedPtr actRotate_;
