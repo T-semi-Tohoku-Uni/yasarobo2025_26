@@ -116,7 +116,7 @@ namespace raspi{
                         if (frame_len == 1) {
                             uint8_t data_byte = recev_buffer_[0];
                             auto msg = std_msgs::msg::UInt8();
-                            msg.data = data_byte;
+                            msg.data = data_byte - 48;
                             pubColor_->publish(msg);
                         } 
 
