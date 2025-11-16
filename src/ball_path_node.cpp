@@ -6,7 +6,10 @@ namespace yasarobo2025_26{
             "/pose", 10, std::bind(&BallPathNode::poseCallback, this, std::placeholders::_1)
         );     
 
-        path_pub_ = create_publisher<nav_msgs::msg::Path>("route", 10);
+        rclcpp::QoS pathQos = rclcpp::QoS(rclcpp::KeepLast(10))
+                                .reliable()
+                                .transient_local();
+        path_pub_ = create_publisher<nav_msgs::msg::Path>("route", pathQos);
 
 
         srv_gen_route_ = this->create_service<inrof2025_ros_type::srv::BallPath>(

@@ -20,6 +20,8 @@
 #include "../include/bt_rotate.hpp"
 #include <bt_get_pose.hpp>
 #include <inrof2025_ros_type/srv/ball_path.hpp>
+#include <bt_increment.hpp>
+#include <bt_while_do_else_break.hpp>
 
 using namespace std::chrono_literals;
 using namespace BT;
@@ -258,6 +260,14 @@ int main(int argc, char* argv[]) {
             return std::make_unique<ActionNodes::GetPose>(name, config, ros_node);
         };
     factory.registerBuilder<ActionNodes::GetPose>("get_pose", builder_get_pose);
+
+    BT::NodeBuilder builder_increment = 
+        [ros_node](const std::string& name, const NodeConfiguration& config) {
+            return std::make_unique<ActionNodes::Increment>(name, config, ros_node);
+        };
+    factory.registerBuilder<ActionNodes::Increment>("increment", builder_increment);
+
+    factory.registerNodeType<ControlNodes::WhileDoElseBreakNode>("WhileDoElseBreak");
 
     std::string package_path = ament_index_cpp::get_package_share_directory("yasarobo2025_26");
     factory.registerBehaviorTreeFromFile(package_path + "/config/main_bt.xml");
