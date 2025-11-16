@@ -33,7 +33,7 @@ namespace raspi{
                 pubColor_ = this->create_publisher<std_msgs::msg::UInt8>("/color", sendQ);
                 
                 receive_timer_ = this->create_wall_timer(
-                    std::chrono::microseconds(10), std::bind(&ColorVacumeNode::receive_color_callback, this)
+                    std::chrono::microseconds(100), std::bind(&ColorVacumeNode::receive_color_callback, this)
                 );
 
                 // --- 3. Vacume ノードの機能（Subscriber と Service） ---
