@@ -248,6 +248,10 @@ def generate_launch_description():
         executable="ball_path_node",
         output="screen",
         remappings=[('clock', '/world/yasarobo/clock')],
+        parameters=[{
+            "shorten": 0.15,
+            "num_points_": 10
+        }]
     )
 
     # spawn ball on field

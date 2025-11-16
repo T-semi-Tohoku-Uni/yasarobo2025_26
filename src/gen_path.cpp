@@ -284,6 +284,12 @@ namespace path {
             }
 
             visualization_msgs::msg::MarkerArray markerArray;
+
+            // delete old marker
+            visualization_msgs::msg::Marker del;
+            del.action = visualization_msgs::msg::Marker::DELETEALL;
+            markerArray.markers.push_back(del);
+
             for (size_t i=0; i<pathMsg.poses.size(); i+=10) {
                 visualization_msgs::msg::Marker arrow;
                 arrow.header = pathMsg.header;
