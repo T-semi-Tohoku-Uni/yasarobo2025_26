@@ -93,6 +93,8 @@ add_library(bt_lib SHARED
   bt/bt_get_pose.cpp
   bt/bt_increment.cpp
   bt/bt_while_do_else_break.cpp
+  bt/bt_ball_color.cpp
+  bt/bt_switch_color.cpp
   # add bt/bt_..._.cpp
 )
 target_include_directories(bt_lib

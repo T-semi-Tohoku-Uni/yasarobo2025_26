@@ -1,5 +1,6 @@
 #include <rclcpp/rclcpp.hpp>
 #include <inrof2025_ros_type/srv/vacume.hpp>
+#include <inrof2025_ros_type/srv/ball_color.hpp>
 
 namespace dummy {
     class Vacume: public rclcpp::Node {
@@ -9,6 +10,11 @@ namespace dummy {
                     "/srv/vacume",
                     std::bind(&Vacume::vacumeCallback, this, std::placeholders::_1, std::placeholders::_2)
                 );
+
+                srvColor_ = this->create_service<inrof2025_ros_type::srv::BallColor> (
+                    "color",
+                    std::bind(&Vacume::colorCallback, this, std::placeholders::_1, std::placeholders::_2)
+                );
             }
         private:
             void vacumeCallback(
@@ -16,7 +22,15 @@ namespace dummy {
                 const std::shared_ptr<inrof2025_ros_type::srv::Vacume::Response> response
             ) {}
 
+            void colorCallback(
+                const std::shared_ptr<inrof2025_ros_type::srv::BallColor::Request> request,
+                const std::shared_ptr<inrof2025_ros_type::srv::BallColor::Response> response
+            ) {
+                response->color = 0;
+            }
+
             rclcpp::Service<inrof2025_ros_type::srv::Vacume>::SharedPtr srvVacume_;
+            rclcpp::Service<inrof2025_ros_type::srv::BallColor>::SharedPtr srvColor_;
     };
 }
 
