@@ -294,7 +294,7 @@ class FollowNode: public rclcpp::Node {
 
             } 
                     
-
+                else {
 
                     //PID control for linear speed
                     double linear_speed_cmd_x = linear_PID_x_.compute(path_[current_waypoint_index_].pose.position.x, pose_.x);
@@ -331,7 +331,7 @@ class FollowNode: public rclcpp::Node {
                     feedback_msg->y = pose_.y;
                     feedback_msg->theta = pose_.theta;
                     goal_handle_->publish_feedback(feedback_msg);
-                
+                }
 
         }
 
