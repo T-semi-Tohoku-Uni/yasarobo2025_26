@@ -288,73 +288,67 @@ class FollowNode: public rclcpp::Node {
             // --- ★ここまで修正版 ---
 
 
+            while (max_linear_tolerance > linear_error) {
+                if (current_waypoint_index_+1 >= static_cast<int>(path_.size())) break;
+
+                current_waypoint_index_++;
+                linear_error = std::hypot(
+                    path_[current_waypoint_index_].pose.position.x - pose_.x, 
+                    path_[current_waypoint_index_].pose.position.y - pose_.y
+                );
+            }
+
+            if ((linear_goal_distance < max_reaching_distance)){ //&& theta_goal < max_reaching_theta) {
+                //goal reached
+                RCLCPP_INFO(this->get_logger(), "Goal reached.");
+                publishZero();
+                auto result_msg = std::make_shared<inrof2025_ros_type::action::Follow::Result>();
+                result_msg->success = true;
+                goal_handle_->succeed(result_msg);
+                goal_handle_.reset();
+                return;
+            }
+
+            //PID control for linear speed
+            double linear_cmd_tan = linear_PID_tan_.compute(error_tan, 0.0);
+            double linear_cmd_norm = linear_PID_norm_.compute(error_norm, 0.0);
             
-
-        
-            if ((max_linear_tolerance > linear_error)){  //&& max_reaching_theta > std::abs(theta_error)) { 
-                if (current_waypoint_index_+ x_ < (int)path_.size() -1){
-                    //move to next waypoint
-                    current_waypoint_index_ = current_waypoint_index_ + x_;
-                } else if (current_waypoint_index_ < static_cast<int>(path_.size() - 1)) {
-                    current_waypoint_index_ = static_cast<int>(path_.size() - 1);
-                }
-
-                if ((linear_goal_distance < max_reaching_distance)){ //&& theta_goal < max_reaching_theta) {
-                    //goal reached
-                    RCLCPP_INFO(this->get_logger(), "Goal reached.");
-                    publishZero();
-                    auto result_msg = std::make_shared<inrof2025_ros_type::action::Follow::Result>();
-                    result_msg->success = true;
-                    goal_handle_->succeed(result_msg);
-                    goal_handle_.reset();
-                    return;
-                }
-
-            } 
-                //PIDcontrol cannot run without "else"    
-                else {
-
-                    //PID control for linear speed
-                    double linear_cmd_tan = linear_PID_tan_.compute(error_tan, 0.0);
-                    double linear_cmd_norm = linear_PID_norm_.compute(error_norm, 0.0);
-                    
-                    //PID control for theta speed
-                    double theta_speed_cmd = omega_PID_.compute(target_theta, pose_.theta);
-    
-
-                    //convert to x,y speed
-                    double linear_speed_cmd_x = linear_cmd_tan * tx + linear_cmd_norm * nx;
-                    double linear_speed_cmd_y = linear_cmd_tan * ty + linear_cmd_norm * ny;
+            //PID control for theta speed
+            double theta_speed_cmd = omega_PID_.compute(target_theta, pose_.theta);
 
 
-                    geometry_msgs::msg::Twist linear_speed;
-                    linear_speed.linear.x = cos(pose_.theta) * linear_speed_cmd_x + sin(pose_.theta) * linear_speed_cmd_y;
-                    linear_speed.linear.y = -sin(pose_.theta) * linear_speed_cmd_x + cos(pose_.theta) * linear_speed_cmd_y;
-                    linear_speed.angular.z = theta_speed_cmd;
-
-                    //apply speed limits 
-                    geometry_msgs::msg::Twist clipped_v = clip(linear_speed);
-                    cmd_pub_->publish(clipped_v);
+            //convert to x,y speed
+            double linear_speed_cmd_x = linear_cmd_tan * tx + linear_cmd_norm * nx;
+            double linear_speed_cmd_y = linear_cmd_tan * ty + linear_cmd_norm * ny;
 
 
-                    double clipped_v_x_r = clipped_v.linear.x;
-                    double clipped_v_y_r = clipped_v.linear.y;
+            geometry_msgs::msg::Twist linear_speed;
+            linear_speed.linear.x = cos(pose_.theta) * linear_speed_cmd_x + sin(pose_.theta) * linear_speed_cmd_y;
+            linear_speed.linear.y = -sin(pose_.theta) * linear_speed_cmd_x + cos(pose_.theta) * linear_speed_cmd_y;
+            linear_speed.angular.z = theta_speed_cmd;
 
-     
-                    double clipped_v_x_f = cos(pose_.theta) * clipped_v_x_r - sin(pose_.theta) * clipped_v_y_r;
-                    double clipped_v_y_f = sin(pose_.theta) * clipped_v_x_r + cos(pose_.theta) * clipped_v_y_r; 
+            //apply speed limits 
+            geometry_msgs::msg::Twist clipped_v = clip(linear_speed);
+            cmd_pub_->publish(clipped_v);
 
 
-                    printCmdVelArrow(linear_speed_cmd_x, linear_speed_cmd_y, clipped_v_x_f, clipped_v_y_f);
+            double clipped_v_x_r = clipped_v.linear.x;
+            double clipped_v_y_r = clipped_v.linear.y;
 
-                    
-                    //publish feedback
-                    auto feedback_msg = std::make_shared<inrof2025_ros_type::action::Follow::Feedback>();
-                    feedback_msg->x = pose_.x;
-                    feedback_msg->y = pose_.y;
-                    feedback_msg->theta = pose_.theta;
-                    goal_handle_->publish_feedback(feedback_msg);
-                }
+
+            double clipped_v_x_f = cos(pose_.theta) * clipped_v_x_r - sin(pose_.theta) * clipped_v_y_r;
+            double clipped_v_y_f = sin(pose_.theta) * clipped_v_x_r + cos(pose_.theta) * clipped_v_y_r; 
+
+
+            printCmdVelArrow(linear_speed_cmd_x, linear_speed_cmd_y, clipped_v_x_f, clipped_v_y_f);
+
+            
+            //publish feedback
+            auto feedback_msg = std::make_shared<inrof2025_ros_type::action::Follow::Feedback>();
+            feedback_msg->x = pose_.x;
+            feedback_msg->y = pose_.y;
+            feedback_msg->theta = pose_.theta;
+            goal_handle_->publish_feedback(feedback_msg);
 
         }
 
