@@ -26,7 +26,7 @@ namespace dummy {
                 const std::shared_ptr<inrof2025_ros_type::srv::BallColor::Request> request,
                 const std::shared_ptr<inrof2025_ros_type::srv::BallColor::Response> response
             ) {
-                response->color = 0;
+                response->color = 1;
             }
 
             rclcpp::Service<inrof2025_ros_type::srv::Vacume>::SharedPtr srvVacume_;

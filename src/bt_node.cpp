@@ -115,7 +115,10 @@ namespace ActionNodes {
                 result_future,
                 std::chrono::seconds(1)
             ) == rclcpp::FutureReturnCode::SUCCESS
-        ) {}
+        ) {
+            std::shared_ptr<inrof2025_ros_type::srv::BallColor::Response> response = result_future.get();
+            return *response;
+        }
     }
 
     bool BTNode::isRuning() {
