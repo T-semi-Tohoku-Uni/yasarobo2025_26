@@ -211,7 +211,7 @@ def generate_launch_description():
             "Kp_theta": 1.00,
             "Ki_theta": 0.00,
             "Kd_theta": 0.00,
-            "x":1
+            "x":25
         }]
     )
 
