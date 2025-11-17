@@ -198,7 +198,7 @@ def generate_launch_description():
             "max_linear_speed": 0.13,
             "max_angular_speed": 0.5,
             "lookahead_distance": 0.10,
-            "max_linear_tolerance": 0.07,
+            "max_linear_tolerance": 0.25,
             "max_reaching_distance": 0.04,
             "max_theta_tolerance": 1.00,
             "max_reaching_theta": 0.10,
