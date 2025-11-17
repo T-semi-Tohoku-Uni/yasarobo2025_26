@@ -292,7 +292,7 @@ class FollowNode: public rclcpp::Node {
                     goal_handle_.reset();
                 }
 
-            } else {
+            } 
                     
 
 
@@ -331,7 +331,7 @@ class FollowNode: public rclcpp::Node {
                     feedback_msg->y = pose_.y;
                     feedback_msg->theta = pose_.theta;
                     goal_handle_->publish_feedback(feedback_msg);
-                }
+                
 
         }
 
