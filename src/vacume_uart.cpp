@@ -12,6 +12,7 @@
 #include <std_msgs/msg/u_int8.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <inrof2025_ros_type/srv/vacume.hpp>
+#include <inrof2025_ros_type/srv/ball_color.hpp>
 
 
 namespace raspi{
@@ -46,9 +47,21 @@ namespace raspi{
                     "/srv/vacume",
                     std::bind(&ColorVacumeNode::vacumeCallback, this, std::placeholders::_1, std::placeholders::_2)
                 );
+
+                srvColor_ = this->create_service<inrof2025_ros_type::srv::BallColor> (
+                    "color",
+                    std::bind(&ColorVacumeNode::colorCallback, this, std::placeholders::_1, std::placeholders::_2)
+                );
             }
         
         private:
+            void colorCallback(
+                const std::shared_ptr<inrof2025_ros_type::srv::BallColor::Request> request,
+                const std::shared_ptr<inrof2025_ros_type::srv::BallColor::Response> response
+            ) {
+                response->color = color_;
+            }
+            
             int open_serial(const char *device_name)
             {
                 int fd = ::open(device_name, O_RDWR | O_NOCTTY | O_NONBLOCK);
@@ -118,6 +131,7 @@ namespace raspi{
                             auto msg = std_msgs::msg::UInt8();
                             msg.data = data_byte - 48;
                             pubColor_->publish(msg);
+                            color_ = msg.data;
                         } 
 
                         recev_buffer_.erase(recev_buffer_.begin(), it_delim + 2);
@@ -165,6 +179,8 @@ namespace raspi{
             // Vacume用
             rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr subVac_;
             rclcpp::Service<inrof2025_ros_type::srv::Vacume>::SharedPtr srvVacume_;
+            rclcpp::Service<inrof2025_ros_type::srv::BallColor>::SharedPtr srvColor_;
+            int color_;
     };
 } // namespace raspi
 

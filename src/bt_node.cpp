@@ -22,6 +22,8 @@
 #include <inrof2025_ros_type/srv/ball_path.hpp>
 #include <bt_increment.hpp>
 #include <bt_while_do_else_break.hpp>
+#include <bt_ball_color.hpp>
+#include <bt_switch_color.hpp>
 
 using namespace std::chrono_literals;
 using namespace BT;
@@ -34,6 +36,7 @@ namespace ActionNodes {
         srvBall_ = this->create_client<inrof2025_ros_type::srv::BallPose> ("ball_detect");
         srvBallRoute_ = this->create_client<inrof2025_ros_type::srv::BallPath>("generate_ball_path");
         srvPose_ = this->create_client<inrof2025_ros_type::srv::Pose>("pose");
+        srvBallColor_ = this->create_client<inrof2025_ros_type::srv::BallColor>("color");
         actFollow_ = rclcpp_action::create_client<inrof2025_ros_type::action::Follow> (this, "follow");
         actRotate_ = rclcpp_action::create_client<inrof2025_ros_type::action::Rotate> (this, "rotate");
     };
@@ -91,7 +94,31 @@ namespace ActionNodes {
                 result_future,
                 std::chrono::seconds(1)
             ) == rclcpp::FutureReturnCode::SUCCESS
-        ) {}
+        ) {
+            std::shared_ptr<inrof2025_ros_type::srv::Pose::Response> response = result_future.get();
+            return *response;
+        }
+    }
+
+    inrof2025_ros_type::srv::BallColor::Response BTNode::ball_color() {
+        while(!this->srvBallColor_->wait_for_service(1s)) {
+            if (!rclcpp::ok()) break;
+            RCLCPP_WARN(this->get_logger(), "srvColor not available");
+        }
+
+        auto request = std::make_shared<inrof2025_ros_type::srv::BallColor::Request>();
+        auto result_future = srvBallColor_->async_send_request(request);
+
+        if (
+            rclcpp::spin_until_future_complete(
+                this->get_node_base_interface(),
+                result_future,
+                std::chrono::seconds(1)
+            ) == rclcpp::FutureReturnCode::SUCCESS
+        ) {
+            std::shared_ptr<inrof2025_ros_type::srv::BallColor::Response> response = result_future.get();
+            return *response;
+        }
     }
 
     bool BTNode::isRuning() {
@@ -267,7 +294,14 @@ int main(int argc, char* argv[]) {
         };
     factory.registerBuilder<ActionNodes::Increment>("increment", builder_increment);
 
+    BT::NodeBuilder builder_ball_color = 
+        [ros_node](const std::string& name, const NodeConfiguration& config) {
+            return std::make_unique<ActionNodes::BallColor>(name, config, ros_node);
+        };
+    factory.registerBuilder<ActionNodes::BallColor>("ball_color", builder_ball_color);
+
     factory.registerNodeType<ControlNodes::WhileDoElseBreakNode>("WhileDoElseBreak");
+    factory.registerNodeType<ControlNodes::SwitchColor>("SwitchColor");
 
     std::string package_path = ament_index_cpp::get_package_share_directory("yasarobo2025_26");
     factory.registerBehaviorTreeFromFile(package_path + "/config/main_bt.xml");
