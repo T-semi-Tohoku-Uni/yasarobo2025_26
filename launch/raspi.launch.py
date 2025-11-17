@@ -202,12 +202,15 @@ def generate_launch_description():
             "max_reaching_distance": 0.04,
             "max_theta_tolerance": 1.00,
             "max_reaching_theta": 0.10,
-            "Kp_linear": 0.80,
-            "Ki_linear": 0.00,
-            "Kd_linear": 0.00,
-            "Kp_angular": 1.00,
-            "Ki_angular": 0.00,
-            "Kd_angular": 0.00,
+            "Kp_tan": 0.80,
+            "Ki_tan": 0.00,
+            "Kd_tan": 0.00,
+            "Kp_norm": 0.80,
+            "Ki_norm": 0.00,
+            "Kd_norm": 0.00,
+            "Kp_theta": 1.00,
+            "Ki_theta": 0.00,
+            "Kd_theta": 0.00,
             "x":1
         }]
     )
