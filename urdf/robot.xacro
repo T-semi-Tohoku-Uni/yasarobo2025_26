@@ -15,14 +15,14 @@
   <visual>
     <origin xyz="0 0 0" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="file://$(find robot_description)/meshes/base_link.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/base_link.stl" scale="0.001 0.001 0.001"/>
     </geometry>
     <material name="steel_satin"/>
   </visual>
   <collision>
     <origin xyz="0 0 0" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="file://$(find robot_description)/meshes/base_link.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/base_link.stl" scale="0.001 0.001 0.001"/>
     </geometry>
   </collision>
 </link>
@@ -36,14 +36,14 @@
   <visual>
     <origin xyz="-0.007243 -0.081923 0.003" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="file://$(find robot_description)/meshes/alm_1_v4_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/alm_1_v4_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
     <material name="aluminum_satin"/>
   </visual>
   <collision>
     <origin xyz="-0.007243 -0.081923 0.003" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="file://$(find robot_description)/meshes/alm_1_v4_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/alm_1_v4_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
   </collision>
 </link>
@@ -57,14 +57,14 @@
   <visual>
     <origin xyz="-0.020233 -0.089423 0.013" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="file://$(find robot_description)/meshes/chassis_unit_v18_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/chassis_unit_v18_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
     <material name="steel_satin"/>
   </visual>
   <collision>
     <origin xyz="-0.020233 -0.089423 0.013" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="file://$(find robot_description)/meshes/chassis_unit_v18_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/chassis_unit_v18_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
   </collision>
 </link>
@@ -78,14 +78,14 @@
   <visual>
     <origin xyz="-0.072195 -0.059423 0.013" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="file://$(find robot_description)/meshes/alm_with_lidar_v6_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/alm_with_lidar_v6_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
     <material name="aluminum_satin"/>
   </visual>
   <collision>
     <origin xyz="-0.072195 -0.059423 0.013" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="file://$(find robot_description)/meshes/alm_with_lidar_v6_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/alm_with_lidar_v6_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
   </collision>
 </link>
@@ -99,14 +99,14 @@
   <visual>
     <origin xyz="-0.072195 0.060577 0.013" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="file://$(find robot_description)/meshes/chassis_unit_v18_2.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/chassis_unit_v18_2.stl" scale="0.001 0.001 0.001"/>
     </geometry>
     <material name="steel_satin"/>
   </visual>
   <collision>
     <origin xyz="-0.072195 0.060577 0.013" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="file://$(find robot_description)/meshes/chassis_unit_v18_2.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/chassis_unit_v18_2.stl" scale="0.001 0.001 0.001"/>
     </geometry>
   </collision>
 </link>
@@ -120,14 +120,14 @@
   <visual>
     <origin xyz="-0.020233 0.090577 0.013" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="file://$(find robot_description)/meshes/alm_1_v4_2.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/alm_1_v4_2.stl" scale="0.001 0.001 0.001"/>
     </geometry>
     <material name="aluminum_satin"/>
   </visual>
   <collision>
     <origin xyz="-0.020233 0.090577 0.013" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="file://$(find robot_description)/meshes/alm_1_v4_2.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/alm_1_v4_2.stl" scale="0.001 0.001 0.001"/>
     </geometry>
   </collision>
 </link>
@@ -141,14 +141,14 @@
   <visual>
     <origin xyz="0.08369 -0.029423 0.013" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="file://$(find robot_description)/meshes/chassis_unit_v18_3.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/chassis_unit_v18_3.stl" scale="0.001 0.001 0.001"/>
     </geometry>
     <material name="steel_satin"/>
   </visual>
   <collision>
     <origin xyz="0.08369 -0.029423 0.013" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="file://$(find robot_description)/meshes/chassis_unit_v18_3.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/chassis_unit_v18_3.stl" scale="0.001 0.001 0.001"/>
     </geometry>
   </collision>
 </link>
@@ -162,14 +162,14 @@
   <visual>
     <origin xyz="-0.072195 0.023977 0.013" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="file://$(find robot_description)/meshes/LD19_with_mounter_v17_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/LD19_with_mounter_v17_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
     <material name="steel_satin"/>
   </visual>
   <collision>
     <origin xyz="-0.072195 0.023977 0.013" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="file://$(find robot_description)/meshes/LD19_with_mounter_v17_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/LD19_with_mounter_v17_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
   </collision>
 </link>
@@ -183,14 +183,14 @@
   <visual>
     <origin xyz="0.044719 0.053077 0.013" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="file://$(find robot_description)/meshes/fun_adapter_v2_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/fun_adapter_v2_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
     <material name="steel_satin"/>
   </visual>
   <collision>
     <origin xyz="0.044719 0.053077 0.013" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="file://$(find robot_description)/meshes/fun_adapter_v2_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/fun_adapter_v2_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
   </collision>
 </link>
@@ -204,14 +204,14 @@
   <visual>
     <origin xyz="0.065593 0.061233 0.016" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="file://$(find robot_description)/meshes/fun_v13_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/fun_v13_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
     <material name="steel_satin"/>
   </visual>
   <collision>
     <origin xyz="0.065593 0.061233 0.016" rpy="0 0 0"/>
     <geometry>
-      <mesh filename="file://$(find robot_description)/meshes/fun_v13_1.stl" scale="0.001 0.001 0.001"/>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/fun_v13_1.stl" scale="0.001 0.001 0.001"/>
     </geometry>
   </collision>
 </link>
