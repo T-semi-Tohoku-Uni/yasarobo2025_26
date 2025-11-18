@@ -252,12 +252,6 @@
   <child link="chassis_unit_v18_3"/>
 </joint>
 
-<joint name="Rigid 9" type="fixed">
-  <origin xyz="0.0 -0.0834 0.0" rpy="0 0 0"/>
-  <parent link="alm_with_lidar_v6_1"/>
-  <child link="LD19_with_mounter_v17_1"/>
-</joint>
-
 <joint name="Rigid 10" type="fixed">
   <origin xyz="-0.064952 0.0375 0.0" rpy="0 0 0"/>
   <parent link="alm_1_v4_2"/>
@@ -268,6 +262,12 @@
   <origin xyz="-0.020874 -0.008156 -0.003" rpy="0 0 0"/>
   <parent link="fun_adapter_v2_1"/>
   <child link="fun_v13_1"/>
+</joint>
+
+<joint name="Rigid 13" type="fixed">
+  <origin xyz="0.0 -0.0834 0.0" rpy="0 0 0"/>
+  <parent link="alm_with_lidar_v6_1"/>
+  <child link="LD19_with_mounter_v17_1"/>
 </joint>
 
   <link name="base_footprint">
