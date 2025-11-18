@@ -5,48 +5,273 @@
   <xacro:include filename="$(find yasarobo2025_26)/urdf/materials.xacro" />
   <xacro:include filename="$(find yasarobo2025_26)/urdf/robot.trans" />
 
-  <!-- base_footprint（地面接触用、摩擦のみ設定） -->
+
+  <link name="base_link">
+  <inertial>
+    <origin xyz="-0.0008546614468033811 -0.0045803537110478505 -0.0015000000000000239" rpy="0 0 0"/>
+    <mass value="0.40518242543610605"/>
+    <inertia ixx="0.000692" iyy="0.000603" izz="0.001295" ixy="-3.5e-05" iyz="-0.0" ixz="-0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/base_link.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="steel_satin"/>
+  </visual>
+  <collision>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/base_link.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="alm_1_v4_1">
+  <inertial>
+    <origin xyz="-0.038971357377718556 -0.022500350269199804 -0.00499999999999999" rpy="0 0 0"/>
+    <mass value="0.012994984167097644"/>
+    <inertia ixx="6e-06" iyy="1.6e-05" izz="2.1e-05" ixy="-9e-06" iyz="-0.0" ixz="-0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.007243 -0.081923 0.003" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/alm_1_v4_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="aluminum_satin"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.007243 -0.081923 0.003" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/alm_1_v4_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="chassis_unit_v18_1">
+  <inertial>
+    <origin xyz="0.02107279938591993 -0.023552949632407408 -0.02707795178986533" rpy="0 0 0"/>
+    <mass value="0.8800381391052138"/>
+    <inertia ixx="0.000678" iyy="0.00046" izz="0.000786" ixy="-0.000191" iyz="4e-06" ixz="3e-06"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.020233 -0.089423 0.013" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/chassis_unit_v18_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="steel_satin"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.020233 -0.089423 0.013" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/chassis_unit_v18_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="alm_with_lidar_v6_1">
+  <inertial>
+    <origin xyz="-3.089236015191288e-07 -0.06000035026918939 0.005000000000004555" rpy="0 0 0"/>
+    <mass value="0.01289311174211968"/>
+    <inertia ixx="2.1e-05" iyy="0.0" izz="2.1e-05" ixy="-0.0" iyz="0.0" ixz="-0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.072195 -0.059423 0.013" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/alm_with_lidar_v6_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="aluminum_satin"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.072195 -0.059423 0.013" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/alm_with_lidar_v6_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="chassis_unit_v18_2">
+  <inertial>
+    <origin xyz="-0.0309054320622899 -0.006457122136964442 -0.02705226646111722" rpy="0 0 0"/>
+    <mass value="0.8800381391052138"/>
+    <inertia ixx="0.000678" iyy="0.000459" izz="0.000786" ixy="0.000191" iyz="-3e-06" ixz="2e-06"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.072195 0.060577 0.013" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/chassis_unit_v18_2.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="steel_satin"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.072195 0.060577 0.013" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/chassis_unit_v18_2.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="alm_1_v4_2">
+  <inertial>
+    <origin xyz="-0.05196135737773084 0.0299996497308002 0.005000000000000043" rpy="0 0 0"/>
+    <mass value="0.012994984167097644"/>
+    <inertia ixx="6e-06" iyy="1.6e-05" izz="2.1e-05" ixy="9e-06" iyz="0.0" ixz="-0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.020233 0.090577 0.013" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/alm_1_v4_2.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="aluminum_satin"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.020233 0.090577 0.013" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/alm_1_v4_2.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="chassis_unit_v18_3">
+  <inertial>
+    <origin xyz="0.009860951500623896 -0.030007342590103164 -0.027052266461117254" rpy="0 0 0"/>
+    <mass value="0.8800381391052138"/>
+    <inertia ixx="0.000348" iyy="0.000788" izz="0.000786" ixy="-0.0" iyz="-0.0" ixz="-4e-06"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.08369 -0.029423 0.013" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/chassis_unit_v18_3.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="steel_satin"/>
+  </visual>
+  <collision>
+    <origin xyz="0.08369 -0.029423 0.013" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/chassis_unit_v18_3.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="LD19_with_mounter_v17_1">
+  <inertial>
+    <origin xyz="0.0014880718181120856 0.023425527493304784 -0.008834144488996753" rpy="0 0 0"/>
+    <mass value="0.2090923090498693"/>
+    <inertia ixx="6.4e-05" iyy="6.1e-05" izz="8.8e-05" ixy="0.0" iyz="-0.0" ixz="3e-06"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.072195 0.023977 0.013" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/LD19_with_mounter_v17_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="steel_satin"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.072195 0.023977 0.013" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/LD19_with_mounter_v17_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="fun_adapter_v2_1">
+  <inertial>
+    <origin xyz="0.0041713899627489545 -0.02277574396026466 -0.0014999999999999528" rpy="0 0 0"/>
+    <mass value="0.06192959665605305"/>
+    <inertia ixx="1.2e-05" iyy="1.8e-05" izz="3e-05" ixy="5e-06" iyz="0.0" ixz="0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.044719 0.053077 0.013" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/fun_adapter_v2_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="steel_satin"/>
+  </visual>
+  <collision>
+    <origin xyz="0.044719 0.053077 0.013" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/fun_adapter_v2_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="fun_v13_1">
+  <inertial>
+    <origin xyz="0.0220222284081973 -0.019856013372210275 -0.02093589984865133" rpy="0 0 0"/>
+    <mass value="0.3073161824855775"/>
+    <inertia ixx="0.000152" iyy="0.00017" izz="0.00015" ixy="1.6e-05" iyz="-2e-06" ixz="-1e-06"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.065593 0.061233 0.016" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/fun_v13_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="steel_satin"/>
+  </visual>
+  <collision>
+    <origin xyz="0.065593 0.061233 0.016" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="file://$(find yasarobo2025_26)/meshes/fun_v13_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+  <joint name="Rigid 1" type="fixed">
+  <origin xyz="0.007243 0.081923 -0.003" rpy="0 0 0"/>
+  <parent link="base_link"/>
+  <child link="alm_1_v4_1"/>
+</joint>
+
+<joint name="Rigid 2" type="fixed">
+  <origin xyz="0.01299 0.0075 -0.01" rpy="0 0 0"/>
+  <parent link="alm_1_v4_1"/>
+  <child link="chassis_unit_v18_1"/>
+</joint>
+
+<joint name="Rigid 3" type="fixed">
+  <origin xyz="0.051962 -0.03 0.0" rpy="0 0 0"/>
+  <parent link="chassis_unit_v18_1"/>
+  <child link="alm_with_lidar_v6_1"/>
+</joint>
+
+<joint name="Rigid 4" type="fixed">
+  <origin xyz="0.0 -0.12 0.0" rpy="0 0 0"/>
+  <parent link="alm_with_lidar_v6_1"/>
+  <child link="chassis_unit_v18_2"/>
+</joint>
+
+<joint name="Rigid 5" type="fixed">
+  <origin xyz="-0.051962 -0.03 0.0" rpy="0 0 0"/>
+  <parent link="chassis_unit_v18_2"/>
+  <child link="alm_1_v4_2"/>
+</joint>
+
+<joint name="Rigid 6" type="fixed">
+  <origin xyz="-0.090933 -0.0525 -0.01" rpy="0 0 0"/>
+  <parent link="alm_1_v4_1"/>
+  <child link="chassis_unit_v18_3"/>
+</joint>
+
+<joint name="Rigid 10" type="fixed">
+  <origin xyz="-0.064952 0.0375 0.0" rpy="0 0 0"/>
+  <parent link="alm_1_v4_2"/>
+  <child link="fun_adapter_v2_1"/>
+</joint>
+
+<joint name="Rigid 11" type="fixed">
+  <origin xyz="-0.020874 -0.008156 -0.003" rpy="0 0 0"/>
+  <parent link="fun_adapter_v2_1"/>
+  <child link="fun_v13_1"/>
+</joint>
+
+<joint name="Rigid 13" type="fixed">
+  <origin xyz="0.0 -0.0834 0.0" rpy="0 0 0"/>
+  <parent link="alm_with_lidar_v6_1"/>
+  <child link="LD19_with_mounter_v17_1"/>
+</joint>
+
   <link name="base_footprint">
     <gazebo>
-      <surface>
-        <friction>
-          <ode>
-            <mu>1.0</mu>
-            <mu2>1.0</mu2>
-          </ode>
-        </friction>
-      </surface>
-    </gazebo>
-  </link>
-
-  <!-- base_link -->
-  <link name="base_link">
-    <inertial>
-      <origin xyz="-9.089504425782191e-15 -4.445651237390906e-17 4.545678390232227e-15" rpy="0 0 0"/>
-      <mass value="0.012946126118149015"/>
-      <!-- iyy をゼロから ixx と同じスケールに修正 -->
-      <inertia
-        ixx="2.1e-05"
-        iyy="2.1e-05"
-        izz="2.1e-05"
-        ixy="0.0"
-        iyz="0.0"
-        ixz="0.0"/>
-    </inertial>
-    <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <mesh filename="file://$(find yasarobo2025_26)/meshes/base_link.stl" scale="0.001 0.001 0.001"/>
-      </geometry>
-      <material name="aluminum_satin"/>
-    </visual>
-    <collision name="base_link_collision">
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <mesh filename="file://$(find yasarobo2025_26)/meshes/base_link.stl" scale="0.001 0.001 0.001"/>
-      </geometry>
-    </collision>
-    <gazebo reference="base_link_collision">
       <surface>
         <friction>
           <ode>
@@ -64,33 +289,11 @@
     <origin xyz="0.0 0.0 0.05" rpy="0 0 0"/>
   </joint>
 
-  <!-- LD19_with_mounter_v4_1 -->
-  <link name="LD19_with_mounter_v4_1">
-    <inertial>
-      <origin xyz="0.025278982742592118 0.01287150469895035 -0.022981220041423615" rpy="0 0 0"/>
-      <mass value="0.19341283989224745"/>
-      <inertia
-        ixx="6.5e-05"
-        iyy="7.9e-05"
-        izz="8.9e-05"
-        ixy="0.0"
-        iyz="0.0"
-        ixz="1.2e-05"/>
-    </inertial>
-    <visual>
-      <origin xyz="-0.005 0.013 -0.0" rpy="0 0 0"/>
-      <geometry>
-        <mesh filename="file://$(find yasarobo2025_26)/meshes/LD19_with_mounter_v4_1.stl" scale="0.001 0.001 0.001"/>
-      </geometry>
-      <material name="steel_satin"/>
-    </visual>
-    <!-- collision が不要ならコメントアウトのままでOK -->
-  </link>
 
-  <!-- LiDAR -->
+   <!-- LiDAR -->
   <link name="ldlidar_base"/>
   <joint name="lidar_joint" type="fixed">
-    <parent link="LD19_with_mounter_v4_1"/>
+    <parent link="LD19_with_mounter_v17_1"/>
     <child  link="ldlidar_base"/>
     <origin xyz="0.033 0.013 -0.05" rpy="0 0 0"/>
   </joint>
@@ -128,227 +331,6 @@
     </sensor>
   </gazebo>
 
-  <!-- chassis_unit_v12_1 -->
-  <link name="chassis_unit_v12_1">
-    <inertial>
-      <origin xyz="-0.03167569261038175 -0.020149624242172634 -0.026142686915341103" rpy="0 0 0"/>
-      <mass value="0.9094540640488471"/>
-      <inertia
-        ixx="0.000711"
-        iyy="0.000485"
-        izz="0.000788"
-        ixy="0.000195"
-        iyz="0.000052"
-        ixz="0.000030"/>
-    </inertial>
-    <visual>
-      <origin xyz="-0.0 0.045 0.005" rpy="0 0 0"/>
-      <geometry>
-        <mesh filename="file://$(find yasarobo2025_26)/meshes/chassis_unit_v12_1.stl" scale="0.001 0.001 0.001"/>
-      </geometry>
-      <material name="silicone_white"/>
-    </visual>
-    <collision name="chassis_unit_v12_1_collision">
-      <origin xyz="-0.0 0.045 0.005" rpy="0 0 0"/>
-      <geometry>
-        <mesh filename="file://$(find yasarobo2025_26)/meshes/chassis_unit_v12_1.stl" scale="0.001 0.001 0.001"/>
-      </geometry>
-    </collision>
-    <gazebo reference="chassis_unit_v12_1_collision">
-      <surface>
-        <friction>
-          <ode>
-            <mu>1.0</mu>
-            <mu2>1.0</mu2>
-          </ode>
-        </friction>
-      </surface>
-    </gazebo>
-  </link>
-
-  <!-- chassis_unit_v12_2 -->
-  <link name="chassis_unit_v12_2">
-    <inertial>
-      <origin xyz="-0.03166397328252324 0.005142858085078819 -0.0261426869153411" rpy="0 0 0"/>
-      <mass value="0.9094540640488471"/>
-      <inertia
-        ixx="0.000711"
-        iyy="0.000486"
-        izz="0.000788"
-        ixy="-0.000195"
-        iyz="-0.000052"
-        ixz="-0.000030"/>
-    </inertial>
-    <visual>
-      <origin xyz="-0.0 -0.06 0.005" rpy="0 0 0"/>
-      <geometry>
-        <mesh filename="file://$(find yasarobo2025_26)/meshes/chassis_unit_v12_2.stl" scale="0.001 0.001 0.001"/>
-      </geometry>
-      <material name="silicone_white"/>
-    </visual>
-    <collision name="chassis_unit_v12_2_collision">
-      <origin xyz="-0.0 -0.06 0.005" rpy="0 0 0"/>
-      <geometry>
-        <mesh filename="file://$(find yasarobo2025_26)/meshes/chassis_unit_v12_2.stl" scale="0.001 0.001 0.001"/>
-      </geometry>
-    </collision>
-    <gazebo reference="chassis_unit_v12_2_collision">
-      <surface>
-        <friction>
-          <ode>
-            <mu>1.0</mu>
-            <mu2>1.0</mu2>
-          </ode>
-        </friction>
-      </surface>
-    </gazebo>
-  </link>
-
-  <!-- alm_1_v3_1 -->
-  <link name="alm_1_v3_1">
-    <inertial>
-      <origin xyz="-0.051961049228441504 0.029999999552957693 0.004999999999999994" rpy="0 0 0"/>
-      <mass value="0.01316675074543267"/>
-      <inertia
-        ixx="6e-06"
-        iyy="1.6e-05"
-        izz="2.1e-05"
-        ixy="9e-06"
-        iyz="0.0"
-        ixz="0.0"/>
-    </inertial>
-    <visual>
-      <origin xyz="0.051962 0.09 0.005" rpy="0 0 0"/>
-      <geometry>
-        <mesh filename="file://$(find yasarobo2025_26)/meshes/alm_1_v3_1.stl" scale="0.001 0.001 0.001"/>
-      </geometry>
-      <material name="aluminum_satin"/>
-    </visual>
-    <collision name="alm_1_v3_1_collision">
-      <origin xyz="0.051962 0.09 0.005" rpy="0 0 0"/>
-      <geometry>
-        <mesh filename="file://$(find yasarobo2025_26)/meshes/alm_1_v3_1.stl" scale="0.001 0.001 0.001"/>
-      </geometry>
-    </collision>
-    <gazebo reference="alm_1_v3_1_collision">
-      <surface>
-        <friction>
-          <ode>
-            <mu>1.0</mu>
-            <mu2>1.0</mu2>
-          </ode>
-        </friction>
-      </surface>
-    </gazebo>
-  </link>
-
-  <!-- chassis_unit_v12_3 -->
-  <link name="chassis_unit_v12_3">
-    <inertial>
-      <origin xyz="-0.0016124325639870207 -0.03749323384290623 -0.02614268691534118" rpy="0 0 0"/>
-      <mass value="0.9094540640488471"/>
-      <inertia
-        ixx="0.000373"
-        iyy="0.000824"
-        izz="0.000788"
-        ixy="0.0"
-        iyz="0.0"
-        ixz="6e-05"/>
-    </inertial>
-    <visual>
-      <origin xyz="0.142894 -0.0375 0.005" rpy="0 0 0"/>
-      <geometry>
-        <mesh filename="file://$(find yasarobo2025_26)/meshes/chassis_unit_v12_3.stl" scale="0.001 0.001 0.001"/>
-      </geometry>
-      <material name="silicone_white"/>
-    </visual>
-    <collision name="chassis_unit_v12_3_collision">
-      <origin xyz="0.142894 -0.0375 0.005" rpy="0 0 0"/>
-      <geometry>
-        <mesh filename="file://$(find yasarobo2025_26)/meshes/chassis_unit_v12_3.stl" scale="0.001 0.001 0.001"/>
-      </geometry>
-    </collision>
-    <gazebo reference="chassis_unit_v12_3_collision">
-      <surface>
-        <friction>
-          <ode>
-            <mu>1.0</mu>
-            <mu2>1.0</mu2>
-          </ode>
-        </friction>
-      </surface>
-    </gazebo>
-  </link>
-
-  <!-- alm_1_v3_2 -->
-  <link name="alm_1_v3_2">
-    <inertial>
-      <origin xyz="-0.051961049228450455 -0.02999999955294213 0.004999999999999977" rpy="0 0 0"/>
-      <mass value="0.01316675074543267"/>
-      <inertia
-        ixx="6e-06"
-        iyy="1.6e-05"
-        izz="2.1e-05"
-        ixy="-9e-06"
-        iyz="0.0"
-        ixz="0.0"/>
-    </inertial>
-    <visual>
-      <origin xyz="0.051962 -0.09 0.005" rpy="0 0 0"/>
-      <geometry>
-        <mesh filename="file://$(find yasarobo2025_26)/meshes/alm_1_v3_2.stl" scale="0.001 0.001 0.001"/>
-      </geometry>
-      <material name="aluminum_satin"/>
-    </visual>
-    <collision name="alm_1_v3_2_collision">
-      <origin xyz="0.051962 -0.09 0.005" rpy="0 0 0"/>
-      <geometry>
-        <mesh filename="file://$(find yasarobo2025_26)/meshes/alm_1_v3_2.stl" scale="0.001 0.001 0.001"/>
-      </geometry>
-    </collision>
-    <gazebo reference="alm_1_v3_2_collision">
-      <surface>
-        <friction>
-          <ode>
-            <mu>1.0</mu>
-            <mu2>1.0</mu2>
-          </ode>
-        </friction>
-      </surface>
-    </gazebo>
-  </link>
-
-  <!-- 固定ジョイント群 -->
-  <joint name="Rigid 1" type="fixed">
-    <origin xyz="0.005 -0.013 0.0" rpy="0 0 0"/>
-    <parent link="base_link"/>
-    <child  link="LD19_with_mounter_v4_1"/>
-  </joint>
-  <joint name="Rigid 2" type="fixed">
-    <origin xyz="0.0 -0.045 -0.005" rpy="0 0 0"/>
-    <parent link="base_link"/>
-    <child  link="chassis_unit_v12_1"/>
-  </joint>
-  <joint name="Rigid 3" type="fixed">
-    <origin xyz="0.0 0.06 -0.005" rpy="0 0 0"/>
-    <parent link="base_link"/>
-    <child  link="chassis_unit_v12_2"/>
-  </joint>
-  <joint name="Rigid 4" type="fixed">
-    <origin xyz="-0.051962 -0.045 0.0" rpy="0 0 0"/>
-    <parent link="chassis_unit_v12_1"/>
-    <child  link="alm_1_v3_1"/>
-  </joint>
-  <joint name="Rigid 6" type="fixed">
-    <origin xyz="-0.090932 -0.0525 0.0" rpy="0 0 0"/>
-    <parent link="alm_1_v3_2"/>
-    <child  link="chassis_unit_v12_3"/>
-  </joint>
-  <joint name="Rigid 7" type="fixed">
-    <origin xyz="-0.051962 0.03 0.0" rpy="0 0 0"/>
-    <parent link="chassis_unit_v12_2"/>
-    <child  link="alm_1_v3_2"/>
-  </joint>
 
   <gazebo>
     <plugin filename="libignition-gazebo-velocity-control-system.so"

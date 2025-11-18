@@ -234,7 +234,8 @@ def generate_launch_description():
         remappings=[('clock', '/world/yasarobo/clock')],
         parameters=[{
             "shorten": 0.15,
-            "num_points_": 10
+            "num_points_": 10,
+            "theta_offset": math.pi/10.0,
         }]
     )
 
