@@ -82,7 +82,7 @@ namespace yasarobo2025_26{
             theta = atan2(dy, dx);
         }
 
-        theta = theta - 2*M_PI/3;
+        theta = theta - 2.0*M_PI/3.0 + 10.0*M_PI/2.0;
 
         if (request->is_return) {
             theta = pose_->theta;
