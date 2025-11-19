@@ -531,7 +531,7 @@ namespace mcl {
             }
 
             void lidarpose2uv(double range, double theta, geometry_msgs::msg::Pose2D pose, double *x_odom, double *y_odom, int *u, int *v) {
-                std::double_t x_lidar = range*cos(theta) + 0.033 + 0.005;
+                std::double_t x_lidar = range*cos(theta) + 0.084;
                 std::double_t y_lidar = range*sin(theta) + 0.013 - 0.013;
                 std::double_t x = x_lidar*cos(pose.theta) - y_lidar*sin(pose.theta) + pose.x;
                 std::double_t y = x_lidar*sin(pose.theta) + y_lidar*cos(pose.theta) + pose.y;

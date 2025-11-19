@@ -21,8 +21,10 @@ namespace yasarobo2025_26{
 
         this->declare_parameter<int>("num_points_", 10);
         this->declare_parameter<double>("shorten", 0.04);
+        this->declare_parameter<double>("theta_offset", 0.0);
         this->get_parameter("num_points_", num_points_);
         this->get_parameter("shorten", shorten_);
+        this->get_parameter("theta_offset", theta_offset_);
     };
 
     void BallPathNode::poseCallback(const geometry_msgs::msg::Pose2D::SharedPtr msg){
@@ -82,7 +84,7 @@ namespace yasarobo2025_26{
             theta = atan2(dy, dx);
         }
 
-        theta = theta - 2*M_PI/3;
+        theta = theta - 2.0*M_PI/3.0 + theta_offset_;
 
         if (request->is_return) {
             theta = pose_->theta;
