@@ -6,7 +6,7 @@
       <Sequence>
         <vacume_on on="1"/>
         <Delay delay_msec="5000">
-          <generate_route x="0.08"
+          <generate_route x="0.09"
                           y="2.05"
                           theta="1.05"/>
         </Delay>
@@ -52,13 +52,13 @@
               <follow_route/>
               <ball_color color="{color}"/>
               <SwitchColor color="{color}">
-                <generate_route x="0.08"
+                <generate_route x="0.09"
                                 y="0.75"
                                 theta="1.05"/>
-                <generate_route x="0.08"
+                <generate_route x="0.09"
                                 y="1.4"
                                 theta="1.05"/>
-                <generate_route x="0.08"
+                <generate_route x="0.09"
                                 y="2.05"
                                 theta="1.05"/>
               </SwitchColor>
