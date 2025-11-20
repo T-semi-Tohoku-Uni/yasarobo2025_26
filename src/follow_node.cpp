@@ -245,7 +245,7 @@ class FollowNode: public rclcpp::Node {
         geometry_msgs::msg::Point lookaheadPoint(double L){
             
             geometry_msgs::msg::Point result;
-            int idx = current_waypoint_index_;
+            double idx = current_waypoint_index_;
             double remain_L = L;
 
             if (path_.empty()) {
@@ -286,7 +286,7 @@ class FollowNode: public rclcpp::Node {
                 result.y = path_[idx].pose.position.y + seg_y * ratio;
                 result.z = 0.0;
 
-                scan_index_ = idx;
+                scan_index_ = idx + ratio;
                 return result;
             }
 
@@ -356,9 +356,9 @@ class FollowNode: public rclcpp::Node {
 
             target_pub_ ->publish(target_pose);
 
-            RCLCPP_INFO(this->get_logger(), "Waypoint advanced to %d start", current_waypoint_index_);
+            RCLCPP_INFO(this->get_logger(), "Waypoint advanced to %.1f start", current_waypoint_index_);
             updateCurrentwaypoint2();
-            RCLCPP_INFO(this->get_logger(), "Waypoint advanced to %d goal", scan_index_);
+            RCLCPP_INFO(this->get_logger(), "Waypoint advanced to %.1f goal", scan_index_);
 
             //error calculation linear
             double dx = path_[scan_index_].pose.position.x - pose_.x;
@@ -444,7 +444,7 @@ class FollowNode: public rclcpp::Node {
             lookahead_distance_ = computeDyanamicL(linear_speed_norm, 0.0);
 
             geometry_msgs::msg::Point lookahead_point = lookaheadPoint(lookahead_distance_);
-            int index = scan_index_;
+            double index = scan_index_;
             
             
             //後で、lateral errorも考慮するようにする
@@ -744,8 +744,8 @@ class FollowNode: public rclcpp::Node {
         double k_c_;
 
         // waypoint index
-        int current_waypoint_index_ = 0;    
-        int scan_index_ = 0.1;
+        double current_waypoint_index_ = 0;    
+        double scan_index_ = 0.1;
         int x_;
         
         // rotate action server
