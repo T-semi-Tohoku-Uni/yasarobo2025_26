@@ -71,11 +71,16 @@ class FollowNode: public rclcpp::Node {
             this->declare_parameter<double>("Kp_theta", 0.40);
             this->declare_parameter<double>("Ki_theta", 0.00);
             this->declare_parameter<double>("Kd_theta", 0.00);
-            this->declare_parameter<double>("max_linear_tolerance", 0.08);
+            this->declare_parameter<double>("max_linear_tolerance", 0.50);
             this->declare_parameter<double>("max_reaching_distance", 0.02);
             this->declare_parameter<double>("max_theta_tolerance", 0.3);
             this->declare_parameter<double>("max_reaching_theta", 0.1);
             this->declare_parameter<int>("x", 2);
+            this->declare_parameter<double>("L_min_", 0.05);
+            this->declare_parameter<double>("L_max_", 0.25);
+            this->declare_parameter<double>("L0_", 0.15);
+            this->declare_parameter<double>("k_v_", 0.0);
+            this->declare_parameter<double>("k_c_", 0.0);
             this->get_parameter("lookahead_distance", lookahead_distance_);
             this->get_parameter("max_linear_speed", max_linear_speed_);
             this->get_parameter("max_theta_speed", max_theta_speed_);
@@ -93,6 +98,11 @@ class FollowNode: public rclcpp::Node {
             this->get_parameter("max_theta_tolerance", max_theta_tolerance);
             this->get_parameter("max_reaching_theta", max_reaching_theta);
             this->get_parameter("x", x_);
+            this->get_parameter("L_min_", L_min_);
+            this->get_parameter("L_max_", L_max_);
+            this->get_parameter("L0_", L0_);
+            this->get_parameter("k_v_", k_v_);
+            this->get_parameter("k_c_", k_c_);
 
 
 
@@ -129,6 +139,8 @@ class FollowNode: public rclcpp::Node {
 
             rclcpp::QoS markerQos(rclcpp::KeepLast(10));
             marker_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("waypoint_marker", markerQos);
+            lookahead_marker_pub_ = this->create_publisher<visualization_msgs::msg::Marker>(
+            "lookahead_marker", 10);
             rclcpp::QoS poseArrowQos(rclcpp::KeepLast(10));
             pose_arrow_pub_= this->create_publisher<visualization_msgs::msg::Marker>("pose_arrow_marker", poseArrowQos);
             rclcpp::QoS cmdVelArrowQos(rclcpp::KeepLast(10));
@@ -185,6 +197,147 @@ class FollowNode: public rclcpp::Node {
             pose_.theta = msgs.theta;
             // RCLCPP_INFO(this->get_logger(), "%.4f %.4f", pose_.x, pose_.y);
         }
+
+
+        //使っていない
+        void updateCurrentwaypoint(){
+            current_waypoint_index_ = 0;
+            while (current_waypoint_index_ < static_cast<int>(path_.size()) -1) {
+                //calculate vector from current waypoint to next waypoint
+                double Ax = path_[current_waypoint_index_ + 1].pose.position.x - path_[current_waypoint_index_].pose.position.x;
+                double Ay = path_[current_waypoint_index_ + 1].pose.position.y - path_[current_waypoint_index_].pose.position.y;
+                //calculate vector from next waypoint to robot pose
+                double Bx = pose_.x - path_[current_waypoint_index_ + 1].pose.position.x;
+                double By = pose_.y - path_[current_waypoint_index_ + 1].pose.position.y;
+
+                double AB = Ax * Bx + Ay * By;
+
+                RCLCPP_INFO(this->get_logger(), "AB: %.4f", AB);
+ 
+                
+                if (AB <= 0.0 + 0.5) break;
+                
+                current_waypoint_index_++;
+
+                if (current_waypoint_index_ >= static_cast<int>(path_.size()) - 1) break;
+            }
+        }
+
+        //たまにうまく動かなかったから、一旦max_linear_toleranceの値をゆるくした。
+        void updateCurrentwaypoint2(){
+            if (path_.empty()) {
+                return;
+            }
+            if (current_waypoint_index_ >= static_cast<int>(path_.size()) - 1) {
+                return;
+            }
+            double linear_error = std::hypot(
+                path_[current_waypoint_index_].pose.position.x - pose_.x,
+                path_[current_waypoint_index_].pose.position.y - pose_.y
+            );
+
+            if (linear_error < max_linear_tolerance) {
+                current_waypoint_index_++;
+            }
+        }
+
+
+        geometry_msgs::msg::Point lookaheadPoint(double L){
+            
+            geometry_msgs::msg::Point result;
+            int idx = current_waypoint_index_;
+            double remain_L = L;
+
+            if (path_.empty()) {
+                return result;
+            }
+
+            if (idx < 0) idx = 0;
+
+            //path is longer than lookahead distance
+            if (idx >= static_cast<int>(path_.size()) - 1) {
+                scan_index_ = path_.size() - 1;
+                return path_.back().pose.position;
+            }
+
+            //search for lookahead point
+            while (idx < static_cast<int>(path_.size()) - 1){
+                double seg_x = path_[idx + 1].pose.position.x - path_[idx].pose.position.x;
+                double seg_y = path_[idx + 1].pose.position.y - path_[idx].pose.position.y;
+                double seg_len = std::hypot(seg_x, seg_y);
+
+                //skip zero-length segment
+                if (seg_len < 1e-6){
+                    idx++;
+                    continue;
+                }
+
+                //
+                if (seg_len < remain_L){
+                    remain_L = remain_L - seg_len;
+                    idx++;
+                    continue;
+                }
+
+
+                double ratio = remain_L / seg_len;
+                
+                result.x = path_[idx].pose.position.x + seg_x * ratio;
+                result.y = path_[idx].pose.position.y + seg_y * ratio;
+                result.z = 0.0;
+
+                scan_index_ = idx;
+                return result;
+            }
+
+            scan_index_ = path_.size() - 1;
+            return path_.back().pose.position;
+        }
+
+
+        
+        
+
+        double computeDyanamicL(double speed, double curvature){
+            double L = L0_ + k_v_ * speed + k_c_ * curvature;
+            if (L <= L_min_) L = L_min_;
+            if (L >= L_max_) L = L_max_;
+            return L;
+        }
+
+        double estimateCurvature(){
+            return 0.0;
+        }
+
+
+        //lateral error calculation
+        double computeLateralError(){
+            int i = current_waypoint_index_;
+            if (i >= static_cast<int>(path_.size()) - 1) {
+                return 0.0;
+            }
+            double seg_x = path_[i + 1].pose.position.x - path_[i].pose.position.x;
+            double seg_y = path_[i + 1].pose.position.y - path_[i].pose.position.y;
+            double seg = std::hypot(seg_x, seg_y);
+    
+            if (seg < 1e-6) return 0.0;
+
+            double dx = pose_.x - path_[i].pose.position.x;
+            double dy = pose_.y - path_[i].pose.position.y;
+
+            double dirx = seg_x / seg;
+            double diry = seg_y / seg;
+
+            double cross = dirx * dy - diry * dx;
+            return std::abs(cross);
+        }
+
+
+
+
+
+
+
         void controlLoop() {
             //do nothing if if there is no goal or path
             if (!goal_handle_){
@@ -203,11 +356,15 @@ class FollowNode: public rclcpp::Node {
 
             target_pub_ ->publish(target_pose);
 
+            RCLCPP_INFO(this->get_logger(), "Waypoint advanced to %d start", current_waypoint_index_);
+            updateCurrentwaypoint2();
+            RCLCPP_INFO(this->get_logger(), "Waypoint advanced to %d goal", scan_index_);
+
             //error calculation linear
-            double dx = path_[current_waypoint_index_].pose.position.x - pose_.x;
-            double dy = path_[current_waypoint_index_].pose.position.y - pose_.y;
-            double tx = path_[current_waypoint_index_+1].pose.position.x - path_[current_waypoint_index_].pose.position.x;
-            double ty = path_[current_waypoint_index_+1].pose.position.y - path_[current_waypoint_index_].pose.position.y;
+            double dx = path_[scan_index_].pose.position.x - pose_.x;
+            double dy = path_[scan_index_].pose.position.y - pose_.y;
+            double tx = path_[scan_index_+1].pose.position.x - path_[scan_index_].pose.position.x;
+            double ty = path_[scan_index_+1].pose.position.y - path_[scan_index_].pose.position.y;
             double norm = std::hypot(tx, ty);
             if (norm > 0) {
                 tx /= norm;
@@ -225,16 +382,16 @@ class FollowNode: public rclcpp::Node {
 
             //quoternion to yaw
             tf2::Quaternion q(
-                path_[current_waypoint_index_].pose.orientation.x,
-                path_[current_waypoint_index_].pose.orientation.y,
-                path_[current_waypoint_index_].pose.orientation.z,
-                path_[current_waypoint_index_].pose.orientation.w
+                path_[scan_index_].pose.orientation.x,
+                path_[scan_index_].pose.orientation.y,
+                path_[scan_index_].pose.orientation.z,
+                path_[scan_index_].pose.orientation.w
             );
 
-            double roll, pitch, yaw;
-            tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+            double roll, pitch, target_theta;
+            tf2::Matrix3x3(q).getRPY(roll, pitch, target_theta);
 
-            double theta_error = yaw - pose_.theta;
+            double theta_error = target_theta - pose_.theta;
             while (theta_error > M_PI) theta_error -= 2*M_PI;
             while (theta_error < -M_PI) theta_error += 2*M_PI;
 
@@ -252,10 +409,80 @@ class FollowNode: public rclcpp::Node {
             while (theta_goal >= M_2_PI) theta_goal -= M_2_PI;
             while (theta_goal < 0) theta_goal += M_2_PI;
 
-            //error calculation theta
-            double target_theta = yaw;
+            
             printWayPointArrow(path_[current_waypoint_index_].pose, path_[path_.size()-1].pose);
 
+
+
+            if ((linear_goal_distance < max_reaching_distance)){ //&& theta_goal < max_reaching_theta) {
+                //goal reached
+                RCLCPP_INFO(this->get_logger(), "Goal reached.");
+                publishZero();
+                auto result_msg = std::make_shared<inrof2025_ros_type::action::Follow::Result>();
+                result_msg->success = true;
+                goal_handle_->succeed(result_msg);
+                goal_handle_.reset();
+                return;
+            }
+
+            //PID control for linear speed
+            double linear_cmd_tan = linear_PID_tan_.compute(error_tan, 0.0);
+            double linear_cmd_norm = linear_PID_norm_.compute(error_norm, 0.0);
+            
+            //PID control for theta speed
+            double theta_speed_cmd = omega_PID_.compute(target_theta, pose_.theta);
+
+
+            //convert to x,y speed
+            double linear_speed_cmd_x = linear_cmd_tan * tx + linear_cmd_norm * nx;
+            double linear_speed_cmd_y = linear_cmd_tan * ty + linear_cmd_norm * ny;
+
+            double linear_speed_norm = std::hypot(linear_speed_cmd_x, linear_speed_cmd_y);
+
+
+            //後で、curvatureも考慮するようにする
+            lookahead_distance_ = computeDyanamicL(linear_speed_norm, 0.0);
+
+            geometry_msgs::msg::Point lookahead_point = lookaheadPoint(lookahead_distance_);
+            int index = scan_index_;
+            
+            
+            //後で、lateral errorも考慮するようにする
+
+
+
+
+            geometry_msgs::msg::Twist linear_speed;
+            linear_speed.linear.x = cos(pose_.theta) * linear_speed_cmd_x + sin(pose_.theta) * linear_speed_cmd_y;
+            linear_speed.linear.y = -sin(pose_.theta) * linear_speed_cmd_x + cos(pose_.theta) * linear_speed_cmd_y;
+            linear_speed.angular.z = theta_speed_cmd;
+
+            //apply speed limits 
+            geometry_msgs::msg::Twist clipped_v = clip(linear_speed);
+            cmd_pub_->publish(clipped_v);
+
+
+            double clipped_v_x_r = clipped_v.linear.x;
+            double clipped_v_y_r = clipped_v.linear.y;
+
+
+            double clipped_v_x_f = cos(pose_.theta) * clipped_v_x_r - sin(pose_.theta) * clipped_v_y_r;
+            double clipped_v_y_f = sin(pose_.theta) * clipped_v_x_r + cos(pose_.theta) * clipped_v_y_r; 
+
+
+            printCmdVelArrow(linear_speed_cmd_x, linear_speed_cmd_y, clipped_v_x_f, clipped_v_y_f);
+
+            
+            //publish feedback
+            auto feedback_msg = std::make_shared<inrof2025_ros_type::action::Follow::Feedback>();
+            feedback_msg->x = pose_.x;
+            feedback_msg->y = pose_.y;
+            feedback_msg->theta = pose_.theta;
+            goal_handle_->publish_feedback(feedback_msg);
+
+
+
+            
            // --- ★ここから修正版：RVizに表示するためのMarker publish ---
             visualization_msgs::msg::Marker marker;
             marker.header.frame_id = "map"; // TFに合わせる
@@ -287,68 +514,37 @@ class FollowNode: public rclcpp::Node {
             marker_pub_->publish(marker);
             // --- ★ここまで修正版 ---
 
+            // --- Lookahead point marker (for RViz) ---
+            visualization_msgs::msg::Marker marker2;
+            marker2.header.frame_id = "map";
+            marker2.header.stamp = this->get_clock()->now();
+            marker2.ns = "lookahead_marker";
+            marker2.id = 0;  // 同じIDで上書き表示
+            marker2.type = visualization_msgs::msg::Marker::SPHERE;
+            marker2.action = visualization_msgs::msg::Marker::ADD;
 
-            while (max_linear_tolerance > linear_error) {
-                if (current_waypoint_index_+1 >= static_cast<int>(path_.size())) break;
+            marker2.pose.position.x = lookahead_point.x;
+            marker2.pose.position.y = lookahead_point.y;
+            marker2.pose.position.z = 0.0;
+            marker2.pose.orientation.w = 1.0;
 
-                current_waypoint_index_++;
-                linear_error = std::hypot(
-                    path_[current_waypoint_index_].pose.position.x - pose_.x, 
-                    path_[current_waypoint_index_].pose.position.y - pose_.y
-                );
-            }
+            // サイズ（色違いの球）
+            marker2.scale.x = 0.15;
+            marker2.scale.y = 0.15;
+            marker2.scale.z = 0.15;
 
-            if ((linear_goal_distance < max_reaching_distance)){ //&& theta_goal < max_reaching_theta) {
-                //goal reached
-                RCLCPP_INFO(this->get_logger(), "Goal reached.");
-                publishZero();
-                auto result_msg = std::make_shared<inrof2025_ros_type::action::Follow::Result>();
-                result_msg->success = true;
-                goal_handle_->succeed(result_msg);
-                goal_handle_.reset();
-                return;
-            }
+            // 色：青
+            marker2.color.r = 0.0;
+            marker2.color.g = 0.0;
+            marker2.color.b = 1.0;
+            marker2.color.a = 1.0;
 
-            //PID control for linear speed
-            double linear_cmd_tan = linear_PID_tan_.compute(error_tan, 0.0);
-            double linear_cmd_norm = linear_PID_norm_.compute(error_norm, 0.0);
-            
-            //PID control for theta speed
-            double theta_speed_cmd = omega_PID_.compute(target_theta, pose_.theta);
+            // lifetime
+            marker2.lifetime = rclcpp::Duration::from_seconds(0.2);
 
+            // publish
+            lookahead_marker_pub_->publish(marker2);
 
-            //convert to x,y speed
-            double linear_speed_cmd_x = linear_cmd_tan * tx + linear_cmd_norm * nx;
-            double linear_speed_cmd_y = linear_cmd_tan * ty + linear_cmd_norm * ny;
-
-
-            geometry_msgs::msg::Twist linear_speed;
-            linear_speed.linear.x = cos(pose_.theta) * linear_speed_cmd_x + sin(pose_.theta) * linear_speed_cmd_y;
-            linear_speed.linear.y = -sin(pose_.theta) * linear_speed_cmd_x + cos(pose_.theta) * linear_speed_cmd_y;
-            linear_speed.angular.z = theta_speed_cmd;
-
-            //apply speed limits 
-            geometry_msgs::msg::Twist clipped_v = clip(linear_speed);
-            cmd_pub_->publish(clipped_v);
-
-
-            double clipped_v_x_r = clipped_v.linear.x;
-            double clipped_v_y_r = clipped_v.linear.y;
-
-
-            double clipped_v_x_f = cos(pose_.theta) * clipped_v_x_r - sin(pose_.theta) * clipped_v_y_r;
-            double clipped_v_y_f = sin(pose_.theta) * clipped_v_x_r + cos(pose_.theta) * clipped_v_y_r; 
-
-
-            printCmdVelArrow(linear_speed_cmd_x, linear_speed_cmd_y, clipped_v_x_f, clipped_v_y_f);
-
-            
-            //publish feedback
-            auto feedback_msg = std::make_shared<inrof2025_ros_type::action::Follow::Feedback>();
-            feedback_msg->x = pose_.x;
-            feedback_msg->y = pose_.y;
-            feedback_msg->theta = pose_.theta;
-            goal_handle_->publish_feedback(feedback_msg);
 
         }
 
@@ -520,6 +716,7 @@ class FollowNode: public rclcpp::Node {
         rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_pub_;
         rclcpp::Publisher<geometry_msgs::msg::Pose2D>::SharedPtr target_pub_;
         rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub_;
+        rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr lookahead_marker_pub_;
         rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr pose_arrow_pub_;
         rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr cmd_vel_arrow_pub;
         rclcpp::Subscription<geometry_msgs::msg::Pose2D>::SharedPtr pose_sub_;
@@ -539,8 +736,16 @@ class FollowNode: public rclcpp::Node {
         double max_reaching_distance;
         double max_reaching_theta;
 
+        //dynamic lookahead parameters
+        double L_min_;
+        double L_max_;
+        double L0_;
+        double k_v_;
+        double k_c_;
+
         // waypoint index
-        int current_waypoint_index_;    
+        int current_waypoint_index_ = 0;    
+        int scan_index_ = 0.1;
         int x_;
         
         // rotate action server
