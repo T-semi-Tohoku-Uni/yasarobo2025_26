@@ -71,16 +71,18 @@ class FollowNode: public rclcpp::Node {
             this->declare_parameter<double>("Kp_theta", 0.40);
             this->declare_parameter<double>("Ki_theta", 0.00);
             this->declare_parameter<double>("Kd_theta", 0.00);
-            this->declare_parameter<double>("max_linear_tolerance", 0.50);
-            this->declare_parameter<double>("max_reaching_distance", 0.02);
+            this->declare_parameter<double>("max_linear_tolerance", 0.25);
+            this->declare_parameter<double>("max_reaching_distance", 0.15);
             this->declare_parameter<double>("max_theta_tolerance", 0.3);
             this->declare_parameter<double>("max_reaching_theta", 0.1);
+            this->declare_parameter<double>("min_approach_distance", 0.10);
             this->declare_parameter<int>("x", 2);
             this->declare_parameter<double>("L_min_", 0.05);
-            this->declare_parameter<double>("L_max_", 0.25);
-            this->declare_parameter<double>("L0_", 0.15);
+            this->declare_parameter<double>("L_max_", 0.50);
+            this->declare_parameter<double>("L0_", 0.30);
             this->declare_parameter<double>("k_v_", 0.0);
             this->declare_parameter<double>("k_c_", 0.0);
+            this->declare_parameter<double>("k_l_", 0.0);
             this->get_parameter("lookahead_distance", lookahead_distance_);
             this->get_parameter("max_linear_speed", max_linear_speed_);
             this->get_parameter("max_theta_speed", max_theta_speed_);
@@ -97,12 +99,14 @@ class FollowNode: public rclcpp::Node {
             this->get_parameter("max_reaching_distance", max_reaching_distance);
             this->get_parameter("max_theta_tolerance", max_theta_tolerance);
             this->get_parameter("max_reaching_theta", max_reaching_theta);
+            this->get_parameter("min_approach_distance", min_approach_distance);
             this->get_parameter("x", x_);
             this->get_parameter("L_min_", L_min_);
             this->get_parameter("L_max_", L_max_);
             this->get_parameter("L0_", L0_);
             this->get_parameter("k_v_", k_v_);
             this->get_parameter("k_c_", k_c_);
+            this->get_parameter("k_l_", k_l_);
 
 
 
@@ -201,21 +205,20 @@ class FollowNode: public rclcpp::Node {
 
         //使っていない
         void updateCurrentwaypoint(){
-            current_waypoint_index_ = 0;
             while (current_waypoint_index_ < static_cast<int>(path_.size()) -1) {
                 //calculate vector from current waypoint to next waypoint
                 double Ax = path_[current_waypoint_index_ + 1].pose.position.x - path_[current_waypoint_index_].pose.position.x;
                 double Ay = path_[current_waypoint_index_ + 1].pose.position.y - path_[current_waypoint_index_].pose.position.y;
                 //calculate vector from next waypoint to robot pose
-                double Bx = pose_.x - path_[current_waypoint_index_ + 1].pose.position.x;
-                double By = pose_.y - path_[current_waypoint_index_ + 1].pose.position.y;
+                double Bx = pose_.x - path_[current_waypoint_index_ +1].pose.position.x;
+                double By = pose_.y - path_[current_waypoint_index_ +1].pose.position.y;
 
                 double AB = Ax * Bx + Ay * By;
 
                 RCLCPP_INFO(this->get_logger(), "AB: %.4f", AB);
  
                 
-                if (AB <= 0.0 + 0.5) break;
+                if (AB <= 0.0) break;
                 
                 current_waypoint_index_++;
 
@@ -248,6 +251,10 @@ class FollowNode: public rclcpp::Node {
             double idx = current_waypoint_index_;
             double remain_L = L;
 
+            double linear_goal_x = path_[path_.size() -1].pose.position.x - pose_.x;
+            double linear_goal_y = path_[path_.size() -1].pose.position.y - pose_.y;
+            double linear_goal_distance = std::hypot(linear_goal_x, linear_goal_y);
+
             if (path_.empty()) {
                 return result;
             }
@@ -256,6 +263,11 @@ class FollowNode: public rclcpp::Node {
 
             //path is longer than lookahead distance
             if (idx >= static_cast<int>(path_.size()) - 1) {
+                scan_index_ = path_.size() - 1;
+                return path_.back().pose.position;
+            }
+
+            if (linear_goal_distance < max_reaching_distance) {
                 scan_index_ = path_.size() - 1;
                 return path_.back().pose.position;
             }
@@ -298,15 +310,35 @@ class FollowNode: public rclcpp::Node {
         
         
 
-        double computeDyanamicL(double speed, double curvature){
-            double L = L0_ + k_v_ * speed + k_c_ * curvature;
+        double computeDyanamicL(double speed, double curvature, double lat_error){
+            double L = L0_ + k_v_ * speed + k_c_ * curvature + k_l_ * lat_error;
             if (L <= L_min_) L = L_min_;
             if (L >= L_max_) L = L_max_;
             return L;
         }
 
-        double estimateCurvature(){
-            return 0.0;
+        double estimateCurvature(double current_waypoint_index, double scan_index){
+            int i = static_cast<int>(current_waypoint_index);
+            int j = std::min(static_cast<int>(scan_index)+1, static_cast<int>(path_.size()) -1);
+            
+            if (i < 0 || j >= static_cast<int>(path_.size()) || i >= j) {
+                return 0.0;
+            }
+
+            double Ax = path_[i+1].pose.position.x - path_[i].pose.position.x;
+            double Ay = path_[i+1].pose.position.y - path_[i].pose.position.y;
+            double Bx = path_[j+1].pose.position.x - path_[j].pose.position.x;
+            double By = path_[j+1].pose.position.y - path_[j].pose.position.y;
+
+            double norm_A = std::hypot(Ax, Ay);
+            double norm_B = std::hypot(Bx, By);
+
+            if (norm_A < 1e-6 || norm_B < 1e-6) {
+                return 0.0;
+            }
+
+            return (Ax * Bx + Ay * By) / (norm_A * norm_B);
+
         }
 
 
@@ -356,9 +388,9 @@ class FollowNode: public rclcpp::Node {
 
             target_pub_ ->publish(target_pose);
 
-            RCLCPP_INFO(this->get_logger(), "Waypoint advanced to %.1f start", current_waypoint_index_);
+            // RCLCPP_INFO(this->get_logger(), "Waypoint advanced to %.1f start", current_waypoint_index_);
             updateCurrentwaypoint2();
-            RCLCPP_INFO(this->get_logger(), "Waypoint advanced to %.1f goal", scan_index_);
+            // RCLCPP_INFO(this->get_logger(), "Waypoint advanced to %.1f goal", scan_index_);
 
             //error calculation linear
             double dx = path_[scan_index_].pose.position.x - pose_.x;
@@ -439,9 +471,17 @@ class FollowNode: public rclcpp::Node {
 
             double linear_speed_norm = std::hypot(linear_speed_cmd_x, linear_speed_cmd_y);
 
+            if (linear_goal_distance < max_reaching_distance + min_approach_distance){
+                linear_speed_norm = std::max(linear_speed_norm, min_linear_speed);
+            }
+
+            if (linear_speed_norm <= 0) return;
+            double scale = linear_speed_norm / std::hypot(linear_speed_cmd_x, linear_speed_cmd_y);
+            linear_speed_cmd_x *= scale;
+            linear_speed_cmd_y *= scale;
 
             //後で、curvatureも考慮するようにする
-            lookahead_distance_ = computeDyanamicL(linear_speed_norm, 0.0);
+            lookahead_distance_ = computeDyanamicL(linear_speed_norm, 0.0, 0.0);
 
             geometry_msgs::msg::Point lookahead_point = lookaheadPoint(lookahead_distance_);
             double index = scan_index_;
@@ -735,6 +775,8 @@ class FollowNode: public rclcpp::Node {
         double max_theta_tolerance;
         double max_reaching_distance;
         double max_reaching_theta;
+        double min_approach_distance;
+        double min_linear_speed = 0.05;
 
         //dynamic lookahead parameters
         double L_min_;
@@ -742,6 +784,7 @@ class FollowNode: public rclcpp::Node {
         double L0_;
         double k_v_;
         double k_c_;
+        double k_l_;
 
         // waypoint index
         double current_waypoint_index_ = 0;    
