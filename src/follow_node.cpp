@@ -203,10 +203,10 @@ class FollowNode: public rclcpp::Node {
         }
 
 
-        //使っていない
+        
         void updateCurrentWaypoint(){
 
-            double span = 5.0; ;
+            double span = 5.0; 
             if (path_.empty()) return;
             if (current_waypoint_index_ >= static_cast<int>(path_.size()) - 1) return;
             
@@ -225,12 +225,25 @@ class FollowNode: public rclcpp::Node {
                 // double Cy = pose_.y - path_[current_waypoint_index_].pose.position.y;
 
                 double AB = Ax * Bx + Ay * By;
+                double A2 = Ax * Ax + Ay * Ay;
                 // double AC = Ax * Cx + Ay * Cy;
 
                 RCLCPP_INFO(this->get_logger(), "AB: %.4f", AB);
  
+                double t = AB / A2;
+                if (A2 < 1e-6) {
+                    current_waypoint_index_++;
+                    continue;
+                }
 
-                if (AB < 0.0 ) break;//|| AC < 0.0) break;
+                double linear_error = std::hypot(
+                    path_[current_waypoint_index_ + span].pose.position.x - pose_.x,
+                    path_[current_waypoint_index_ + span].pose.position.y - pose_.y
+                );
+
+
+                if (t < 1.0) break;
+                if (linear_error > max_linear_tolerance) break;
                 current_waypoint_index_++;
 
                 if (current_waypoint_index_ >= static_cast<int>(path_.size()) - 1) break;
@@ -254,6 +267,8 @@ class FollowNode: public rclcpp::Node {
                 double Ay = P1.y - P0.y;
                 double Bx = pose_.x - P1.x;
                 double By = pose_.y - P1.y;
+                double Cx = pose_.x - path_[current_waypoint_index_].pose.position.x;
+                double Cy = pose_.y - path_[current_waypoint_index_].pose.position.y;
 
                 double A_len2 = Ax*Ax + Ay*Ay;
                 if (A_len2 < 1e-6) {
@@ -297,8 +312,8 @@ class FollowNode: public rclcpp::Node {
                 return;
             }
             double linear_error = std::hypot(
-                path_[current_waypoint_index_].pose.position.x - pose_.x,
-                path_[current_waypoint_index_].pose.position.y - pose_.y
+                path_[current_waypoint_index_ + 1].pose.position.x - pose_.x,
+                path_[current_waypoint_index_ + 1].pose.position.y - pose_.y
             );
 
             if (linear_error < max_linear_tolerance) {
@@ -456,10 +471,12 @@ class FollowNode: public rclcpp::Node {
             // RCLCPP_INFO(this->get_logger(), "Waypoint advanced to %.1f goal", scan_index_);
 
             //error calculation linear
+            // span is to smooth the path direction
+            double span = 5.0;
             double dx = path_[scan_index_].pose.position.x - pose_.x;
             double dy = path_[scan_index_].pose.position.y - pose_.y;
-            double tx = path_[scan_index_+1].pose.position.x - path_[scan_index_].pose.position.x;
-            double ty = path_[scan_index_+1].pose.position.y - path_[scan_index_].pose.position.y;
+            double tx = path_[scan_index_ + span].pose.position.x - path_[scan_index_].pose.position.x;
+            double ty = path_[scan_index_ + span].pose.position.y - path_[scan_index_].pose.position.y;
             double norm = std::hypot(tx, ty);
             if (norm > 0) {
                 tx /= norm;

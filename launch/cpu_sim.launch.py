@@ -193,7 +193,7 @@ def generate_launch_description():
         parameters=[{
             "max_linear_speed": 0.10,
             "max_angular_speed": 0.7,
-            "max_linear_tolerance": 0.25,
+            "max_linear_tolerance": 0.15,
             "max_theta_tolerance": 0.10,
             "max_reaching_distance": 0.08,
             "max_reaching_theta": 0.10,
@@ -211,7 +211,7 @@ def generate_launch_description():
             "x": 10,
             "L_min_": 0.05,
             "L_max_": 0.50,
-            "L0_": 0.20,
+            "L0_": 0.25,
         },
         ],
         remappings=[('clock', '/world/yasarobo/clock')],
