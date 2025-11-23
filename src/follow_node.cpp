@@ -207,9 +207,13 @@ class FollowNode: public rclcpp::Node {
         void updateCurrentWaypoint(){
 
             double span = 5.0; 
+
             if (path_.empty()) return;
-            if (current_waypoint_index_ >= static_cast<int>(path_.size()) - 1) return;
-            
+
+            if (current_waypoint_index_ + span >= static_cast<int>(path_.size()) - 1 || current_waypoint_index_ >= static_cast<int>(path_.size()) - 1) {
+                current_waypoint_index_ = path_.size() -1;
+                return;
+            }
 
             while (current_waypoint_index_ < static_cast<int>(path_.size()) -1) {
 
@@ -241,12 +245,14 @@ class FollowNode: public rclcpp::Node {
                     path_[current_waypoint_index_ + span].pose.position.y - pose_.y
                 );
 
-
                 if (t < 1.0) break;
                 if (linear_error > max_linear_tolerance) break;
                 current_waypoint_index_++;
 
-                if (current_waypoint_index_ >= static_cast<int>(path_.size()) - 1) break;
+                if (current_waypoint_index_ + span >= static_cast<int>(path_.size()) - 1) {
+                    current_waypoint_index_ = path_.size() -1;
+                    break;
+                }
             }
 
         }
@@ -309,9 +315,13 @@ class FollowNode: public rclcpp::Node {
             if (path_.empty()) {
                 return;
             }
-            if (current_waypoint_index_ >= static_cast<int>(path_.size()) - 1) {
+            double span = 5.0;
+            
+            if (current_waypoint_index_ + span >= static_cast<int>(path_.size()) - 1 || current_waypoint_index_ >= static_cast<int>(path_.size()) - 1) {
+                current_waypoint_index_ = path_.size() -1;
                 return;
             }
+
             double linear_error = std::hypot(
                 path_[current_waypoint_index_ + 1].pose.position.x - pose_.x,
                 path_[current_waypoint_index_ + 1].pose.position.y - pose_.y
@@ -403,7 +413,7 @@ class FollowNode: public rclcpp::Node {
             int j = std::min(static_cast<int>(scan_index)+1, static_cast<int>(path_.size()) -1);
             int span = 5;
 
-            if (i < 0 || j >= static_cast<int>(path_.size()) || i >= j) {
+            if (i < 0 || j >= static_cast<int>(path_.size()) || j + span >= static_cast<int>(path_.size()) || i >= j) {
                 return 0.0;
             }
 
@@ -494,6 +504,7 @@ class FollowNode: public rclcpp::Node {
             double linear_goal_x = path_[path_.size() -1].pose.position.x - pose_.x;
             double linear_goal_y = path_[path_.size() -1].pose.position.y - pose_.y;
             double linear_goal_distance = std::hypot(linear_goal_x, linear_goal_y);
+
 
 
             //quoternion to yaw
