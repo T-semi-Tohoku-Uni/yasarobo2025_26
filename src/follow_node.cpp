@@ -79,10 +79,10 @@ class FollowNode: public rclcpp::Node {
             this->declare_parameter<int>("x", 2);
             this->declare_parameter<double>("L_min_", 0.05);
             this->declare_parameter<double>("L_max_", 0.50);
-            this->declare_parameter<double>("L0_", 0.30);
-            this->declare_parameter<double>("k_v_", 0.0);
-            this->declare_parameter<double>("k_c_", 0.0);
-            this->declare_parameter<double>("k_l_", 0.0);
+            this->declare_parameter<double>("L0_", 0.25);
+            this->declare_parameter<double>("k_v_", 0.50);
+            this->declare_parameter<double>("k_c_", 0.04);
+            this->declare_parameter<double>("k_l_", 1.5);
             this->get_parameter("lookahead_distance", lookahead_distance_);
             this->get_parameter("max_linear_speed", max_linear_speed_);
             this->get_parameter("max_theta_speed", max_theta_speed_);
@@ -297,6 +297,7 @@ class FollowNode: public rclcpp::Node {
                 }
 
                 current_waypoint_index_++;
+                // RCLCPP_INFO(this->get_logger(), "Waypoint advanced");
 
                 if (current_waypoint_index_ >= static_cast<int>(path_.size()) - 1) break;
             }
@@ -318,7 +319,7 @@ class FollowNode: public rclcpp::Node {
 
             if (linear_error < max_linear_tolerance) {
                 current_waypoint_index_++;
-                RCLCPP_INFO(this->get_logger(), "Waypoint advanced");
+                // RCLCPP_INFO(this->get_logger(), "Waypoint advanced");
             }
         }
 
@@ -389,24 +390,27 @@ class FollowNode: public rclcpp::Node {
         
 
         double computeDyanamicL(double speed, double curvature, double lat_error){
-            double L = L0_ + k_v_ * speed + k_c_ * curvature + k_l_ * lat_error;
+            double L = L0_ + k_v_ * speed - k_c_ * curvature - k_l_ * lat_error;
             if (L <= L_min_) L = L_min_;
             if (L >= L_max_) L = L_max_;
+            RCLCPP_INFO(this->get_logger(), "L: %.2f", L);
             return L;
         }
+
 
         double estimateCurvature(double current_waypoint_index, double scan_index){
             int i = static_cast<int>(current_waypoint_index);
             int j = std::min(static_cast<int>(scan_index)+1, static_cast<int>(path_.size()) -1);
-            
+            int span = 5;
+
             if (i < 0 || j >= static_cast<int>(path_.size()) || i >= j) {
                 return 0.0;
             }
 
-            double Ax = path_[i+1].pose.position.x - path_[i].pose.position.x;
-            double Ay = path_[i+1].pose.position.y - path_[i].pose.position.y;
-            double Bx = path_[j+1].pose.position.x - path_[j].pose.position.x;
-            double By = path_[j+1].pose.position.y - path_[j].pose.position.y;
+            double Ax = path_[i+span].pose.position.x - path_[i].pose.position.x;
+            double Ay = path_[i+span].pose.position.y - path_[i].pose.position.y;
+            double Bx = path_[j+span].pose.position.x - path_[j].pose.position.x;
+            double By = path_[j+span].pose.position.y - path_[j].pose.position.y;
 
             double norm_A = std::hypot(Ax, Ay);
             double norm_B = std::hypot(Bx, By);
@@ -415,7 +419,7 @@ class FollowNode: public rclcpp::Node {
                 return 0.0;
             }
 
-            return (Ax * Bx + Ay * By) / (norm_A * norm_B);
+            return std::abs(Ax * Bx + Ay * By) / (norm_A * norm_B);
 
         }
 
@@ -466,9 +470,9 @@ class FollowNode: public rclcpp::Node {
 
             target_pub_ ->publish(target_pose);
 
-            // RCLCPP_INFO(this->get_logger(), "Waypoint advanced to %.1f start", current_waypoint_index_);
-            updateCurrentWaypoint3();
-            // RCLCPP_INFO(this->get_logger(), "Waypoint advanced to %.1f goal", scan_index_);
+            
+            updateCurrentWaypoint2();
+            
 
             //error calculation linear
             // span is to smooth the path direction
@@ -561,7 +565,9 @@ class FollowNode: public rclcpp::Node {
             linear_speed_cmd_y *= scale;
 
             //後で、curvatureも考慮するようにする
-            lookahead_distance_ = computeDyanamicL(linear_speed_norm, 0.0, 0.0);
+            lookahead_distance_ = computeDyanamicL(linear_speed_norm, estimateCurvature(current_waypoint_index_, scan_index_), computeLateralError());
+
+
 
             geometry_msgs::msg::Point lookahead_point = lookaheadPoint(lookahead_distance_);
             double index = scan_index_;
