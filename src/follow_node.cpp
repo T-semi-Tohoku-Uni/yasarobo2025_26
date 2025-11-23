@@ -204,30 +204,92 @@ class FollowNode: public rclcpp::Node {
 
 
         //使っていない
-        void updateCurrentwaypoint(){
+        void updateCurrentWaypoint(){
+
+            double span = 5.0; ;
+            if (path_.empty()) return;
+            if (current_waypoint_index_ >= static_cast<int>(path_.size()) - 1) return;
+            
+
             while (current_waypoint_index_ < static_cast<int>(path_.size()) -1) {
+
                 //calculate vector from current waypoint to next waypoint
-                double Ax = path_[current_waypoint_index_ + 1].pose.position.x - path_[current_waypoint_index_].pose.position.x;
-                double Ay = path_[current_waypoint_index_ + 1].pose.position.y - path_[current_waypoint_index_].pose.position.y;
+                double Ax = path_[current_waypoint_index_ + span].pose.position.x - path_[current_waypoint_index_].pose.position.x;
+                double Ay = path_[current_waypoint_index_ + span].pose.position.y - path_[current_waypoint_index_].pose.position.y;
+                
                 //calculate vector from next waypoint to robot pose
-                double Bx = pose_.x - path_[current_waypoint_index_ +1].pose.position.x;
-                double By = pose_.y - path_[current_waypoint_index_ +1].pose.position.y;
+                double Bx = pose_.x - path_[current_waypoint_index_ + span].pose.position.x;
+                double By = pose_.y - path_[current_waypoint_index_ + span].pose.position.y;
+
+                // double Cx = pose_.x - path_[current_waypoint_index_].pose.position.x;
+                // double Cy = pose_.y - path_[current_waypoint_index_].pose.position.y;
 
                 double AB = Ax * Bx + Ay * By;
+                // double AC = Ax * Cx + Ay * Cy;
 
                 RCLCPP_INFO(this->get_logger(), "AB: %.4f", AB);
  
-                
-                if (AB <= 0.0) break;
-                
+
+                if (AB < 0.0 ) break;//|| AC < 0.0) break;
+                current_waypoint_index_++;
+
+                if (current_waypoint_index_ >= static_cast<int>(path_.size()) - 1) break;
+            }
+
+        }
+
+
+        void updateCurrentWaypoint3() {
+
+            if (path_.empty()) return;
+
+            while (current_waypoint_index_ < static_cast<int>(path_.size()) - 1) {
+
+                int i = current_waypoint_index_;
+                auto &P0 = path_[i].pose.position;
+                auto &P1 = path_[i+5].pose.position;
+
+                // segment vector and robot vector
+                double Ax = P1.x - P0.x;
+                double Ay = P1.y - P0.y;
+                double Bx = pose_.x - P1.x;
+                double By = pose_.y - P1.y;
+
+                double A_len2 = Ax*Ax + Ay*Ay;
+                if (A_len2 < 1e-6) {
+                    current_waypoint_index_++;
+                    continue;
+                }
+
+                double t = (Ax*Bx + Ay*By) / A_len2;
+
+                // robot projection point
+                double proj_x = P0.x + Ax * t;
+                double proj_y = P0.y + Ay * t;
+
+                double dist_to_proj = std::hypot(pose_.x - proj_x, pose_.y - proj_y);
+                double dist_to_P1   = std::hypot(pose_.x - P1.x, pose_.y - P1.y);
+
+                // 外積 sign → P1 がロボット後方にあるか判定
+                double cross = Ax * By - Ay * Bx;
+
+                bool passed_forward  = (t > 1.0);                      // 正面から通過
+                bool passed_side     = (dist_to_P1 < max_linear_tolerance); // 横から通過
+                // bool passed_backside = (cross * t < 0);                // 後方側侵入（大きく逸脱）
+
+                if (!(passed_forward || passed_side) ){ //|| passed_backside)) {
+                    break;
+                }
+
                 current_waypoint_index_++;
 
                 if (current_waypoint_index_ >= static_cast<int>(path_.size()) - 1) break;
             }
         }
 
+
         //たまにうまく動かなかったから、一旦max_linear_toleranceの値をゆるくした。
-        void updateCurrentwaypoint2(){
+        void updateCurrentWaypoint2(){
             if (path_.empty()) {
                 return;
             }
@@ -241,6 +303,7 @@ class FollowNode: public rclcpp::Node {
 
             if (linear_error < max_linear_tolerance) {
                 current_waypoint_index_++;
+                RCLCPP_INFO(this->get_logger(), "Waypoint advanced");
             }
         }
 
@@ -389,7 +452,7 @@ class FollowNode: public rclcpp::Node {
             target_pub_ ->publish(target_pose);
 
             // RCLCPP_INFO(this->get_logger(), "Waypoint advanced to %.1f start", current_waypoint_index_);
-            updateCurrentwaypoint2();
+            updateCurrentWaypoint3();
             // RCLCPP_INFO(this->get_logger(), "Waypoint advanced to %.1f goal", scan_index_);
 
             //error calculation linear

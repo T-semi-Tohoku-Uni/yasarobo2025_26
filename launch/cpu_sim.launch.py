@@ -211,7 +211,7 @@ def generate_launch_description():
             "x": 10,
             "L_min_": 0.05,
             "L_max_": 0.50,
-            "L0_": 0.35,
+            "L0_": 0.20,
         },
         ],
         remappings=[('clock', '/world/yasarobo/clock')],
