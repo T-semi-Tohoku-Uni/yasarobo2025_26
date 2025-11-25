@@ -5,6 +5,7 @@
 #include <inrof2025_ros_type/srv/gen_route.hpp>
 #include <inrof2025_ros_type/srv/vacume.hpp>
 #include <inrof2025_ros_type/srv/ball_pose.hpp>
+#include <inrof2025_ros_type/srv/waypoint.hpp>
 #include <inrof2025_ros_type/action/follow.hpp>
 #include <inrof2025_ros_type/action/rotate.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
@@ -24,6 +25,7 @@
 #include <bt_while_do_else_break.hpp>
 #include <bt_ball_color.hpp>
 #include <bt_switch_color.hpp>
+#include <bt_waypoint.hpp>
 
 using namespace std::chrono_literals;
 using namespace BT;
@@ -37,9 +39,33 @@ namespace ActionNodes {
         srvBallRoute_ = this->create_client<inrof2025_ros_type::srv::BallPath>("generate_ball_path");
         srvPose_ = this->create_client<inrof2025_ros_type::srv::Pose>("pose");
         srvBallColor_ = this->create_client<inrof2025_ros_type::srv::BallColor>("color");
+        srvWaypoint_ = this->create_client<inrof2025_ros_type::srv::Waypoint>("waypoint");
         actFollow_ = rclcpp_action::create_client<inrof2025_ros_type::action::Follow> (this, "follow");
         actRotate_ = rclcpp_action::create_client<inrof2025_ros_type::action::Rotate> (this, "rotate");
     };
+
+    void BTNode::send_waypoint(double x, double y) {
+        while(!this->srvWaypoint_->wait_for_service(1s)) {
+            if (!rclcpp::ok()) break;
+            RCLCPP_WARN(this->get_logger(), "srvWaypoint_ not available");
+        }
+
+        inrof2025_ros_type::srv::Waypoint_Request::SharedPtr request 
+            = std::make_shared<inrof2025_ros_type::srv::Waypoint::Request>();
+        request->x = x;
+        request->y = y;
+
+        rclcpp::Client<inrof2025_ros_type::srv::Waypoint>::FutureAndRequestId result_future
+            = srvWaypoint_->async_send_request(request);
+        
+        if (
+            rclcpp::spin_until_future_complete(
+                this->get_node_base_interface(),
+                result_future,
+                std::chrono::seconds(1)
+            ) == rclcpp::FutureReturnCode::SUCCESS
+        ) {}
+    }
 
     void BTNode::send_ball_pose(double x, double y, bool is_return) {
         // check action server available
@@ -299,6 +325,12 @@ int main(int argc, char* argv[]) {
             return std::make_unique<ActionNodes::BallColor>(name, config, ros_node);
         };
     factory.registerBuilder<ActionNodes::BallColor>("ball_color", builder_ball_color);
+
+    BT::NodeBuilder builder_waypoint = 
+        [ros_node](const std::string& name, const NodeConfiguration& config) {
+            return std::make_unique<ActionNodes::Waypoint>(name, config, ros_node);
+        };
+    factory.registerBuilder<ActionNodes::Waypoint>("waypoint", builder_waypoint);
 
     factory.registerNodeType<ControlNodes::WhileDoElseBreakNode>("WhileDoElseBreak");
     factory.registerNodeType<ControlNodes::SwitchColor>("SwitchColor");
