@@ -215,6 +215,9 @@ def generate_launch_description():
             "L_min_": 0.05,
             "L_max_": 0.50,
             "L0_": 0.25,
+            "k_v_": 0.50,
+            "k_c_": 0.04,
+            "k_l_": 1.5,
         }]
     )
 
