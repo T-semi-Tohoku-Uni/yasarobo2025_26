@@ -22,7 +22,7 @@ namespace path {
                 this->declare_parameter<std::float_t>("initial_x", 0.25);
                 this->declare_parameter<std::float_t>("initial_y", 0.25);
                 this->declare_parameter<std::float_t>("initial_theta", M_PI/2);
-                this->declare_parameter<std::float_t>("sample_parameter",5.0);
+                this->declare_parameter<std::float_t>("sample_parameter", 15.0);
 
                 double initial_x = this->get_parameter("initial_x").as_double();
                 double initial_y = this->get_parameter("initial_y").as_double();
@@ -135,6 +135,8 @@ namespace path {
                 start_point = waypoint_array_[i];
             }
 
+            path = splineSmoothEigen(path);
+
             // create path message
             nav_msgs::msg::Path pathMsg;
             pathMsg.header.frame_id = "map";
@@ -190,34 +192,40 @@ namespace path {
             waypoint_array_.clear();
         }
         
-        nav_msgs::msg::Path splineSmoothEigen(const nav_msgs::msg::Path &input) {
+        std::vector<std::pair<double, double>> splineSmoothEigen(const std::vector<std::pair<double, double>> &original_path) {
             using Spline2d = Eigen::Spline<double, 2>;
             using Vec2 = Eigen::Matrix<double, 2, 1>;
 
-            const int N = input.poses.size();
-            if (N < 4) return input;
+            // sampling point from original path
+            std::vector<std::pair<double, double>> sampled_path;
+            for (size_t i=0; i<original_path.size(); i+=sample_parameter_ ) {
+                sampled_path.push_back(original_path[i]);
+            }
+            sampled_path.push_back(original_path.back());
 
-            Eigen::Matrix<double, 2, Eigen::Dynamic> points(2, N);
-            for (int i = 0; i < N; i++) {
-                points(0, i) = input.poses[i].pose.position.x;
-                points(1, i) = input.poses[i].pose.position.y;
+            const int degree = 3;
+            if (sampled_path.size() < 4) return original_path;
+            // sampleする点はdegree+1以上
+            if (sampled_path.size() <= degree) return original_path;
+
+            Eigen::Matrix<double, 2, Eigen::Dynamic> points(2, sampled_path.size());
+            for (size_t i = 0; i < sampled_path.size(); i++) {
+                points(0, i) = sampled_path[i].first;
+                points(1, i) = sampled_path[i].second;
             }
 
-            Eigen::RowVectorXd u(N);
-            for (int i = 0; i < N; ++i) {
-               u(i) = static_cast<double>(i) / double(N - 1);
+            Eigen::RowVectorXd u(sampled_path.size());
+            for (int i = 0; i < sampled_path.size(); ++i) {
+               u(i) = static_cast<double>(i) / double(sampled_path.size() - 1);
             }
  
-            const int degree = 3; // 3次元のspline
-            // 注意: 点数 N は degree+1 以上であること
-            if (N <= degree) return input;
+            // const int degree = 3; // 3次元のspline
+            // // 注意: 点数 N は degree+1 以上であること
+            // if (N <= degree) return original_path;
 
             Spline2d spline = Eigen::SplineFitting<Spline2d>::Interpolate(points, degree, u);
-
-            nav_msgs::msg::Path smooth;
-            smooth.header = input.header;
-
-            int dense = N * 5;
+            std::vector<std::pair<double, double>> smoothed_path;
+            int dense = sampled_path.size() * sample_parameter_;
             for (int i = 0; i <= dense; i++) {
                 
                 double t = static_cast<double>(i) / dense; // 0..1
@@ -225,16 +233,10 @@ namespace path {
                 Eigen::Vector2d pv = spline(t); // p(t)
 
                 geometry_msgs::msg::PoseStamped pose;
-                pose.header = smooth.header;
-                pose.pose.position.x = pv.x();
-                pose.pose.position.y = pv.y();
-                pose.pose.position.z = 0;
-                pose.pose.orientation.w = 1.0;
-
-                smooth.poses.push_back(pose);
+                smoothed_path.push_back(std::make_pair(pv.x(), pv.y()));
             }
 
-            return smooth;
+            return smoothed_path;
         }
 
         std::vector<std::pair<double, double>> generator(std::pair<double, double> start_point, std::pair<double, double> goal_point) {
@@ -304,100 +306,6 @@ namespace path {
             }
 
             return path_f;
-
-            // /*点をfrequency個おきにサンプリングする*/
-            // nav_msgs::msg::Path sampled_path;
-            // sampled_path.header.frame_id = "map";
-            // sampled_path.header.stamp = this->now();
-
-            // for (size_t i = 0; i < path.size();  i += sample_parameter_)
-            // {
-            //     auto [u, v] = path[i];
-
-            //     geometry_msgs::msg::PoseStamped pose;
-            //     pose.header = sampled_path.header;
-
-            //     pose.pose.position.x = (u + 0.5) * mapResolution_;
-            //     pose.pose.position.y = (static_cast<double>(mapHeight_ - v - 1) + 0.5) * mapResolution_;
-            //     pose.pose.position.z = 0.0;
-            //     pose.pose.orientation.w = 1.0;
-
-            //     sampled_path.poses.push_back(std::move(pose));
-            // }
-            
-            // {/*最後の点もサンプリングに含める*/
-            //     auto [u, v] = path.back();
-            //     geometry_msgs::msg::PoseStamped pose;
-            //     pose.header = sampled_path.header;
-            //     pose.pose.position.x = (u + 0.5) * mapResolution_;
-            //     pose.pose.position.y = (static_cast<double>(mapHeight_ - v - 1) + 0.5) * mapResolution_;
-            //     pose.pose.position.z = 0.0;
-            //     pose.pose.orientation.w = 1.0;
-            //     sampled_path.poses.push_back(std::move(pose));
-            // }
-            // /*サンプリングしたパスの点を配信*/
-            // pubSamplePath_->publish(sampled_path); 
-
-            // /*スプライン補間したパスを配信*/
-            // auto smoothed_path = splineSmoothEigen(sampled_path);
-            // pubPath_->publish(smoothed_path);
-
-
-            // nav_msgs::msg::Path pathMsg;
-            // pathMsg.header.frame_id = "map";
-            // pathMsg.header.stamp    = this->now();
-
-            // for (size_t i=0; i<path.size(); i++) {
-            //     int gr = path[i].first;
-            //     int gc = path[i].second;
-
-            //     geometry_msgs::msg::PoseStamped pose;
-            //     pose.header = pathMsg.header;
-
-            //     pose.pose.position.x = (gr + 0.5) * mapResolution_;
-            //     pose.pose.position.y = (static_cast<double>(mapHeight_ - gc - 1) + 0.5) * mapResolution_;
-            //     pose.pose.position.z = 0.0;
-
-            //     tf2::Quaternion q;
-            //     if (i+30 > path.size()) {
-            //         q.setRPY(0, 0, goalOdom_.theta);
-            //     } else {
-            //         q.setRPY(0, 0, curOdom_.theta);
-            //     }
-            //     pose.pose.orientation = tf2::toMsg(q);
-            //     pathMsg.poses.push_back(pose);
-            // }
-
-            // visualization_msgs::msg::MarkerArray markerArray;
-
-            // // delete old marker
-            // visualization_msgs::msg::Marker del;
-            // del.action = visualization_msgs::msg::Marker::DELETEALL;
-            // markerArray.markers.push_back(del);
-
-            // for (size_t i=0; i<pathMsg.poses.size(); i+=10) {
-            //     visualization_msgs::msg::Marker arrow;
-            //     arrow.header = pathMsg.header;
-            //     arrow.ns = "path_orientations";
-            //     arrow.id = static_cast<int>(i);
-            //     arrow.type = visualization_msgs::msg::Marker::ARROW;
-            //     arrow.action = visualization_msgs::msg::Marker::ADD;
-            //     arrow.pose = pathMsg.poses[i].pose;
-            //     arrow.scale.x = 0.05;  // 矢印の長さ
-            //     arrow.scale.y = 0.01; // 矢印の太さ
-            //     arrow.scale.z = 0.01; // 矢印の頭のサイズ
-
-            //     // 矢印の色（RGBA）
-            //     arrow.color.r = 1.0f;
-            //     arrow.color.g = 0.0f;
-            //     arrow.color.b = 0.0f;
-            //     arrow.color.a = 1.0f;
-            //     markerArray.markers.push_back(arrow);
-            // }
-            
-            // //pubPath_->publish(pathMsg);
-            // pubPath_->publish(pathMsg);
-            // pubMarker_->publish(markerArray);
         }
 
         void readMap() {

@@ -104,6 +104,7 @@
         "span": "cpp",
         "syncstream": "cpp",
         "valarray": "cpp",
-        "dense": "cpp"
+        "dense": "cpp",
+        "splines": "cpp"
     }
 }
