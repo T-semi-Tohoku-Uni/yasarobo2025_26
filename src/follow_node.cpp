@@ -217,6 +217,11 @@ class FollowNode: public rclcpp::Node {
 
             while (current_waypoint_index_ < static_cast<int>(path_.size()) -1) {
 
+                if (current_waypoint_index_ + span >= static_cast<int>(path_.size()) - 1) {
+                    current_waypoint_index_ = path_.size() - 1;
+                    break;
+                }
+
                 //calculate vector from current waypoint to next waypoint
                 double Ax = path_[current_waypoint_index_ + span].pose.position.x - path_[current_waypoint_index_].pose.position.x;
                 double Ay = path_[current_waypoint_index_ + span].pose.position.y - path_[current_waypoint_index_].pose.position.y;
@@ -261,12 +266,18 @@ class FollowNode: public rclcpp::Node {
         void updateCurrentWaypoint3() {
 
             if (path_.empty()) return;
+            double span = 5.0;
 
             while (current_waypoint_index_ < static_cast<int>(path_.size()) - 1) {
 
                 int i = current_waypoint_index_;
                 auto &P0 = path_[i].pose.position;
-                auto &P1 = path_[i+5].pose.position;
+                auto &P1 = path_[i+span].pose.position;
+
+                if (current_waypoint_index_ + span >= static_cast<int>(path_.size()) - 1) {
+                    current_waypoint_index_ = path_.size() - 1;
+                    break;
+                }
 
                 // segment vector and robot vector
                 double Ax = P1.x - P0.x;
@@ -315,9 +326,8 @@ class FollowNode: public rclcpp::Node {
             if (path_.empty()) {
                 return;
             }
-            double span = 5.0;
-            
-            if (current_waypoint_index_ + span >= static_cast<int>(path_.size()) - 1 || current_waypoint_index_ >= static_cast<int>(path_.size()) - 1) {
+
+            if (current_waypoint_index_ >= static_cast<int>(path_.size()) - 1) {
                 current_waypoint_index_ = path_.size() -1;
                 return;
             }
@@ -413,7 +423,7 @@ class FollowNode: public rclcpp::Node {
             int j = std::min(static_cast<int>(scan_index)+1, static_cast<int>(path_.size()) -1);
             int span = 5;
 
-            if (i < 0 || j >= static_cast<int>(path_.size()) || j + span >= static_cast<int>(path_.size()) || i >= j) {
+            if (i < 0 || j < 0 || i + span >= static_cast<int>(path_.size()) || j + span >= static_cast<int>(path_.size()) || i >= j) {
                 return 0.0;
             }
 
@@ -430,8 +440,8 @@ class FollowNode: public rclcpp::Node {
             }
 
             return std::abs(Ax * Bx + Ay * By) / (norm_A * norm_B);
-
         }
+
 
 
         //lateral error calculation
@@ -471,7 +481,6 @@ class FollowNode: public rclcpp::Node {
                 return;
             }
 
-
             // publish goal position
             geometry_msgs::msg::Pose2D target_pose;
             target_pose.x = path_[current_waypoint_index_].pose.position.x;
@@ -482,11 +491,19 @@ class FollowNode: public rclcpp::Node {
 
             
             updateCurrentWaypoint2();
-            
+            double span = 5.0;
+
+            if (current_waypoint_index_ < 0) current_waypoint_index_ = 0;
+            if (scan_index_ < 0) scan_index_ = 0;
+
+            if (current_waypoint_index_ >= path_.size()) current_waypoint_index_ = path_.size() -1;
+            if (scan_index_ >= path_.size()) scan_index_ = path_.size() -1;
+
+            //これがあると動かない
+            // if (scan_index_ + span >= path_.size() && span < path_.size() -1) scan_index_ = path_.size() -span -1;
 
             //error calculation linear
             // span is to smooth the path direction
-            double span = 5.0;
             double dx = path_[scan_index_].pose.position.x - pose_.x;
             double dy = path_[scan_index_].pose.position.y - pose_.y;
             double tx = path_[scan_index_ + span].pose.position.x - path_[scan_index_].pose.position.x;
@@ -575,18 +592,11 @@ class FollowNode: public rclcpp::Node {
             linear_speed_cmd_x *= scale;
             linear_speed_cmd_y *= scale;
 
-            //後で、curvatureも考慮するようにする
+           
+            //add lookahead distance
             lookahead_distance_ = computeDyanamicL(linear_speed_norm, estimateCurvature(current_waypoint_index_, scan_index_), computeLateralError());
-
-
-
             geometry_msgs::msg::Point lookahead_point = lookaheadPoint(lookahead_distance_);
-            double index = scan_index_;
             
-            
-            //後で、lateral errorも考慮するようにする
-
-
 
 
             geometry_msgs::msg::Twist linear_speed;
