@@ -192,27 +192,9 @@ def generate_launch_description():
 
     follow_node = Node(
         package="yasarobo2025_26",
-        executable="follow_node",
+        executable="mpc_node",
         output="screen",
-        parameters=[{
-            "max_linear_speed": 0.13,
-            "max_angular_speed": 0.5,
-            "lookahead_distance": 0.10,
-            "max_linear_tolerance": 0.25,
-            "max_reaching_distance": 0.04,
-            "max_theta_tolerance": 1.00,
-            "max_reaching_theta": 0.10,
-            "Kp_tan": 0.80,
-            "Ki_tan": 0.00,
-            "Kd_tan": 0.00,
-            "Kp_norm": 0.80,
-            "Ki_norm": 0.00,
-            "Kd_norm": 0.00,
-            "Kp_theta": 1.00,
-            "Ki_theta": 0.00,
-            "Kd_theta": 0.00,
-            "x":25
-        }]
+        remappings=[('clock', '/world/yasarobo/clock')],
     )
 
     rotate_node = Node(
