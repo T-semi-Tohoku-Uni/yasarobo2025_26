@@ -15,13 +15,8 @@
       </Sequence>
       <KeepRunningUntilFailure>
         <Sequence>
-          <get_pose x="{psee_x}"
-                    y="{pose_y}"
-                    theta="{pose_theta}"/>
-          <generate_route x="0.3"
-                          y="2.0"
-                          theta="{pose_theta}"/>
-          <follow_route/>
+          <waypoint x="0.3"
+                    y="2.0"/>
           <generate_route x="1.34"
                           y="1.8"
                           theta="-1.57"/>
@@ -46,21 +41,29 @@
                          y="1.8"
                          is_return="1"/>
               <follow_route/>
-              <generate_route x="0.3"
-                              y="2.0"
-                              theta="{pose_theta}"/>
-              <follow_route/>
               <ball_color color="{color}"/>
               <SwitchColor color="{color}">
-                <generate_route x="0.15"
-                                y="0.75"
-                                theta="1.05"/>
-                <generate_route x="0.15"
-                                y="1.4"
-                                theta="1.05"/>
-                <generate_route x="0.15"
-                                y="2.05"
-                                theta="1.05"/>
+                <Sequence>
+                  <waypoint x="0.3"
+                            y="2.0"/>
+                  <generate_route x="0.15"
+                                  y="0.75"
+                                  theta="1.05"/>
+                </Sequence>
+                <Sequence>
+                  <waypoint x="0.3"
+                            y="2.0"/>
+                  <generate_route x="0.15"
+                                  y="1.4"
+                                  theta="1.05"/>
+                </Sequence>
+                <Sequence>
+                  <waypoint x="0.3"
+                            y="2.0"/>
+                  <generate_route x="0.15"
+                                  y="2.05"
+                                  theta="1.05"/>
+                </Sequence>
               </SwitchColor>
             </Sequence>
             <Sequence>
@@ -121,6 +124,11 @@
     <Action ID="vacume_on"
             editable="true">
       <input_port name="on"/>
+    </Action>
+    <Action ID="waypoint"
+            editable="true">
+      <input_port name="x"/>
+      <input_port name="y"/>
     </Action>
   </TreeNodesModel>
 
