@@ -8,6 +8,10 @@ namespace yasarobo2025_26{
         subpose_ = create_subscription<geometry_msgs::msg::Pose2D>(
             "/pose", 10, std::bind(&MpcNode::poseCallback, this, std::placeholders::_1)
         );
+        rclcpp::QoS pathQos(rclcpp::KeepLast(5));
+        subpath_ = create_subscription<nav_msgs::msg::Path>(
+            "route", pathQos, std::bind(&MpcNode::pathCallback, this, std::placeholders::_1)
+        );
 
         cmd_pub_ = create_publisher<geometry_msgs::msg::Twist>(
             "cmd_vel", 10
@@ -20,8 +24,16 @@ namespace yasarobo2025_26{
             std::bind(&MpcNode::control, this)
         );
 
-        Q_ = casadi::SX::diag({1.0, 1.0, 0.001});
-        Qf_ = casadi::SX::diag({1.0, 1.0, 0.001});
+        action_server_ = rclcpp_action::create_server<inrof2025_ros_type::action::Follow>(
+            this,
+            "follow",
+            std::bind(&MpcNode::handleGoal, this, std::placeholders::_1, std::placeholders::_2),
+            std::bind(&MpcNode::handleCancel, this, std::placeholders::_1),
+            std::bind(&MpcNode::handleAccepted, this, std::placeholders::_1)
+        );
+
+        Q_ = casadi::SX::diag({1.0, 1.0, 0.01});
+        Qf_ = casadi::SX::diag({1.0, 1.0, 1.0});
         R_ = casadi::SX::diag({0.1, 0.1, 0.1});
         x_ref_ = casadi::DM({0.3, 2.0, 0.0});
         u_ref_ = casadi::DM({0.0, 0.0, 0.0});
@@ -31,7 +43,7 @@ namespace yasarobo2025_26{
         u_lb_ = casadi::DM({-0.1, -0.1, -0.1});
         u_ub_ = casadi::DM({0.1, 0.1, 0.1});
 
-        K_ = 10;
+        K_ = 100;
         r_ = 0.14;
         delta_t_ = 0.10;
         nx_ = 3;
@@ -42,20 +54,85 @@ namespace yasarobo2025_26{
         pose_ = msg;
     }
 
+    void MpcNode::pathCallback(const nav_msgs::msg::Path::SharedPtr msg) {
+        path_ = msg;
+        current_index_ = 0;
+    }
+
     void MpcNode::control() {
+        if (!goal_handle_) {
+            return;
+        }
         if (!pose_) {
             RCLCPP_WARN(this->get_logger(), "pose not available");
             return;
         }
+        if (!path_) {
+            RCLCPP_WARN(this->get_logger(), "path not available");
+            return;
+        }
+        
+        // update waypoint
+        double linear_error = std::hypot(
+            path_->poses[current_index_].pose.position.x - pose_->x,
+            path_->poses[current_index_].pose.position.y - pose_->y
+        );
+        while(lookahead_distance > linear_error) {
+            if (current_index_+1 >= static_cast<size_t>(path_->poses.size())) break;
+            current_index_++;
+            linear_error = std::hypot(
+                path_->poses[current_index_].pose.position.x - pose_->x,
+                path_->poses[current_index_].pose.position.y - pose_->y
+            );
+        }
 
+        // check reaching goal
+        double goal_error = std::hypot(
+            path_->poses[path_->poses.size()-1].pose.position.x - pose_->x,
+            path_->poses[path_->poses.size()-1].pose.position.y - pose_->y
+        );
+        if (max_reaching_distance > goal_error) {
+            // TODO: check velocity is zero
+            RCLCPP_WARN(this->get_logger(), "Reaching goal");
+
+            // publish zero velocity
+            geometry_msgs::msg::Twist t;
+            t.linear.x = 0.0;
+            t.linear.y = 0.0;
+            t.angular.z = 0.0;
+            cmd_pub_->publish(t);
+
+            std::shared_ptr<inrof2025_ros_type::action::Follow_Result> result_msg = 
+                std::make_shared<inrof2025_ros_type::action::Follow::Result>();
+            result_msg->success = true;
+            goal_handle_->succeed(result_msg);
+            goal_handle_.reset();
+            return;
+        }
+
+
+        // get yaw
+        tf2::Quaternion tf_q;
+        tf2::fromMsg(path_->poses[current_index_].pose.orientation, tf_q);
+        double roll, pitch, yaw;
+        tf2::Matrix3x3(tf_q).getRPY(roll, pitch, yaw);
+        x_ref_ = casadi::DM({
+            path_->poses[current_index_].pose.position.x, 
+            path_->poses[current_index_].pose.position.y, 
+            yaw // TODO
+        });
+
+        // initialize current state
         casadi::DM x_current = casadi::DM::vertcat({pose_->x, pose_->y, pose_->theta});
         casadi::DM x0 = casadi::DM::zeros(nx_*(K_+1)+nu_*K_);
         casadi::Function S = MpcNode::make_nlp();
 
+        // mpc
         // (u, x)
         std::pair<casadi::DM, casadi::DM> result = 
             compute_optimal_control(S, x_current, x0);
         
+        // publish
         geometry_msgs::msg::Twist t;
         std::array<double, 3> v_r = MpcNode::inverseKinematics(result.first(0).scalar(), result.first(1).scalar(), result.first(2).scalar());
         t.linear.x = v_r[0];
@@ -109,7 +186,6 @@ namespace yasarobo2025_26{
 
         casadi::DMDict res = S(arg);        
         casadi::DM x_opt = res.at("x");
-        RCLCPP_INFO(this->get_logger(), "%s", x_opt.get_str().c_str());
 
         int offset = nx_*(K_+1);
         casadi::DM u_opt = x_opt(casadi::Slice(offset, offset+nu_));
@@ -250,6 +326,31 @@ namespace yasarobo2025_26{
 
         return out;
     }
+
+    rclcpp_action::GoalResponse MpcNode::handleGoal(
+        const rclcpp_action::GoalUUID &,
+        std::shared_ptr<const inrof2025_ros_type::action::Follow::Goal> goal
+    ) {
+        if (!goal_handle_){
+            return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+        } else {
+            return rclcpp_action::GoalResponse::REJECT;
+        }
+    }
+
+    rclcpp_action::CancelResponse MpcNode::handleCancel(
+        const std::shared_ptr<rclcpp_action::ServerGoalHandle<inrof2025_ros_type::action::Follow>> goal_handle
+    ) {
+        goal_handle_.reset();
+        return rclcpp_action::CancelResponse::ACCEPT;
+    }
+
+    void MpcNode::handleAccepted(
+        const std::shared_ptr<rclcpp_action::ServerGoalHandle<inrof2025_ros_type::action::Follow>> goal_handle
+    ) {
+        goal_handle_ = goal_handle;
+    }
+
 }
 
 int main(int argc, char *argv[]) {
