@@ -72,6 +72,7 @@ function(dependencies target)
     ${YAML_CPP_LIBRARIES}
     nanoflann::nanoflann
     Eigen3::Eigen
+    casadi
   )
 endfunction()
 
@@ -129,6 +130,7 @@ ros_node_executable(mcl_node)
 ros_node_executable(vel_feedback_node)
 ros_node_executable(ball_detect_node)
 ros_node_executable(ball_path_node)
+ros_node_executable(mpc_node)
 
 install(DIRECTORY include/ DESTINATION include/${PROJECT_NAME})
 install(DIRECTORY launch worlds models urdf config map meshes

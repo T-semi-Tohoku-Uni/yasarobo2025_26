@@ -180,33 +180,41 @@ def generate_launch_description():
         remappings=[('clock', '/world/yasarobo/clock')],
     )
 
+    # follow_node = Node(
+    #     package="yasarobo2025_26",
+    #     executable="follow_node",
+    #     output="screen",
+    #     parameters=[{
+    #         "max_linear_speed": 0.10,
+    #         "max_angular_speed": 0.7,
+    #         "max_linear_tolerance": 0.20,
+    #         "max_theta_tolerance": 0.10,
+    #         "max_reaching_distance": 0.05,
+    #         "max_reaching_theta": 0.10,
+    #         "lookahead_distance": 0.20,
+    #         "resampleThreshold": 0.10,
+    #         "Kp_tan": 0.80,
+    #         "Ki_tan": 0.0,
+    #         "Kd_tan": 0.0,
+    #         "Kp_normal": 0.80,
+    #         "Ki_normal": 0.00,
+    #         "Kd_normal": 0.00,
+    #         "Kp_theta": 1.0,
+    #         "Ki_theta": 0.00,
+    #         "Kd_theta": 0.00,
+    #         "x": 20,
+    #     },
+    #     ],
+    #     remappings=[('clock', '/world/yasarobo/clock')],
+    # )
+
     follow_node = Node(
         package="yasarobo2025_26",
-        executable="follow_node",
+        executable="mpc_node",
         output="screen",
-        parameters=[{
-            "max_linear_speed": 0.10,
-            "max_angular_speed": 0.7,
-            "max_linear_tolerance": 0.20,
-            "max_theta_tolerance": 0.10,
-            "max_reaching_distance": 0.05,
-            "max_reaching_theta": 0.10,
-            "lookahead_distance": 0.20,
-            "resampleThreshold": 0.10,
-            "Kp_tan": 0.80,
-            "Ki_tan": 0.0,
-            "Kd_tan": 0.0,
-            "Kp_normal": 0.80,
-            "Ki_normal": 0.00,
-            "Kd_normal": 0.00,
-            "Kp_theta": 1.0,
-            "Ki_theta": 0.00,
-            "Kd_theta": 0.00,
-            "x": 20,
-        },
-        ],
         remappings=[('clock', '/world/yasarobo/clock')],
     )
+
 
     bt_node = Node (
         package="yasarobo2025_26",
