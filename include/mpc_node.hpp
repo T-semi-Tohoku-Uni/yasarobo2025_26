@@ -6,9 +6,10 @@
 #include <nav_msgs/msg/path.hpp>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <inrof2025_ros_type/action/follow.hpp>
+#include <visualization_msgs/msg/marker.hpp>
 
 namespace yasarobo2025_26{
     class MpcNode:public rclcpp::Node{
@@ -43,6 +44,8 @@ namespace yasarobo2025_26{
                 const casadi::DM& x0
             );
 
+            void printWayPointArrow(geometry_msgs::msg::Pose waypoint_pose, geometry_msgs::msg::Pose goal_pose);
+
             std::array<casadi::SX, 3> inverseKinematics(casadi::SX& v1, casadi::SX& v2, casadi::SX& v3);
             std::array<double, 3> inverseKinematics(double v1, double v2, double v3);
             std::array<casadi::SX, 3> toFieldVel(casadi::SX& v_xr, casadi::SX& v_yr, casadi::SX& omega_r, casadi::SX& theta_f);
@@ -50,6 +53,7 @@ namespace yasarobo2025_26{
             rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_pub_;
             geometry_msgs::msg::Pose2D::SharedPtr pose_;
             nav_msgs::msg::Path::SharedPtr path_;
+            rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr pose_arrow_pub_;
             rclcpp::Subscription<geometry_msgs::msg::Pose2D>::SharedPtr subpose_;
             rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr subpath_;
             rclcpp::TimerBase::SharedPtr timer_;
@@ -68,8 +72,8 @@ namespace yasarobo2025_26{
 
             // waypoint parameter
             size_t current_index_;
-            double lookahead_distance = 0.05;
-            double max_reaching_distance = 0.05;
+            double lookahead_distance_;
+            double max_reaching_distance_;
 
             int K_;
             int nx_;

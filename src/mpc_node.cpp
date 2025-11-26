@@ -40,6 +40,11 @@ namespace yasarobo2025_26{
         this->declare_parameter<int32_t>("K", 20);
         this->get_parameter<int32_t>("K", K_);
 
+        this->declare_parameter<double>("lookahead_distance", 0.20);
+        this->get_parameter<double>("lookahead_distance", lookahead_distance_);
+
+        this->declare_parameter<double>("max_reaching_distance", 0.05);
+        this->get_parameter<double>("max_reaching_distance", max_reaching_distance_);
 
         subpose_ = create_subscription<geometry_msgs::msg::Pose2D>(
             "/pose", 10, std::bind(&MpcNode::poseCallback, this, std::placeholders::_1)
@@ -52,6 +57,9 @@ namespace yasarobo2025_26{
         cmd_pub_ = create_publisher<geometry_msgs::msg::Twist>(
             "cmd_vel", 10
         );
+
+        rclcpp::QoS poseArrowQos(rclcpp::KeepLast(10));
+        pose_arrow_pub_= this->create_publisher<visualization_msgs::msg::Marker>("pose_arrow_marker", poseArrowQos);
 
         timer_ = rclcpp::create_timer(
             this,
@@ -113,7 +121,7 @@ namespace yasarobo2025_26{
             path_->poses[current_index_].pose.position.x - pose_->x,
             path_->poses[current_index_].pose.position.y - pose_->y
         );
-        while(lookahead_distance > linear_error) {
+        while(lookahead_distance_ > linear_error) {
             if (current_index_+1 >= static_cast<size_t>(path_->poses.size())) break;
             current_index_++;
             linear_error = std::hypot(
@@ -127,7 +135,7 @@ namespace yasarobo2025_26{
             path_->poses[path_->poses.size()-1].pose.position.x - pose_->x,
             path_->poses[path_->poses.size()-1].pose.position.y - pose_->y
         );
-        if (max_reaching_distance > goal_error) {
+        if (max_reaching_distance_ > goal_error) {
             // TODO: check velocity is zero
             RCLCPP_WARN(this->get_logger(), "Reaching goal");
 
@@ -146,6 +154,7 @@ namespace yasarobo2025_26{
             return;
         }
 
+        printWayPointArrow(path_->poses[current_index_].pose, path_->poses[path_->poses.size()-1].pose);
 
         // get yaw
         tf2::Quaternion tf_q;
@@ -385,6 +394,44 @@ namespace yasarobo2025_26{
         const std::shared_ptr<rclcpp_action::ServerGoalHandle<inrof2025_ros_type::action::Follow>> goal_handle
     ) {
         goal_handle_ = goal_handle;
+    }
+
+    void MpcNode::printWayPointArrow(geometry_msgs::msg::Pose waypoint_pose, geometry_msgs::msg::Pose goal_pose) {
+        visualization_msgs::msg::Marker arrow;
+
+        // pub waypoint pose
+        arrow.header.frame_id = "map";
+        arrow.ns = "way_point_arrow";
+        arrow.id = 0;
+        arrow.type = visualization_msgs::msg::Marker::ARROW;
+        arrow.action = visualization_msgs::msg::Marker::ADD;
+        arrow.pose = waypoint_pose;
+        arrow.scale.x = 0.08;
+        arrow.scale.y = 0.04;
+        arrow.scale.z = 0.04;
+
+        arrow.color.r = 0.0f;
+        arrow.color.g = 0.0f;
+        arrow.color.b = 1.0f;
+        arrow.color.a = 1.0f;
+        pose_arrow_pub_ -> publish(arrow);
+
+        // pub goal pose
+        arrow.header.frame_id = "map";
+        arrow.ns = "goal_point_arrow";
+        arrow.id = 0;
+        arrow.type = visualization_msgs::msg::Marker::ARROW;
+        arrow.action = visualization_msgs::msg::Marker::ADD;
+        arrow.pose = goal_pose;
+        arrow.scale.x = 0.08;
+        arrow.scale.y = 0.04;
+        arrow.scale.z = 0.04;
+
+        arrow.color.r = 0.0f;
+        arrow.color.g = 1.0f;
+        arrow.color.b = 0.0f;
+        arrow.color.a = 1.0f;
+        pose_arrow_pub_ -> publish(arrow);
     }
 
 }
