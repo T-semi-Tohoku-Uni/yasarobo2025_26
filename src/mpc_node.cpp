@@ -5,6 +5,42 @@ using namespace std::chrono_literals;
 namespace yasarobo2025_26{
     MpcNode::MpcNode(const rclcpp::NodeOptions & options): Node("mpc_node", options){
         
+        // Q
+        double q_x, q_y, q_theta;
+        this->declare_parameter<double>("q_x", 1.0);
+        this->declare_parameter<double>("q_y", 1.0);
+        this->declare_parameter<double>("q_theta", 0.10);
+        this->get_parameter<double>("q_x", q_x);
+        this->get_parameter<double>("q_y", q_y);
+        this->get_parameter<double>("q_theta", q_theta);
+
+        // Qf
+        double q_fx, q_fy, q_ftheta;
+        this->declare_parameter<double>("q_fx", 1.0);
+        this->declare_parameter<double>("q_fy", 1.0);
+        this->declare_parameter<double>("q_ftheta", 0.10);
+        this->get_parameter<double>("q_fx", q_fx);
+        this->get_parameter<double>("q_fy", q_fy);
+        this->get_parameter<double>("q_ftheta", q_ftheta);
+
+        // R
+        double r_vx, r_vy, r_vtheta;
+        this->declare_parameter<double>("r_vx", 0.10);
+        this->declare_parameter<double>("r_vy", 0.10);
+        this->declare_parameter<double>("r_vtheta", 0.10);
+        this->get_parameter<double>("r_vx", r_vx);
+        this->get_parameter<double>("r_vy", r_vy);
+        this->get_parameter<double>("r_vtheta", r_vtheta);
+
+        // mpc parameter
+        double max_speed;
+        this->declare_parameter<double>("max_speed", 0.10);
+        this->get_parameter<double>("max_speed", max_speed);
+        
+        this->declare_parameter<int32_t>("K", 20);
+        this->get_parameter<int32_t>("K", K_);
+
+
         subpose_ = create_subscription<geometry_msgs::msg::Pose2D>(
             "/pose", 10, std::bind(&MpcNode::poseCallback, this, std::placeholders::_1)
         );
@@ -32,18 +68,18 @@ namespace yasarobo2025_26{
             std::bind(&MpcNode::handleAccepted, this, std::placeholders::_1)
         );
 
-        Q_ = casadi::SX::diag({1.0, 1.0, 0.01});
-        Qf_ = casadi::SX::diag({1.0, 1.0, 1.0});
-        R_ = casadi::SX::diag({0.1, 0.1, 0.1});
+        Q_ = casadi::SX::diag({q_x, q_y, q_theta});
+        Qf_ = casadi::SX::diag({q_fx, q_fy, q_ftheta});
+        R_ = casadi::SX::diag({r_vx, r_vy, r_vtheta});
         x_ref_ = casadi::DM({0.3, 2.0, 0.0});
         u_ref_ = casadi::DM({0.0, 0.0, 0.0});
 
         x_lb_ = casadi::DM({-casadi::inf, -casadi::inf, -casadi::inf});
         x_ub_ = casadi::DM({casadi::inf, casadi::inf, casadi::inf});
-        u_lb_ = casadi::DM({-0.1, -0.1, -0.1});
-        u_ub_ = casadi::DM({0.1, 0.1, 0.1});
+        u_lb_ = casadi::DM({-max_speed, -max_speed, -max_speed});
+        u_ub_ = casadi::DM({max_speed, max_speed, max_speed});
 
-        K_ = 100;
+        // K_ = 20;
         r_ = 0.14;
         delta_t_ = 0.10;
         nx_ = 3;
