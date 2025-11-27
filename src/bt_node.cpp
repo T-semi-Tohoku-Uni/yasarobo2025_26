@@ -102,7 +102,15 @@ namespace ActionNodes {
         request->y = y;
         request->theta = theta;
 
-        srvGenRoute_->async_send_request(request);
+        auto result_future = srvGenRoute_->async_send_request(request);
+
+        if (
+            rclcpp::spin_until_future_complete(
+                this->get_node_base_interface(),
+                result_future,
+                std::chrono::seconds(1)
+            ) == rclcpp::FutureReturnCode::SUCCESS
+        ) {}
     }
 
     inrof2025_ros_type::srv::Pose::Response BTNode::get_pose() {
