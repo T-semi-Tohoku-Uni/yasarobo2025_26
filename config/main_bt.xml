@@ -15,12 +15,16 @@
       </Sequence>
       <KeepRunningUntilFailure>
         <Sequence>
-          <waypoint x="0.3"
-                    y="2.0"/>
-          <generate_route x="1.34"
-                          y="2.00"
-                          theta="-1.57"/>
-          <follow_route/>
+          <Delay delay_msec="2000">
+            <Sequence>
+              <waypoint x="0.3"
+                        y="2.0"/>
+              <generate_route x="1.34"
+                              y="2.00"
+                              theta="-1.57"/>
+              <follow_route/>
+            </Sequence>
+          </Delay>
           <WhileDoElseBreak>
             <ball_detect x="{x}"
                          y="{y}"/>
@@ -41,9 +45,7 @@
                          y="1.8"
                          is_return="1"/>
               <follow_route/>
-              <Delay delay_msec="5000">
-                <ball_color color="{color}"/>
-              </Delay>
+              <ball_color color="{color}"/>
               <SwitchColor color="{color}">
                 <Sequence>
                   <waypoint x="0.3"
