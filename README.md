@@ -53,6 +53,20 @@ sudo make install
 cd ros_ws
 ```
 
+### CasiDAiのインストール
+```bash
+sudo apt install gfortran liblapack-dev pkg-config --install-recommends
+sudo apt install swig
+cd
+git clone https://github.com/casadi/casadi.git -b main casadi
+cd casadi
+mkdir build
+cd build
+cmake -DWITH_PYTHON=ON -DWITH_IPOPT=ON -DWITH_OPENMP=ON -DWITH_THREAD=ON -DWITH_BUILD_REQUIRED=ON ..
+make -j24
+sudo make install
+```
+
 ### gazeboのインストール
 ```bash
 sudo apt-get install ros-${ROS_DISTRO}-ros-gz
