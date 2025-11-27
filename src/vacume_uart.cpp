@@ -59,6 +59,17 @@ namespace raspi{
                 const std::shared_ptr<inrof2025_ros_type::srv::BallColor::Request> request,
                 const std::shared_ptr<inrof2025_ros_type::srv::BallColor::Response> response
             ) {
+                switch(color_) {
+                    case 0:
+                        RCLCPP_INFO(this->get_logger(), "RED");
+                        break;
+                    case 1:
+                        RCLCPP_INFO(this->get_logger(), "YELLO");
+                        break;
+                    case 2:
+                        RCLCPP_INFO(this->get_logger(), "BLUE");
+                        break;
+                }
                 response->color = color_;
             }
             
