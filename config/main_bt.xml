@@ -7,7 +7,7 @@
         <vacume_on on="1"/>
         <Delay delay_msec="5000">
           <generate_route x="0.15"
-                          y="2.05"
+                          y="2.00"
                           theta="1.05"/>
         </Delay>
         <follow_route/>
@@ -41,7 +41,7 @@
                          y="1.8"
                          is_return="1"/>
               <follow_route/>
-              <Delay delay_msec="1000">
+              <Delay delay_msec="5000">
                 <ball_color color="{color}"/>
               </Delay>
               <SwitchColor color="{color}">
