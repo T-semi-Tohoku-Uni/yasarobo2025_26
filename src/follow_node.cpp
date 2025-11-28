@@ -188,9 +188,11 @@ class FollowNode: public rclcpp::Node {
         void controlLoop() {
             //do nothing if if there is no goal or path
             if (!goal_handle_){
+                publishZero();
                 return;
             }
             if (path_.empty()){
+                publishZero();
                 return;
             }
 
