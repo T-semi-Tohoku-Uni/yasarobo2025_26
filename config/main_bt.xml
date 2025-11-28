@@ -7,7 +7,7 @@
         <vacume_on on="1"/>
         <Delay delay_msec="5000">
           <generate_route x="0.15"
-                          y="2.00"
+                          y="0.75"
                           theta="1.05"/>
         </Delay>
         <follow_route/>
@@ -64,9 +64,9 @@
                 <Sequence>
                   <waypoint x="0.3"
                             y="2.0"/>
-                  <generate_route x="0.15"
-                                  y="2.05"
-                                  theta="1.05"/>
+                  <generate_route x="0.30"
+                                  y="1.850"
+                                  theta="0.524"/>
                 </Sequence>
               </SwitchColor>
             </Sequence>
