@@ -21,8 +21,8 @@
             <Sequence>
               <SwitchColor color="{old_color}">
                 <Sequence>
-                  <generate_route x="1.00"
-                                  y="0.740"
+                  <generate_route x="0.88"
+                                  y="0.700"
                                   theta="0.0"/>
                 </Sequence>
                 <Sequence>
@@ -48,9 +48,9 @@
                          y="{y}"/>
             <Sequence>
               <SwitchColor color="{old_color}">
-                <generate_route x="0.88"
-                                y="0.74"
-                                theta="2.0944"/>
+                <generate_route x="0.60"
+                                y="0.70"
+                                theta="3.14"/>
                 <generate_route x="1.34"
                                 y="2.10"
                                 theta="2.62"/>
