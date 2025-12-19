@@ -2,11 +2,11 @@
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/pose2_d.hpp>
 #include <geometry_msgs/msg/pose2_d.hpp>
-#include <inrof2025_ros_type/srv/gen_route.hpp>
+#include <nhk2026_msgs/srv/path_plan.hpp>
 #include <inrof2025_ros_type/srv/vacume.hpp>
 #include <inrof2025_ros_type/srv/ball_pose.hpp>
-#include <inrof2025_ros_type/srv/waypoint.hpp>
-#include <inrof2025_ros_type/action/follow.hpp>
+#include <nhk2026_msgs/srv/waypoint.hpp>
+#include <nhk2026_msgs/action/follow.hpp>
 #include <inrof2025_ros_type/action/rotate.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <behaviortree_cpp/behavior_tree.h>
@@ -33,14 +33,14 @@ using namespace BT;
 namespace ActionNodes {
     BTNode::BTNode(const rclcpp::NodeOptions & options): Node("bt_node", options) {
         // create service client
-        srvGenRoute_ = this->create_client<inrof2025_ros_type::srv::GenRoute>("generate_route");
+        srvGenRoute_ = this->create_client<nhk2026_msgs::srv::PathPlan>("generate_route");
         srvVacume_ = this->create_client<inrof2025_ros_type::srv::Vacume>("/srv/vacume");
         srvBall_ = this->create_client<inrof2025_ros_type::srv::BallPose> ("ball_detect");
         srvBallRoute_ = this->create_client<inrof2025_ros_type::srv::BallPath>("generate_ball_path");
         srvPose_ = this->create_client<inrof2025_ros_type::srv::Pose>("pose");
         srvBallColor_ = this->create_client<inrof2025_ros_type::srv::BallColor>("color");
-        srvWaypoint_ = this->create_client<inrof2025_ros_type::srv::Waypoint>("waypoint");
-        actFollow_ = rclcpp_action::create_client<inrof2025_ros_type::action::Follow> (this, "follow");
+        srvWaypoint_ = this->create_client<nhk2026_msgs::srv::Waypoint>("waypoint");
+        actFollow_ = rclcpp_action::create_client<nhk2026_msgs::action::Follow> (this, "follow");
         actRotate_ = rclcpp_action::create_client<inrof2025_ros_type::action::Rotate> (this, "rotate");
     };
 
@@ -50,12 +50,12 @@ namespace ActionNodes {
             RCLCPP_WARN(this->get_logger(), "srvWaypoint_ not available");
         }
 
-        inrof2025_ros_type::srv::Waypoint_Request::SharedPtr request 
-            = std::make_shared<inrof2025_ros_type::srv::Waypoint::Request>();
+        nhk2026_msgs::srv::Waypoint_Request::SharedPtr request 
+            = std::make_shared<nhk2026_msgs::srv::Waypoint::Request>();
         request->x = x;
         request->y = y;
 
-        rclcpp::Client<inrof2025_ros_type::srv::Waypoint>::FutureAndRequestId result_future
+        rclcpp::Client<nhk2026_msgs::srv::Waypoint>::FutureAndRequestId result_future
             = srvWaypoint_->async_send_request(request);
         
         if (
@@ -97,7 +97,7 @@ namespace ActionNodes {
             RCLCPP_WARN(this->get_logger(), "srvGenRoute not available");
         }
 
-        auto request = std::make_shared<inrof2025_ros_type::srv::GenRoute::Request>();
+        auto request = std::make_shared<nhk2026_msgs::srv::PathPlan::Request>();
         request->x = x;
         request->y = y;
         request->theta = theta;
@@ -203,8 +203,8 @@ namespace ActionNodes {
             RCLCPP_WARN(this->get_logger(), "actFollow_ not available");
         }
 
-        auto goal_msg = inrof2025_ros_type::action::Follow::Goal();
-        auto send_goal_options = rclcpp_action::Client<inrof2025_ros_type::action::Follow>::SendGoalOptions();
+        auto goal_msg = nhk2026_msgs::action::Follow::Goal();
+        auto send_goal_options = rclcpp_action::Client<nhk2026_msgs::action::Follow>::SendGoalOptions();
         send_goal_options.goal_response_callback = std::bind(&BTNode::goalResponseCallback, this, std::placeholders::_1);
         send_goal_options.feedback_callback = std::bind(&BTNode::feedbackCallback, this, std::placeholders::_1, std::placeholders::_2);
         send_goal_options.result_callback = std::bind(&BTNode::resultCallback, this, std::placeholders::_1);
@@ -213,7 +213,7 @@ namespace ActionNodes {
         this->isRun_ = true;
     }
 
-    void BTNode::goalResponseCallback(rclcpp_action::ClientGoalHandle<inrof2025_ros_type::action::Follow>::SharedPtr goal_handle){
+    void BTNode::goalResponseCallback(rclcpp_action::ClientGoalHandle<nhk2026_msgs::action::Follow>::SharedPtr goal_handle){
         if (goal_handle) {
 
         } else {
@@ -221,13 +221,13 @@ namespace ActionNodes {
         }
     }
 
-    void BTNode::feedbackCallback(rclcpp_action::ClientGoalHandle<inrof2025_ros_type::action::Follow>::SharedPtr goal_handle, 
-        const std::shared_ptr<const inrof2025_ros_type::action::Follow::Feedback> feedback)
+    void BTNode::feedbackCallback(rclcpp_action::ClientGoalHandle<nhk2026_msgs::action::Follow>::SharedPtr goal_handle, 
+        const std::shared_ptr<const nhk2026_msgs::action::Follow::Feedback> feedback)
     {
         (void) goal_handle;
     }
 
-    void BTNode::resultCallback(const rclcpp_action::ClientGoalHandle<inrof2025_ros_type::action::Follow>::WrappedResult result) {
+    void BTNode::resultCallback(const rclcpp_action::ClientGoalHandle<nhk2026_msgs::action::Follow>::WrappedResult result) {
         this->isRun_ = false;
     }
 

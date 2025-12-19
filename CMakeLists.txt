@@ -30,6 +30,7 @@ find_package(laser_geometry REQUIRED)
 find_package(tf2_sensor_msgs REQUIRED)
 find_package(behaviortree_cpp REQUIRED)
 find_package(inrof2025_ros_type REQUIRED)
+find_package(nhk2026_msgs REQUIRED)
 find_package(nanoflann REQUIRED)
 find_package(backward_ros REQUIRED)
 find_package(Eigen3 REQUIRED)
@@ -55,6 +56,7 @@ function(dependencies target)
     "tf2_sensor_msgs"
     "behaviortree_cpp"
     "inrof2025_ros_type"
+    "nhk2026_msgs"
   )
 
   target_include_directories(${target}
@@ -107,6 +109,7 @@ ament_target_dependencies(bt_lib
   "rclcpp_action"
   "behaviortree_cpp"
   "inrof2025_ros_type"
+  "nhk2026_msgs"
 )
 install(TARGETS bt_lib DESTINATION lib/${PROJECT_NAME})
 

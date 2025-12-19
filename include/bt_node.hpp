@@ -1,15 +1,15 @@
 #pragma once
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
-#include <inrof2025_ros_type/srv/gen_route.hpp>
+#include <nhk2026_msgs/srv/path_plan.hpp>
 #include <inrof2025_ros_type/srv/vacume.hpp>
 #include <inrof2025_ros_type/srv/ball_pose.hpp>
-#include <inrof2025_ros_type/action/follow.hpp>
+#include <nhk2026_msgs/action/follow.hpp>
 #include <inrof2025_ros_type/action/rotate.hpp>
 #include <inrof2025_ros_type/srv/pose.hpp>
 #include <inrof2025_ros_type/srv/ball_path.hpp>
 #include <inrof2025_ros_type/srv/ball_color.hpp>
-#include <inrof2025_ros_type/srv/waypoint.hpp>
+#include <nhk2026_msgs/srv/waypoint.hpp>
 
 namespace ActionNodes {
     class BTNode: public rclcpp::Node {
@@ -24,12 +24,12 @@ namespace ActionNodes {
             bool ball_detect(double *x, double *y);
             void send_vacume_on(bool on);
             void send_start_follow();
-            void goalResponseCallback(rclcpp_action::ClientGoalHandle<inrof2025_ros_type::action::Follow>::SharedPtr goal_handle);
+            void goalResponseCallback(rclcpp_action::ClientGoalHandle<nhk2026_msgs::action::Follow>::SharedPtr goal_handle);
             void feedbackCallback(
-                rclcpp_action::ClientGoalHandle<inrof2025_ros_type::action::Follow>::SharedPtr goal_handle, 
-                const std::shared_ptr<const inrof2025_ros_type::action::Follow::Feedback> feedback
+                rclcpp_action::ClientGoalHandle<nhk2026_msgs::action::Follow>::SharedPtr goal_handle, 
+                const std::shared_ptr<const nhk2026_msgs::action::Follow::Feedback> feedback
             );
-            void resultCallback(const rclcpp_action::ClientGoalHandle<inrof2025_ros_type::action::Follow>::WrappedResult result);
+            void resultCallback(const rclcpp_action::ClientGoalHandle<nhk2026_msgs::action::Follow>::WrappedResult result);
             void send_rotate_position(double theta);
             void rotateGoalResponseCallback(rclcpp_action::ClientGoalHandle<inrof2025_ros_type::action::Rotate>::SharedPtr goal_handle);
             void rotateFeedbackCallback(
@@ -39,15 +39,15 @@ namespace ActionNodes {
             void rotateResultCallback(const rclcpp_action::ClientGoalHandle<inrof2025_ros_type::action::Rotate>::WrappedResult result);
             bool isRotateRuning();
         private:
-            rclcpp::Client<inrof2025_ros_type::srv::GenRoute>::SharedPtr srvGenRoute_;
+            rclcpp::Client<nhk2026_msgs::srv::PathPlan>::SharedPtr srvGenRoute_;
             rclcpp::Client<inrof2025_ros_type::srv::Vacume>::SharedPtr srvVacume_;
             rclcpp::Client<inrof2025_ros_type::srv::BallPose>::SharedPtr srvBall_;
             rclcpp::Client<inrof2025_ros_type::srv::BallPath>::SharedPtr srvBallRoute_;
             rclcpp::Client<inrof2025_ros_type::srv::Pose>::SharedPtr srvPose_;
-            rclcpp::Client<inrof2025_ros_type::srv::Waypoint>::SharedPtr srvWaypoint_;
+            rclcpp::Client<nhk2026_msgs::srv::Waypoint>::SharedPtr srvWaypoint_;
             rclcpp::Client<inrof2025_ros_type::srv::BallColor>::SharedPtr srvBallColor_;
-            rclcpp_action::Client<inrof2025_ros_type::action::Follow>::SharedPtr actFollow_;
-            rclcpp_action::ClientGoalHandle<inrof2025_ros_type::action::Follow>::SharedPtr currentFollow_;
+            rclcpp_action::Client<nhk2026_msgs::action::Follow>::SharedPtr actFollow_;
+            rclcpp_action::ClientGoalHandle<nhk2026_msgs::action::Follow>::SharedPtr currentFollow_;
             rclcpp_action::Client<inrof2025_ros_type::action::Rotate>::SharedPtr actRotate_;
             bool isRun_{false};
             bool isRotateRun_{false};
