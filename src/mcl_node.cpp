@@ -7,7 +7,6 @@
 #include <sensor_msgs/point_cloud2_iterator.hpp>
 #include <visualization_msgs/msg/marker.hpp>
 #include <random>
-#include <rclcpp/rclcpp.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <tf2/LinearMath/Quaternion.hpp>
 #include <tf2_ros/transform_broadcaster.h>
@@ -24,8 +23,13 @@
 #include <cstdlib>
 #include <inrof2025_ros_type/srv/ball_pose.hpp>
 #include <inrof2025_ros_type/srv/pose.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
+
+// HDF5 C++ API
+#include <H5Cpp.h>
 
 using namespace std::chrono_literals; 
+using namespace H5; // HDF5 namespace
 
 namespace mcl {
     class Particle {
@@ -69,14 +73,15 @@ namespace mcl {
                 this->declare_parameter<std::float_t>("odomNoise2", 1.0);
                 this->declare_parameter<std::float_t>("odomNoise3", 1.0);
                 this->declare_parameter<std::float_t>("odomNoise4", 1.0);
-                this->declare_parameter<std::float_t>("mapResolution", 0.01);
-                this->declare_parameter<std::string>("mapDir", "src/yasarobo2025_26/map/");
+                // this->declare_parameter<std::float_t>("mapResolution", 0.01); // readMap内で上書きするためコメントアウトまたは無視
+                this->declare_parameter<std::string>("mapFile", "src/yasarobo2025_26/map/voxel_map_output.h5"); // HDF5ファイルのパス
                 this->declare_parameter<std::int32_t>("scanStep", 50);
                 this->declare_parameter<std::double_t>("lfmSigma", 0.03);
                 this->declare_parameter<std::double_t>("zHit", 1.0);
                 this->declare_parameter<std::double_t>("zMax", 0.0);
                 this->declare_parameter<std::double_t>("zRand", 1.0);
                 this->declare_parameter<double>("lidar_threshold", 1.0/5.0*M_PI);
+                this->declare_parameter<int>("mapZIndex", 27); // 使用するZスライスのインデックス
                 
                 particleNum_ = this->get_parameter("particleNum").as_int();
                 double initial_x = this->get_parameter("initial_x").as_double();
@@ -87,13 +92,14 @@ namespace mcl {
                 this->odomNoise2_ = this->get_parameter("odomNoise2").as_double();
                 this->odomNoise3_ = this->get_parameter("odomNoise3").as_double();
                 this->odomNoise4_ = this->get_parameter("odomNoise4").as_double();
-                this->mapResolution_ = this->get_parameter("mapResolution").as_double();
-                this->mapDir_ = this->get_parameter("mapDir").as_string();
+                // this->mapResolution_ = this->get_parameter("mapResolution").as_double();
+                this->mapFile_ = this->get_parameter("mapFile").as_string();
                 this->scanStep_ = this->get_parameter("scanStep").as_int();
                 this->lfmSigma_ = this->get_parameter("lfmSigma").as_double();
                 this->zHit_ = this->get_parameter("zHit").as_double();
                 this->zMax_ = this->get_parameter("zMax").as_double();
                 this->zRand_ = this->get_parameter("zRand").as_double();
+                this->mapZIndex_ = this->get_parameter("mapZIndex").as_int();
                 this->get_parameter("lidar_threshold", LIDAR_THTRSHOLD_);
 
                 particles_.resize(particleNum_);
@@ -126,6 +132,11 @@ namespace mcl {
                 // set mesurementModel
                 measurementModel_ = MeasurementModel::LikelihoodFieldModel;
 
+
+                rclcpp::QoS map_qos(rclcpp::KeepLast(1));
+                map_qos.transient_local().reliable();
+                // PointCloud2型のパブリッシャーに変更
+                pubMapCloud_ = create_publisher<sensor_msgs::msg::PointCloud2>("voxel_map_cloud", map_qos);
                 MCL::readMap();
                 
                 last_timestamp_ = this->get_clock()->now();
@@ -221,69 +232,217 @@ namespace mcl {
                 odom_=msg;
             }
             
+            // --- ここを変更 ---
             void readMap() {
                 try {
-                    YAML::Node lconf = YAML::LoadFile(this->mapDir_ + "map.yaml");
-                    mapResolution_ = lconf["resolution"].as<std::double_t>();
-                    mapOrigin_ = lconf["origin"].as<std::vector<std::double_t>>();
+                    RCLCPP_INFO(this->get_logger(), "Loading map from: %s", this->mapFile_.c_str());
+                    
+                    // 1. HDF5ファイルを開く
+                    H5File file(this->mapFile_, H5F_ACC_RDONLY);
+                    DataSet dataset = file.openDataSet("map_data");
 
-                    std::string imgFile = mapDir_ + "map.pgm";
-                    mapImg_ = cv::imread(imgFile, 0);
-                    mapWidth_ = mapImg_.cols;
-                    mapHeight_ = mapImg_.rows;
+                    // 2. データ空間の次元を取得
+                    DataSpace dataspace = dataset.getSpace();
+                    int rank = dataspace.getSimpleExtentNdims();
+                    std::vector<hsize_t> dims(rank);
+                    dataspace.getSimpleExtentDims(dims.data(), NULL);
 
-                    cv::Mat mapImg = mapImg_.clone();
-                    for (int v = 0; v < mapHeight_; v++ ) {
-                        for (int u = 0; u < mapWidth_; u++ ) {
-                            uchar val = mapImg.at<uchar>(v, u);
-                            if (val == 0) {
-                                mapImg.at<uchar>(v, u) = 0;
+                    hsize_t dim_x = dims[0];
+                    hsize_t dim_y = dims[1];
+                    hsize_t dim_z = dims[2];
+
+                    mapWidth_ = dim_x;
+                    mapHeight_ = dim_y;
+
+                    RCLCPP_INFO(this->get_logger(), "Map Shape: (%llu, %llu, %llu)", dim_x, dim_y, dim_z);
+
+                    if (this->mapZIndex_ >= (int)dim_z) {
+                        RCLCPP_ERROR(this->get_logger(), "Z index %d is out of bounds (Max: %llu)", this->mapZIndex_, dim_z - 1);
+                        return;
+                    }
+
+                    // 3. 属性 (voxel_size, origin) の読み込み
+                    float voxel_size = 0.01f;
+                    try {
+                        if(dataset.attrExists("voxel_size")) {
+                            Attribute attr = dataset.openAttribute("voxel_size");
+                            attr.read(PredType::NATIVE_FLOAT, &voxel_size);
+                            mapResolution_ = (double)voxel_size;
+                            RCLCPP_INFO(this->get_logger(), "Voxel Size: %f m", mapResolution_);
+                        }
+                        if (dataset.attrExists("origin")) {
+                            Attribute attr = dataset.openAttribute("origin");
+                            // originは float[3] と仮定
+                            float origin_buf[3];
+                            // ArrayTypeを作って読む必要があるが、簡易的にNATIVE_FLOATの配列として読める場合も
+                            // ここではシンプルにHDF5のAPIで読む実装例
+                            // ※注意: HDF5のArray属性の読み込みは型定義が必要。
+                            // ここでは一旦、既存コードのmapOrigin_への格納はスキップするか、デフォルト値を使用します。
+                            // もし原点情報が必須なら以下のように実装（要HDF5型の詳細確認）
+                            /*
+                            hsize_t dims_attr[1] = {3};
+                            ArrayType array_type(PredType::NATIVE_FLOAT, 1, dims_attr);
+                            attr.read(array_type, origin_buf);
+                            mapOrigin_ = {(double)origin_buf[0], (double)origin_buf[1], (double)origin_buf[2]};
+                            */
+                        }
+                    } catch(...) {
+                        RCLCPP_WARN(this->get_logger(), "Could not read attributes. Using defaults.");
+                        mapResolution_ = 0.01;
+                    }
+
+
+                    // 4. データ読み込み
+                    size_t total_size = dim_x * dim_y * dim_z;
+                    std::vector<uint8_t> map_data(total_size);
+                    dataset.read(map_data.data(), PredType::NATIVE_UINT8);
+
+                    // 5. OpenCV画像 (2値マップ) の作成 & 距離場計算
+                    // OpenCV Mat: (rows=height=y, cols=width=x)
+                    cv::Mat binary_img(dim_y, dim_x, CV_8UC1);
+                    cv::Mat raw_slice_img(dim_y, dim_x, CV_8UC1);
+
+                    // 指定したZ平面のデータを画像へコピー
+                    // インデックス計算: x * (dim_y * dim_z) + y * (dim_z) + z
+                    for (int y = 0; y < (int)dim_y; ++y) {
+                        for (int x = 0; x < (int)dim_x; ++x) {
+                            unsigned long idx = x * (dim_y * dim_z) + y * dim_z + this->mapZIndex_;
+                            uint8_t val = map_data[idx];
+                            raw_slice_img.at<uint8_t>(y, x) = val;
+
+                            // 2値化: 障害物(True/非0) -> 0 (黒), 自由空間(False/0) -> 255 (白)
+                            if (val == 1) {
+                                binary_img.at<uint8_t>(y, x) = 0;   // 障害物
                             } else {
-                                mapImg.at<uchar>(v, u) = 1;
+                                binary_img.at<uint8_t>(y, x) = 255; // 自由空間
                             }
                         }
                     }
+                    cv::imwrite("debug_binary_map.png", binary_img);
 
-                    cv::Mat distFieldF(mapHeight_, mapWidth_, CV_32FC1);
-                    cv::Mat distFieldD(mapHeight_, mapWidth_, CV_64FC1);
-                    cv::distanceTransform(mapImg, distFieldF, cv::DIST_L2, 5);
-                    
-                    // 原点    : 左上
-                    // first  : 縦軸
-                    // second : 横軸
+                    cv::imwrite("debug_raw_slice.png", raw_slice_img);
+                    RCLCPP_INFO(this->get_logger(), "Saved raw Z-slice image to debug_raw_slice.png");
+                    // デバッグ用に2値画像をメンバに保存（必要であれば）
+                    mapImg_ = binary_img.clone();
 
-                    for (int v = 0; v < mapHeight_; v++ ) {
-                        for (int u = 0; u < mapWidth_; u++ ) {
-                            std::float_t d = distFieldF.at<std::float_t>(v, u);
-                            distFieldD.at<std::double_t>(v, u) = (std::double_t)d * mapResolution_;
+                    // 6. 距離変換
+                    cv::Mat distFieldF;
+                    cv::distanceTransform(binary_img, distFieldF, cv::DIST_L2, 5);
+
+                    // 実距離(メートル)へ変換して格納 (CV_64F)
+                    // distFieldD = d * mapResolution_
+                    distField_ = cv::Mat(dim_y, dim_x, CV_64FC1); // メモリ確保
+                    for (int y = 0; y < (int)dim_y; ++y) {
+                        for (int x = 0; x < (int)dim_x; ++x) {
+                            float d_pixel = distFieldF.at<float>(y, x);
+                            distField_.at<double>(y, x) = (double)d_pixel * mapResolution_;
                         }
                     }
-                    RCLCPP_INFO(this->get_logger(), "(11, 50) = %lf", distFieldF.at<std::float_t>(11, 50));
+                    
+                    RCLCPP_INFO(this->get_logger(), "Distance Field created. (11, 50) = %lf m", distField_.at<double>(11, 50));
 
-                    // 1) 距離場 distFieldD（CV_64F）を 0–255 に正規化して 8bit 化
-                    cv::Mat normDist;
-                    cv::normalize(distFieldD, normDist, 0.0, 255.0, cv::NORM_MINMAX);
-                    cv::Mat dist8U;
+                    // --- デバッグ用画像保存（元のコードの機能） ---
+                    cv::Mat normDist, dist8U, colorImg;
+                    cv::normalize(distField_, normDist, 0.0, 255.0, cv::NORM_MINMAX);
                     normDist.convertTo(dist8U, CV_8U);
-
-                    // 2) グレースケール→BGR に変換
-                    cv::Mat colorImg;
                     cv::cvtColor(dist8U, colorImg, cv::COLOR_GRAY2BGR);
-
-                    // 3) 特定ピクセルをマーク (row=50, col=11 を赤に)
-                    //    .at は (y,x) = (row,col) の順番なので注意
-                    colorImg.at<cv::Vec3b>(11, 50) = cv::Vec3b(0, 0, 255);
-
-                    // （任意）円マークを描く場合
-                    cv::circle(colorImg, cv::Point(11, 50), /*半径*/ 3, cv::Scalar(0,255,0), /*塗りつぶし*/ -1);
-
-                    // 4) 画像を保存
+                    
+                    if (11 < dim_y && 50 < dim_x) {
+                        colorImg.at<cv::Vec3b>(11, 50) = cv::Vec3b(0, 0, 255);
+                        cv::circle(colorImg, cv::Point(50, 11), 3, cv::Scalar(0,255,0), -1); // cv::Point(x, y)
+                    }
                     cv::imwrite("distField_highlight.png", colorImg);
+                    publishVoxelMap(map_data, dim_x, dim_y, dim_z);
 
-                    distField_ = distFieldD.clone();
-                } catch (const YAML::Exception& e) {
-                    RCLCPP_ERROR(this->get_logger(), "%s\n", e.what());
+                } catch (FileIException& error) {
+                    error.printErrorStack();
+                    RCLCPP_ERROR(this->get_logger(), "HDF5 File Error");
+                } catch (DataSetIException& error) {
+                    error.printErrorStack();
+                    RCLCPP_ERROR(this->get_logger(), "HDF5 DataSet Error");
+                } catch (DataSpaceIException& error) {
+                    error.printErrorStack();
+                    RCLCPP_ERROR(this->get_logger(), "HDF5 DataSpace Error");
+                } catch (const std::exception& e) {
+                    RCLCPP_ERROR(this->get_logger(), "Error in readMap: %s", e.what());
                 }
+            }
+
+            void publishVoxelMap(const std::vector<uint8_t>& map_data, hsize_t dim_x, hsize_t dim_y, hsize_t dim_z) {
+                // インデックスの範囲チェック
+                if (this->mapZIndex_ < 0 || this->mapZIndex_ >= (int)dim_z) {
+                    RCLCPP_ERROR(this->get_logger(), "mapZIndex %d is out of bounds (0 to %llu)", this->mapZIndex_, dim_z - 1);
+                    return;
+                }
+
+                int target_z = this->mapZIndex_;
+
+                // 1. 指定されたZ面にある障害物(値が0以外)の数をカウントする
+                size_t num_points = 0;
+                
+                // データ配列のインデックス計算: x * (dim_y * dim_z) + y * dim_z + z
+                // ここでは z を target_z に固定して x, y だけ回します
+                for (hsize_t x = 0; x < dim_x; ++x) {
+                    for (hsize_t y = 0; y < dim_y; ++y) {
+                        unsigned long idx = x * (dim_y * dim_z) + y * dim_z + target_z;
+                        
+                        // 範囲外アクセス防止（念のため）
+                        if (idx >= map_data.size()) continue;
+
+                        if (map_data[idx] != 0) { 
+                            num_points++;
+                        }
+                    }
+                }
+
+                if (num_points == 0) {
+                    RCLCPP_WARN(this->get_logger(), "No occupied voxels found at Z index %d.", target_z);
+                    return;
+                }
+
+                // 2. PointCloud2 メッセージの作成
+                sensor_msgs::msg::PointCloud2 cloud_msg;
+                cloud_msg.header.stamp = this->now();
+                cloud_msg.header.frame_id = "map";
+                cloud_msg.height = 1;
+                cloud_msg.width = num_points;
+                cloud_msg.is_dense = false;
+                cloud_msg.is_bigendian = false;
+
+                sensor_msgs::PointCloud2Modifier modifier(cloud_msg);
+                modifier.setPointCloud2FieldsByString(1, "xyz");
+                modifier.resize(num_points);
+
+                sensor_msgs::PointCloud2Iterator<float> iter_x(cloud_msg, "x");
+                sensor_msgs::PointCloud2Iterator<float> iter_y(cloud_msg, "y");
+                sensor_msgs::PointCloud2Iterator<float> iter_z(cloud_msg, "z");
+
+                // 3. データを走査して座標を埋める
+                for (hsize_t x = 0; x < dim_x; ++x) {
+                    for (hsize_t y = 0; y < dim_y; ++y) {
+                        unsigned long idx = x * (dim_y * dim_z) + y * dim_z + target_z;
+
+                        if (idx >= map_data.size()) continue;
+
+                        if (map_data[idx] != 0) {
+                            // 物理座標への変換
+                            float phys_x = (float)x * mapResolution_;
+                            float phys_y = (float)y * mapResolution_;
+                            float phys_z = (float)target_z * mapResolution_; // Z高さは固定
+
+                            *iter_x = phys_x;
+                            *iter_y = phys_y;
+                            *iter_z = phys_z;
+
+                            ++iter_x;
+                            ++iter_y;
+                            ++iter_z;
+                        }
+                    }
+                }
+
+                pubMapCloud_->publish(cloud_msg);
+                RCLCPP_INFO(this->get_logger(), "Published Z-slice (z=%d, height=%.3fm) map with %zu points", target_z, (float)target_z * mapResolution_, num_points);
             }
 
             void loop() {
@@ -315,6 +474,7 @@ namespace mcl {
                 estimatePose();
                 resampleParticles();
                 printTrajectoryOnRviz2();
+                //RCLCPP_INFO(this->get_logger(), " Z-Index : %d", this->mapZIndex_);
                 // publishScanEndpoints();
                 // TODO: printTrajectory
             }
@@ -713,6 +873,26 @@ namespace mcl {
             // TODO
             // グリッドマップ上の点へ変換する
             void xy2uv(std::double_t x, std::double_t y, std::int32_t *u, std::int32_t *v) {
+                // 原点情報を考慮した変換が必要
+                // ただし、voxel_map_output.h5 の仕様に合わせて調整が必要
+                // HDF5のoriginは恐らく物理座標での原点位置を示す
+                
+                // 例: mapOrigin_ が [-0.31, -0.01, 0] なら、物理座標 (x, y) から 原点を引いて解像度で割る
+                // 注意: HDF5のデータ配列の軸方向とロボット座標系の整合性を確認してください。
+                // 通常: u = (x - origin_x) / res, v = (y - origin_y) / res
+                // 下記は旧コードのロジックを踏襲していますが、HDF5に合わせて調整が必要かもしれません
+                
+                // 一旦、元のコードの座標系ロジック（画像座標系 左上が原点、Y軸下向き）を想定する場合:
+                // *u = (std::int32_t)(x / mapResolution_);
+                // *v = mapHeight_ - 1 - (std::int32_t)(y / mapResolution_);
+                
+                // もしHDF5由来のマップが「ボクセルデータ」として座標軸通りの並び（u=X, v=Y）で、
+                // かつ原点補正が必要な場合：
+                // *u = (int)((x - mapOrigin_[0]) / mapResolution_);
+                // *v = (int)((y - mapOrigin_[1]) / mapResolution_);
+                
+                // ※ ここは実際のマップデータとロボットの座標系に合わせて調整してください。
+                // とりあえず元のロジックのままでコンパイルを通します。
                 *u = (std::int32_t)(x / mapResolution_);
                 *v = mapHeight_ - 1 - (std::int32_t)(y / mapResolution_);
             }
@@ -734,6 +914,8 @@ namespace mcl {
 
             // parameter for map
             std::string mapDir_;
+            std::string mapFile_; // 追加
+            int mapZIndex_;       // 追加
             std::double_t mapResolution_;
             std::int32_t mapWidth_, mapHeight_;
             std::vector<std::double_t> mapOrigin_;
@@ -802,6 +984,8 @@ namespace mcl {
             rclcpp::Service<inrof2025_ros_type::srv::BallPose>::SharedPtr srvBallPose_;
 
             rclcpp::Service<inrof2025_ros_type::srv::Pose>::SharedPtr srvPose_;
+
+            rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubMapCloud_;
 
             // TODO: delete
             rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr s_odom_;

@@ -32,7 +32,7 @@ def generate_launch_description():
     map_server_config_path = os.path.join(
         package_dir,
         "map",
-        "map.yaml"
+        "mcl_params.yaml"
     )
     rviz_config_path = os.path.join(
         package_dir,

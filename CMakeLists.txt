@@ -33,7 +33,7 @@ find_package(inrof2025_ros_type REQUIRED)
 find_package(nanoflann REQUIRED)
 find_package(backward_ros REQUIRED)
 find_package(Eigen3 REQUIRED)
-
+find_package(HDF5 COMPONENTS C CXX REQUIRED)
 if (BUILD_WITH_SIM)
   find_package(gazebo_ros REQUIRED)
   find_package(gazebo_msgs REQUIRED)
@@ -61,6 +61,7 @@ function(dependencies target)
     PUBLIC
       "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
       "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
+      ${HDF5_INCLUDE_DIRS}
   )
 
   if (BUILD_WITH_SIM)
@@ -72,6 +73,8 @@ function(dependencies target)
     ${YAML_CPP_LIBRARIES}
     nanoflann::nanoflann
     Eigen3::Eigen
+    ${HDF5_LIBRARIES}
+    ${HDF5_CXX_LIBRARIES}
   )
 endfunction()
 
