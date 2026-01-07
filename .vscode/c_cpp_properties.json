@@ -9,7 +9,8 @@
                 "/opt/ros/humble/include/**",
                 "${env:HOME}/ros_ws/src/yasarobo2025_26/include/**",
                 "${env:HOME}/ros_ws/install/inrof2025_ros_type/include/**",
-                "/usr/include/**"
+                "/usr/include/**",
+                "/usr/include/eigen3"
             ],
             "name": "ROS",
             "compilerPath": "/usr/bin/g++"

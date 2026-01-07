@@ -106,5 +106,6 @@
         "valarray": "cpp",
         "dense": "cpp",
         "splines": "cpp"
-    }
+    },
+    "ROS2.distro": "humble"
 }
