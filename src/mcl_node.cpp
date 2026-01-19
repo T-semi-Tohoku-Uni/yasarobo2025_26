@@ -279,12 +279,12 @@ namespace mcl {
                             // ※注意: HDF5のArray属性の読み込みは型定義が必要。
                             // ここでは一旦、既存コードのmapOrigin_への格納はスキップするか、デフォルト値を使用します。
                             // もし原点情報が必須なら以下のように実装（要HDF5型の詳細確認）
-                            /*
+                            
                             hsize_t dims_attr[1] = {3};
                             ArrayType array_type(PredType::NATIVE_FLOAT, 1, dims_attr);
                             attr.read(array_type, origin_buf);
                             mapOrigin_ = {(double)origin_buf[0], (double)origin_buf[1], (double)origin_buf[2]};
-                            */
+                            
                         }
                     } catch(...) {
                         RCLCPP_WARN(this->get_logger(), "Could not read attributes. Using defaults.");
