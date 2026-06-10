@@ -81,7 +81,7 @@ def generate_launch_description():
         package='ros_gz_bridge',
         executable='parameter_bridge',
         arguments=[
-            '/ldlidar_node/scan@sensor_msgs/msg/LaserScan@ignition.msgs.LaserScan',
+            '/scan_back@sensor_msgs/msg/LaserScan@ignition.msgs.LaserScan',
             '/odom@nav_msgs/msg/Odometry@gz.msgs.Odometry',
             '/cmd_vel@geometry_msgs/msg/Twist@gz.msgs.Twist',
             '/tf@tf2_msgs/msg/TFMessage@gz.msgs.Pose_V',

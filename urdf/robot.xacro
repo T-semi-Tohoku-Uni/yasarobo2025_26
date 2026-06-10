@@ -293,7 +293,7 @@
    <!-- LiDAR -->
   <link name="ldlidar_base"/>
   <joint name="lidar_joint" type="fixed">
-    <parent link="LD19_with_mounter_v17_1"/>
+    <parent link="base_link"/>
     <child  link="ldlidar_base"/>
     <origin xyz="0.0 0.0 -0.1" rpy="0 0 0"/>
   </joint>
