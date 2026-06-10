@@ -295,12 +295,12 @@
   <joint name="lidar_joint" type="fixed">
     <parent link="LD19_with_mounter_v17_1"/>
     <child  link="ldlidar_base"/>
-    <origin xyz="0.033 0.013 -0.05" rpy="0 0 0"/>
+    <origin xyz="0.0 0.0 -0.1" rpy="0 0 0"/>
   </joint>
   <gazebo reference="ldlidar_base">
     <sensor type="gpu_lidar" name="lidar_sensor">
       <ignition_frame_id>ldlidar_base</ignition_frame_id>
-      <topic>/ldlidar_node/scan</topic>
+      <topic>/scan_back</topic>
       <alwaysOn>1</alwaysOn>
       <visualize>true</visualize>
       <update_rate>10</update_rate>
