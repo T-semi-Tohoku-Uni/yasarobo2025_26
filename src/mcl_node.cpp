@@ -139,7 +139,7 @@ namespace mcl {
                 // rclcpp::QoS laserScanQos(rclcpp::KeepLast(10));
                 auto laserScanQos = rclcpp::SensorDataQoS();
                 subLayerScan_ = create_subscription<sensor_msgs::msg::LaserScan>(
-                    "/ldlidar_node/scan", laserScanQos, std::bind(&MCL::laserScanCallback, this, std::placeholders::_1)
+                    "scan_back", laserScanQos, std::bind(&MCL::laserScanCallback, this, std::placeholders::_1)
                 );
                 // rclcpp::QoS callbackQos(rclcpp::KeepLast(10));
                 // subOdom_ = create_subscription<nav_msgs::msg::Odometry>(
@@ -531,8 +531,8 @@ namespace mcl {
             }
 
             void lidarpose2uv(double range, double theta, geometry_msgs::msg::Pose2D pose, double *x_odom, double *y_odom, int *u, int *v) {
-                std::double_t x_lidar = range*cos(theta) + 0.084;
-                std::double_t y_lidar = range*sin(theta) + 0.013 - 0.013;
+                std::double_t x_lidar = range*cos(theta) ;
+                std::double_t y_lidar = range*sin(theta) ;
                 std::double_t x = x_lidar*cos(pose.theta) - y_lidar*sin(pose.theta) + pose.x;
                 std::double_t y = x_lidar*sin(pose.theta) + y_lidar*cos(pose.theta) + pose.y;
 

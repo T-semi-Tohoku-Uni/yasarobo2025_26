@@ -24,6 +24,7 @@ def generate_launch_description():
     theata = math.pi / 2
 
     package_dir = get_package_share_directory("yasarobo2025_26")
+    urg_node2_nl_pkg = get_package_share_directory('urg_node2_nl')
 
     # load robot urdf file
     xacro_file = os.path.join(package_dir, "urdf", "robot.xacro")
@@ -133,7 +134,7 @@ def generate_launch_description():
         executable="mcl_node",
         output="screen",
         parameters=[{
-            "particleNum": 50,
+            "particleNum": 5,
             "initial_x": x,
             "initial_y": y,
             "initial_theta": theata,
@@ -254,31 +255,32 @@ def generate_launch_description():
         }]
     )
 
+    urg_node_rear = Node(
+        package='urg_node2_nl',
+        executable='urg_node2_nl_node',
+        name='urg_node_rear',                    
+        remappings=[('scan', 'scan_back')],       
+        parameters=[PathJoinSubstitution([urg_node2_nl_pkg, "config", "params_ether_2nd.yaml"])],
+        output='screen',
+    )
+
     return LaunchDescription([
-        SetEnvironmentVariable(name='RCUTILS_COLORIZED_OUTPUT', value='1'),
-        ros_bag,
-        RegisterEventHandler(
-            event_handler=OnProcessStart(
-                target_action=ros_bag,
-                on_start=[
-                    node_robot_state_publisher,
-                    map_server_cmd,
-                    start_lifecycle_manager_cmd,
-                    static_from_map_to_odom,
-                    mcl_node,
-                    joy_node,
-                    joy2Vel_node,
-                    vel_feedback_node,
-                    ldlidar_node,
-                    static_ldlidar_tf,
-                    gen_path,
-                    follow_node,
-                    vacume_node,
-                    bt_node,
-                    rotate_node,
-                    ball_path_node,
-                    detect_node
-                ]
-            )
-        )
+        node_robot_state_publisher,
+        map_server_cmd,
+        start_lifecycle_manager_cmd,
+        static_from_map_to_odom,
+        mcl_node,
+        joy_node,
+        joy2Vel_node,
+        vel_feedback_node,
+        # ldlidar_node,
+        static_ldlidar_tf,
+        gen_path,
+        follow_node,
+        vacume_node,
+        bt_node,
+        rotate_node,
+        ball_path_node,
+        detect_node,
+        urg_node_rear
     ])
