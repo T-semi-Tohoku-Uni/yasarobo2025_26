@@ -29,7 +29,7 @@ namespace raspi {
                 this->get_parameter("Kp_angular", Kp_angular);
                 this->get_parameter("max_linear_acceleration", max_linear_acceleration);
                 this->get_parameter("max_angular_acceleration", max_angular_acceleration);
-                fd_vel_ = open_serial("/dev/serial/by-path/pci-0000:00:14.0-usb-0:4:1.1");
+                fd_vel_ = open_serial("/dev/serial/by-path/pci-0000:00:14.0-usb-0:3:1.1");
                 r_ = 0.14;
                 auto feedbackQ = rclcpp::QoS(rclcpp::KeepLast(10));
                 pub_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel_feedback", feedbackQ);
@@ -170,6 +170,7 @@ namespace raspi {
                 static constexpr uint8_t DELTM[] = {'\r', '\n'};
                 
                 if (n > 0) {
+                    //RCLCPP_INFO(this->get_logger(), "ok");
                     recev_buffer_.insert(recev_buffer_.end(), tmp, tmp+n);
                     float cmd_feedback[3];
 
