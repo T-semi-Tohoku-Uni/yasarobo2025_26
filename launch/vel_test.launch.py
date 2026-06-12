@@ -23,7 +23,7 @@ def generate_launch_description():
         cmd=[
             'ros2', 'topic', 'pub', '--rate', '20',
             '/cmd_vel', 'geometry_msgs/msg/Twist',
-            '{linear: {x: 0.1, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}'
+            '{linear: {x: 0.0, y: 0.1, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}'
         ],
         output='screen'
     )
