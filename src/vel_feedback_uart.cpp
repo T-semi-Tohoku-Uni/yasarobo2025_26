@@ -286,8 +286,8 @@ namespace raspi {
                 // motor_vel.v2 = 0.5 * vx + std::sqrt(3)/2*vy - r_*vtheta;
                 // motor_vel.v3 = -0.5 * vx + std::sqrt(3)/2*vy + r_*vtheta;
                 motor_vel.v1 = -((-vy) + r_*vtheta);
-                motor_vel.v2 = -(-0.5 * (-vy) - std::sqrt(3)/2*vx + r_*vtheta);
-                motor_vel.v3 = -(-0.5 * (-vy) + std::sqrt(3)/2*vx + r_*vtheta);
+                motor_vel.v2 = -(-0.5 * (-vy) + std::sqrt(3)/2*vx + r_*vtheta);
+                motor_vel.v3 = -(-0.5 * (-vy) - std::sqrt(3)/2*vx + r_*vtheta);
                 //RCLCPP_INFO(this->get_logger(), "vel:%f %f %f %f %f %f",vx, vy,vtheta, motor_vel.v1,motor_vel.v2,motor_vel.v3);
                 return motor_vel;
 
@@ -296,10 +296,13 @@ namespace raspi {
             geometry_msgs::msg::Twist inverseKinematics(float v1, float v2, float v3) {
                 geometry_msgs::msg::Twist twist;
                 
-                // 行列計算の結果に基づいた式
-                twist.linear.x = (1.0 / 3.0) * (-v1 + 2.0 * v2 - v3) / std::sqrt(3.0); 
-                twist.linear.y = (1.0 / 3.0) * (-2.0 * v1 + v2 + v3);
-                twist.angular.z = (1.0 / (3.0 * r_)) * (v1 + v2 + v3);
+                // 定数定義（sqrt(3)はあらかじめ計算しておくと高速です）
+                const float inv_sqrt3 = 1.0 / std::sqrt(3.0);
+                
+                // 逆運動学の計算
+                twist.linear.x = inv_sqrt3 * (v3 - v2);
+                twist.linear.y = (1.0 / 3.0) * (2.0 * v1 - v2 - v3);
+                twist.angular.z = -(1.0 / (3.0 * r_)) * (v1 + v2 + v3);
                 
                 return twist;
             }
