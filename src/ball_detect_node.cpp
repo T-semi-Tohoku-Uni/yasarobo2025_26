@@ -356,7 +356,7 @@ DBSCAN::PointCloud DBSCAN::BallDetect::scan2Point(const sensor_msgs::msg::LaserS
     for (size_t i=0; i<scan.ranges.size(); i++) {
         double r, theta;
         r = scan.ranges[i];
-        if (std::isnan(r) || r < 0.1  || scan.range_max<r) continue;
+        if (std::isnan(r) || r < 0.2  || scan.range_max<r) continue;
         theta = scan.angle_min + ((std::double_t)(i))*scan.angle_increment;
         // if (is_sim_) theta = scan.angle_min + ((std::double_t)(i))*scan.angle_increment;
         // else {
