@@ -208,6 +208,7 @@ namespace raspi {
 
                         // caculate x, y, theta
                         // TODO: 時間付きで渡してあげたい気持ち
+                        RCLCPP_INFO(this->get_logger(), "feedback:%f %f %f ", cmd_feedback[0], cmd_feedback[1], cmd_feedback[2]);
                         geometry_msgs::msg::Twist twist = inverseKinematics(cmd_feedback[0], cmd_feedback[1], cmd_feedback[2]);
                         cmd_vel_feedback_ = twist;
                         // twist.linear.x = cmd_feedback[0];
@@ -285,9 +286,11 @@ namespace raspi {
                 // motor_vel.v2 = 0.5 * vx + std::sqrt(3)/2*vy - r_*vtheta;
                 // motor_vel.v3 = -0.5 * vx + std::sqrt(3)/2*vy + r_*vtheta;
                 motor_vel.v1 = (-vy) + r_*vtheta;
-                motor_vel.v2 = 0.5 * (-vy) + std::sqrt(3)/2*vx - r_*vtheta;
+                motor_vel.v2 = -0.5 * (-vy) - std::sqrt(3)/2*vx + r_*vtheta;
                 motor_vel.v3 = -0.5 * (-vy) + std::sqrt(3)/2*vx + r_*vtheta;
+                //RCLCPP_INFO(this->get_logger(), "vel:%f %f %f %f %f %f",vx, vy,vtheta, motor_vel.v1,motor_vel.v2,motor_vel.v3);
                 return motor_vel;
+
             }
 
             geometry_msgs::msg::Twist inverseKinematics(float v1, float v2, float v3) {

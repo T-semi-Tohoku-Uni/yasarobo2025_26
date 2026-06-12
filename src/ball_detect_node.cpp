@@ -25,7 +25,7 @@ DBSCAN::BallDetect::BallDetect(const rclcpp::NodeOptions & options): Node("ball_
     // subscribe topic
     rclcpp::SensorDataQoS lidarScanQos = rclcpp::SensorDataQoS();
     this->subLider_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
-        "/ldlidar_node/scan", lidarScanQos, std::bind(&BallDetect::lidarCallback, this, std::placeholders::_1)
+        "scan_back", lidarScanQos, std::bind(&BallDetect::lidarCallback, this, std::placeholders::_1)
     );
     this->subPose_ = this->create_subscription<geometry_msgs::msg::Pose2D>(
         "/pose", 10, std::bind(&DBSCAN::BallDetect::poseCallback, this, std::placeholders::_1)
@@ -356,17 +356,18 @@ DBSCAN::PointCloud DBSCAN::BallDetect::scan2Point(const sensor_msgs::msg::LaserS
     for (size_t i=0; i<scan.ranges.size(); i++) {
         double r, theta;
         r = scan.ranges[i];
-        if (std::isnan(r) || r<scan.range_min || scan.range_max<r) continue;
-        if (is_sim_) theta = scan.angle_min + ((std::double_t)(i))*scan.angle_increment;
-        else {
-            theta = scan.angle_min + ((std::double_t)(i))*scan.angle_increment - 3.0*M_PI/2.0;
-            // normalize
-            if (theta > M_PI) theta -= M_2_PI;
-            if (theta < -M_PI) theta += M_2_PI;
+        if (std::isnan(r) || r < 0.1  || scan.range_max<r) continue;
+        theta = scan.angle_min + ((std::double_t)(i))*scan.angle_increment;
+        // if (is_sim_) theta = scan.angle_min + ((std::double_t)(i))*scan.angle_increment;
+        // else {
+        //     theta = scan.angle_min + ((std::double_t)(i))*scan.angle_increment - 3.0*M_PI/2.0;
+        //     // normalize
+        //     if (theta > M_PI) theta -= M_2_PI;
+        //     if (theta < -M_PI) theta += M_2_PI;
             
-            if (theta < -M_PI_2+this->LIDAR_THTRSHOLD_) continue;
-            if (theta >  M_PI_2-this->LIDAR_THTRSHOLD_) continue;
-        }
+        //     if (theta < -M_PI_2+this->LIDAR_THTRSHOLD_) continue;
+        //     if (theta >  M_PI_2-this->LIDAR_THTRSHOLD_) continue;
+        // }
         // convert origin
         try {
             geometry_msgs::msg::PointStamped point_st;

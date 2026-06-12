@@ -22,7 +22,7 @@ namespace raspi{
              : Node("color_vacume_node", options) {
                 
                 // --- 1. シリアルポートを1回だけ開く ---
-                serial_fd_ = open_serial("/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.3:1.2");
+                serial_fd_ = open_serial("/dev/serial/by-path/pci-0000:00:14.0-usb-0:4:1.2");
                 if (serial_fd_ < 0) {
                     RCLCPP_ERROR(this->get_logger(), "Failed to open serial port. Shutting down.");
                     rclcpp::shutdown();

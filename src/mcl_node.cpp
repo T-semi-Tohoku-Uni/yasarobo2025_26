@@ -483,7 +483,7 @@ namespace mcl {
 
                 for (std::size_t i = 0; i < scan.ranges.size(); i+=scanStep_) {
                     std::double_t r = scan.ranges[i];
-                    if (std::isnan(r) || r < scan.range_min || scan.range_max < r) {
+                    if (std::isnan(r) || r < 0.1 || scan.range_max < r) {
                         // p_vector.push_back(zRand_*pRand); // TODO: add pMax
                         p_vector.push_back(zRand_*pRand);
                     }

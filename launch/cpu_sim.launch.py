@@ -23,8 +23,25 @@ def generate_launch_description():
 
     # cpu simulation setting
     os.environ['LIBGL_ALWAYS_SOFTWARE'] = '1'
+    os.environ['WITH_SIM'] = '1'
 
     package_dir = get_package_share_directory("yasarobo2025_26")
+
+    # === 【追加】Gazeboにフィールドモデルの探索パスを教える設定 ===
+    models_dir = os.path.join(package_dir, "models")
+    
+    # GZ_SIM_RESOURCE_PATH の設定 (追加)
+    if "GZ_SIM_RESOURCE_PATH" in os.environ:
+        os.environ["GZ_SIM_RESOURCE_PATH"] += f":{package_dir}:{models_dir}"
+    else:
+        os.environ["GZ_SIM_RESOURCE_PATH"] = f"{package_dir}:{models_dir}"
+
+    # IGN_GAZEBO_RESOURCE_PATH の設定 (Humbleの移行期仕様に合わせて両方設定)
+    if "IGN_GAZEBO_RESOURCE_PATH" in os.environ:
+        os.environ["IGN_GAZEBO_RESOURCE_PATH"] += f":{package_dir}:{models_dir}"
+    else:
+        os.environ["IGN_GAZEBO_RESOURCE_PATH"] = f"{package_dir}:{models_dir}"
+    # ==========================================================
 
     world = os.path.join(
         get_package_share_directory("yasarobo2025_26"), "worlds", "field.world"
