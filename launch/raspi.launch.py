@@ -98,19 +98,19 @@ def generate_launch_description():
         arguments=['0', '0', '-0.255', '0', '0', '0', 'map', 'odom']
     )
 
-    static_ldlidar_tf = Node(
-    package='tf2_ros',
-    executable='static_transform_publisher',
-    name='ldlidar_tf',
-    arguments=[
-        # 3D 位置 (x  y  z)
-        '0.0', '0.0', '0.00',
-        # 回転 (roll pitch yaw) でも quaternion(x y z w) でも可
-         '1.570', '0', '0',
-        # 親フレーム / 子フレーム
-        'ldlidar_base', 'ldlidar_link'
-    ],
-)
+    # static_ldlidar_tf = Node(
+    #     package='tf2_ros',
+    #     executable='static_transform_publisher',
+    #     name='ldlidar_tf',
+    #     arguments=[
+    #         # 3D 位置 (x  y  z)
+    #         '0.0', '0.0', '0.00',
+    #         # 回転 (roll pitch yaw) でも quaternion(x y z w) でも可
+    #         '1.570', '0', '0',
+    #         # 親フレーム / 子フレーム
+    #         'ldlidar_base', 'ldlidar_link'
+    #     ],
+    # )
 
 #     static_from_odom_to_basefootprint = Node(
 #     package="tf2_ros",
@@ -274,7 +274,7 @@ def generate_launch_description():
         joy2Vel_node,
         vel_feedback_node,
         # ldlidar_node,
-        static_ldlidar_tf,
+        # static_ldlidar_tf,
         gen_path,
         follow_node,
         vacume_node,

@@ -291,15 +291,15 @@
 
 
    <!-- LiDAR -->
-  <link name="ldlidar_base"/>
+  <link name="lidar_base"/>
   <joint name="lidar_joint" type="fixed">
     <parent link="base_link"/>
-    <child  link="ldlidar_base"/>
-    <origin xyz="0.0 0.0 -0.1" rpy="0 0 0"/>
+    <child  link="lidar_base"/>
+    <origin xyz="0.0 0.0 -0.1" rpy="1.57 0 0"/>
   </joint>
-  <gazebo reference="ldlidar_base">
+  <gazebo reference="lidar_base">
     <sensor type="gpu_lidar" name="lidar_sensor">
-      <ignition_frame_id>ldlidar_base</ignition_frame_id>
+      <ignition_frame_id>lidar_base</ignition_frame_id>
       <topic>/scan_back</topic>
       <alwaysOn>1</alwaysOn>
       <visualize>true</visualize>
