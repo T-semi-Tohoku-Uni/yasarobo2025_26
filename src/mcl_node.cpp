@@ -177,6 +177,7 @@ namespace mcl {
                     std::bind(&MCL::loop, this)
                   );
                 RCLCPP_INFO(this->get_logger(), "Success initialize");
+                RCLCPP_INFO(this->get_logger(), "init pose:%f %f",initial_x,initial_y);
 
                 // TODO: deleteb
             } 
@@ -258,7 +259,7 @@ namespace mcl {
                             distFieldD.at<std::double_t>(v, u) = (std::double_t)d * mapResolution_;
                         }
                     }
-                    RCLCPP_INFO(this->get_logger(), "(11, 50) = %lf", distFieldF.at<std::float_t>(11, 50));
+                    //RCLCPP_INFO(this->get_logger(), "(11, 50) = %lf", distFieldF.at<std::float_t>(11, 50));
 
                     // 1) 距離場 distFieldD（CV_64F）を 0–255 に正規化して 8bit 化
                     cv::Mat normDist;
@@ -315,7 +316,7 @@ namespace mcl {
                 estimatePose();
                 resampleParticles();
                 printTrajectoryOnRviz2();
-                // publishScanEndpoints();
+                publishScanEndpoints();
                 // TODO: printTrajectory
             }
 
@@ -483,16 +484,17 @@ namespace mcl {
 
                 for (std::size_t i = 0; i < scan.ranges.size(); i+=scanStep_) {
                     std::double_t r = scan.ranges[i];
-                    if (std::isnan(r) || r < 0.1 || scan.range_max < r) {
+                    if (std::isnan(r) || r < 0.15 || scan.range_max < r) {
                         // p_vector.push_back(zRand_*pRand); // TODO: add pMax
                         p_vector.push_back(zRand_*pRand);
+                        continue;
                     }
 
                     std::double_t theta_lidar;
                     if (is_sim_) {
                         theta_lidar = scan.angle_min + ((std::double_t)(i))*scan.angle_increment;
                     } else {
-                        theta_lidar = scan.angle_min + ((std::double_t)(i))*scan.angle_increment - 3.0*M_PI/2.0;
+                        theta_lidar = scan.angle_min + ((std::double_t)(i))*scan.angle_increment + 2.0*M_PI/3.0;
                     }
 
                     double x_odom, y_odom;
@@ -512,6 +514,11 @@ namespace mcl {
                         p_vector.push_back(p);
 
                         // RCLCPP_INFO(this->get_logger(), "%d %d %lf %lf", u, v, d, log(p));
+                        geometry_msgs::msg::Point pt;
+                        pt.x = x_odom;
+                        pt.y = y_odom;
+                        pt.z = 0.0;
+                        scan_endpoints_.push_back(pt);
                         
                         //
                         // scan_endpoints_.push_back(pt);
@@ -526,7 +533,7 @@ namespace mcl {
                     // シミュレーション動かしながら逐次実装していくよ
                 }
                 // RCLCPP_INFO(this->get_logger(), "####################################");
-                // publishScanEndpoints();
+                //publishScanEndpoints();
                 return p_vector;
             }
 
