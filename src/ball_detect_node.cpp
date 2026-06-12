@@ -2,7 +2,7 @@
 
 DBSCAN::BallDetect::BallDetect(const rclcpp::NodeOptions & options): Node("ball_detect_node", options), tf_buffer_(this->get_clock()), tf_listener_(tf_buffer_) {
     // parameter
-    this->declare_parameter<std::string>("frame_id", "ldlidar_base");
+    this->declare_parameter<std::string>("frame_id", "lidar_base");
     this->declare_parameter<double>("eps", 0.1);
     this->declare_parameter<int>("min_pts", 10);
     this->declare_parameter<double>("diagonal_threshold", 0.1);
