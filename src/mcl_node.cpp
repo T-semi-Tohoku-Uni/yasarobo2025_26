@@ -489,17 +489,34 @@ namespace mcl {
                         p_vector.push_back(zRand_*pRand);
                         continue;
                     }
+                    // 修正前:
+                    // std::double_t theta_lidar;
+                    // if (is_sim_) {
+                    //     theta_lidar = scan.angle_min + ((std::double_t)(i))*scan.angle_increment;
+                    // } else {
+                    //     theta_lidar = scan.angle_min + ((std::double_t)(i))*scan.angle_increment + 2.0*M_PI/3.0;
+                    // }
 
-                    std::double_t theta_lidar;
-                    if (is_sim_) {
-                        theta_lidar = scan.angle_min + ((std::double_t)(i))*scan.angle_increment;
+                    // 修正後:
+                    std::double_t raw_theta = scan.angle_min + ((std::double_t)(i)) * scan.angle_increment;
+                    std::double_t theta_base;
+
+                    // URDFの設定値
+                    int lidar_pose = 1; // 1: 逆さ吊り (Roll=3.14), 0: 通常
+                    std::double_t yaw_offset = -2.09333;
+
+                    if (lidar_pose == 1) {
+                        // 逆さ吊りの場合、回転方向が逆になる
+                        theta_base = yaw_offset - raw_theta;
                     } else {
-                        theta_lidar = scan.angle_min + ((std::double_t)(i))*scan.angle_increment + 2.0*M_PI/3.0;
+                        theta_base = yaw_offset + raw_theta;
                     }
 
                     double x_odom, y_odom;
                     int u, v;
-                    lidarpose2uv(r, theta_lidar, pose, &x_odom, &y_odom, &u, &v);
+
+                    // XYの並進オフセットは0なので、そのままtheta_baseを渡す
+                    lidarpose2uv(r, theta_base, pose, &x_odom, &y_odom, &u, &v);
 
                     // TODO: isInMap
                     if (0 <= u && u < mapWidth_ && 0 <= v && v < mapHeight_) {

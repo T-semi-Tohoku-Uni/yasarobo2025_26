@@ -297,7 +297,7 @@ namespace raspi {
                 geometry_msgs::msg::Twist twist;
                 
                 // 行列計算の結果に基づいた式
-                twist.linear.x = (1.0 / 3.0) * (-v1 + 2.0 * v2 - v3) / std::sqrt(3.0); // 誤っていた係数を修正
+                twist.linear.x = (1.0 / 3.0) * (-v1 + 2.0 * v2 - v3) / std::sqrt(3.0); 
                 twist.linear.y = (1.0 / 3.0) * (-2.0 * v1 + v2 + v3);
                 twist.angular.z = (1.0 / (3.0 * r_)) * (v1 + v2 + v3);
                 
