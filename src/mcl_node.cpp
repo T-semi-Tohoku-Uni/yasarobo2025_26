@@ -224,64 +224,88 @@ namespace mcl {
             
             void readMap() {
                 try {
+                    // YAMLの読み込み
                     YAML::Node lconf = YAML::LoadFile(this->mapDir_ + "map.yaml");
                     mapResolution_ = lconf["resolution"].as<std::double_t>();
                     mapOrigin_ = lconf["origin"].as<std::vector<std::double_t>>();
 
+                    // マップ画像の読み込み
                     std::string imgFile = mapDir_ + "map.pgm";
                     mapImg_ = cv::imread(imgFile, 0);
                     mapWidth_ = mapImg_.cols;
                     mapHeight_ = mapImg_.rows;
 
-                    cv::Mat mapImg = mapImg_.clone();
+                    // 1. 二値化マップの作成 (障害物=0, 自由空間=255)
+                    cv::Mat binaryMapImg(mapHeight_, mapWidth_, CV_8UC1);
                     for (int v = 0; v < mapHeight_; v++ ) {
                         for (int u = 0; u < mapWidth_; u++ ) {
-                            uchar val = mapImg.at<uchar>(v, u);
-                            if (val == 0) {
-                                mapImg.at<uchar>(v, u) = 0;
+                            uchar val = mapImg_.at<uchar>(v, u);
+                            // 閾値230未満を障害物とする
+                            if (val < 230) {
+                                binaryMapImg.at<uchar>(v, u) = 0;   // 障害物
                             } else {
-                                mapImg.at<uchar>(v, u) = 1;
+                                binaryMapImg.at<uchar>(v, u) = 255; // 自由空間
                             }
                         }
                     }
 
-                    cv::Mat distFieldF(mapHeight_, mapWidth_, CV_32FC1);
-                    cv::Mat distFieldD(mapHeight_, mapWidth_, CV_64FC1);
-                    cv::distanceTransform(mapImg, distFieldF, cv::DIST_L2, 5);
-                    
-                    // 原点    : 左上
-                    // first  : 縦軸
-                    // second : 横軸
+                    // 2. 障害物の外側（自由空間）の距離場を計算
+                    cv::Mat distFieldOut(mapHeight_, mapWidth_, CV_32FC1);
+                    cv::distanceTransform(binaryMapImg, distFieldOut, cv::DIST_L2, 5);
 
+                    // 3. 障害物の内側の距離場を計算するために画像を反転
+                    cv::Mat invertedMapImg;
+                    cv::bitwise_not(binaryMapImg, invertedMapImg);
+                    cv::Mat distFieldIn(mapHeight_, mapWidth_, CV_32FC1);
+                    cv::distanceTransform(invertedMapImg, distFieldIn, cv::DIST_L2, 5);
+
+                    // 4. Signed Distance Field (SDF) の計算
+                    distField_ = cv::Mat(mapHeight_, mapWidth_, CV_64FC1);
                     for (int v = 0; v < mapHeight_; v++ ) {
                         for (int u = 0; u < mapWidth_; u++ ) {
-                            std::float_t d = distFieldF.at<std::float_t>(v, u);
-                            distFieldD.at<std::double_t>(v, u) = (std::double_t)d * mapResolution_;
+                            std::float_t d_out = distFieldOut.at<std::float_t>(v, u);
+                            std::float_t d_in  = distFieldIn.at<std::float_t>(v, u);
+
+                            // 外側ならプラス、内側ならマイナスの距離に変換
+                            std::double_t sdf_pixel = static_cast<std::double_t>(d_out - d_in);
+                            distField_.at<std::double_t>(v, u) = sdf_pixel * mapResolution_;
                         }
                     }
-                    //RCLCPP_INFO(this->get_logger(), "(11, 50) = %lf", distFieldF.at<std::float_t>(11, 50));
 
-                    // 1) 距離場 distFieldD（CV_64F）を 0–255 に正規化して 8bit 化
-                    cv::Mat normDist;
-                    cv::normalize(distFieldD, normDist, 0.0, 255.0, cv::NORM_MINMAX);
-                    cv::Mat dist8U;
-                    normDist.convertTo(dist8U, CV_8U);
+                    // 5. デバッグ・可視化用の画像生成
+                    double min_val, max_val;
+                    cv::minMaxLoc(distField_, &min_val, &max_val);
+                    double max_abs_val = std::max(std::abs(min_val), std::abs(max_val)) + 1e-6;
 
-                    // 2) グレースケール→BGR に変換
-                    cv::Mat colorImg;
-                    cv::cvtColor(dist8U, colorImg, cv::COLOR_GRAY2BGR);
+                    cv::Mat sdfColorImg(mapHeight_, mapWidth_, CV_8UC3);
+                    for (int v = 0; v < mapHeight_; v++) {
+                        for (int u = 0; u < mapWidth_; u++) {
+                            double d = distField_.at<double>(v, u);
+                            double ratio = std::abs(d) / max_abs_val;
+                            int intensity = 255 - static_cast<int>(ratio * 255.0);
+                            intensity = std::max(0, std::min(255, intensity));
 
-                    // 3) 特定ピクセルをマーク (row=50, col=11 を赤に)
-                    //    .at は (y,x) = (row,col) の順番なので注意
-                    colorImg.at<cv::Vec3b>(11, 50) = cv::Vec3b(0, 0, 255);
+                            cv::Vec3b color;
+                            if (d > 1e-9) {
+                                // 外側 (プラス) -> 青系統 (OpenCVはBGR形式)
+                                color = cv::Vec3b(255, intensity, intensity);
+                            } else if (d < -1e-9) {
+                                // 内側 (マイナス) -> 赤系統
+                                color = cv::Vec3b(intensity, intensity, 255);
+                            } else {
+                                // 境界 -> 白
+                                color = cv::Vec3b(255, 255, 255);
+                            }
+                            sdfColorImg.at<cv::Vec3b>(v, u) = color;
+                        }
+                    }
 
-                    // （任意）円マークを描く場合
-                    cv::circle(colorImg, cv::Point(11, 50), /*半径*/ 3, cv::Scalar(0,255,0), /*塗りつぶし*/ -1);
+                    // 元のコードにあった特定ピクセルのマーク（必要であれば残してください）
+                    cv::circle(sdfColorImg, cv::Point(50, 11), 3, cv::Scalar(0, 255, 0), -1);
 
-                    // 4) 画像を保存
-                    cv::imwrite("distField_highlight.png", colorImg);
+                    cv::imwrite("distField_highlight.png", sdfColorImg);
+                    RCLCPP_INFO(this->get_logger(), "Saved colored SDF image to distField_highlight.png");
 
-                    distField_ = distFieldD.clone();
                 } catch (const YAML::Exception& e) {
                     RCLCPP_ERROR(this->get_logger(), "%s\n", e.what());
                 }
@@ -411,55 +435,53 @@ namespace mcl {
             }
 
             void caculateMeasurementModel(sensor_msgs::msg::LaserScan scan) {
-                totalLikelihood_ = 0.0;
-                std::double_t maxLikelihood = 0.0;
-
                 std::vector<std::vector<double>> likelihood_table;
                 likelihood_table.reserve(particleNum_);
                 
+                // 1. 各パーティクルの観測尤度を取得
                 for (std::size_t i = 0; i < particles_.size(); i++ ) {
-                    std::double_t likelihood = 0.0;
-                    // 尤度場モデル
                     if (measurementModel_ == MeasurementModel::LikelihoodFieldModel) {
                         likelihood_table.push_back(std::move(caculateLikelihoodFieldModel(particles_[i].getPose(), scan)));
+                    } else {
+                        likelihood_table.push_back(std::vector<double>());
                     }
-                    if (i == 0) {
-                        maxLikelihood = likelihood;
-                        maxLikelihoodParticleIdx_ = 0;
-                    } else if (maxLikelihood < likelihood) {
-                        maxLikelihood = likelihood;
-                        maxLikelihoodParticleIdx_ = i;
-                    }
-                    // RCLCPP_INFO(this->get_logger(), "%lf", maxLikelihood);
                 }
-                // RCLCPP_INFO(this->get_logger(), "%lf", maxLikelihood);
-                std::double_t w_sum = 0;
-                for(std::size_t i=0; i<likelihood_table.size(); i++ ) {
-                    std::double_t w = 0;
-                    for (std::size_t j=0; j<likelihood_table.size(); j++ ) {
-                        std::double_t loglikefood_sum=0;
-                        for (std::size_t k=0; k<likelihood_table[i].size(); k++ ) {
-                            // if (std::isnan(likelihood_table[j][k]) || std::isnan(likelihood_table[i][k])) continue;
-                            // if (likelihood_table[j][k]<1e-12 || likelihood_table[i][k]<1e-12) continue;
-                            loglikefood_sum += std::log(likelihood_table[j][k]/likelihood_table[i][k]);
-                            // RCLCPP_INFO(this->get_logger(), "j=%d k=%d %.4f", j, k, likelihood_table[j][k]);
-                        }
-                        w += std::exp(loglikefood_sum);
+
+                // 2. 各パーティクルの対数尤度の和を計算
+                std::vector<double> total_log_likelihood(particleNum_, 0.0);
+                for (std::size_t i = 0; i < particleNum_; i++) {
+                    for (std::size_t k = 0; k < likelihood_table[i].size(); k++) {
+                        // 1e-10で床打ちして log(0) による -inf を防ぐ
+                        total_log_likelihood[i] += std::log(std::max(likelihood_table[i][k], 1e-10));
                     }
-                    w = 1/w;
-                    particles_[i].setW(w);
-                    w_sum += w*w;
                 }
-                effectiveSampleSize_ = 1.0 / w_sum;
-                
-                // // normalize likelihood and caculate valid sample num
-                // std::double_t sum = 0.0;
-                // for(std::size_t i = 0; i < particles_.size(); i++ ) {
-                //     std::double_t w = measurementLikelihoods_[i] / totalLikelihood_;
-                //     particles_[i].setW(w);
-                //     sum += w*w;
-                // }
-                // effectiveSampleSize_ = 1.0 / sum;
+
+                // 3. 対数尤度の最大値を取得 (Log-Sum-Exp法の要)
+                double max_log_likelihood = -std::numeric_limits<double>::infinity();
+                for (std::size_t i = 0; i < particleNum_; i++) {
+                    if (total_log_likelihood[i] > max_log_likelihood) {
+                        max_log_likelihood = total_log_likelihood[i];
+                        maxLikelihoodParticleIdx_ = i; // 元のコードの変数も一応更新しておく
+                    }
+                }
+
+                // 4. 最大値を引いてからexpを適用し、線形な重みを計算
+                std::vector<double> linear_weights(particleNum_, 0.0);
+                double w_sum = 0.0;
+                for (std::size_t i = 0; i < particleNum_; i++) {
+                    linear_weights[i] = std::exp(total_log_likelihood[i] - max_log_likelihood);
+                    w_sum += linear_weights[i];
+                }
+
+                // 5. 重みの正規化と有効サンプルサイズ (ESS) の計算
+                double w_sq_sum = 0.0;
+                for (std::size_t i = 0; i < particleNum_; i++) {
+                    double normalized_w = linear_weights[i] / w_sum;
+                    particles_[i].setW(normalized_w);
+                    w_sq_sum += normalized_w * normalized_w;
+                }
+
+                effectiveSampleSize_ = 1.0 / w_sq_sum;
             }
 
             std::vector<std::double_t> caculateLikelihoodFieldModel (geometry_msgs::msg::Pose2D pose, sensor_msgs::msg::LaserScan scan) {
