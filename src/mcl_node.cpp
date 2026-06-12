@@ -121,7 +121,7 @@ namespace mcl {
                 initialNoise.set__y(0.07); // var of y
                 initialNoise.set__theta(M_PI/180.0); // var of theta
                 resetParticlesDistribution(initialNoise);
-                //printParticlesMakerOnRviz2();
+                printParticlesMakerOnRviz2();
                 
                 // set mesurementModel
                 measurementModel_ = MeasurementModel::LikelihoodFieldModel;
@@ -311,12 +311,12 @@ namespace mcl {
 
 
                 updateParticles(delta_);
-                //printParticlesMakerOnRviz2();
+                printParticlesMakerOnRviz2();
                 caculateMeasurementModel(*scan_); // TODO: ポーリングする（この方法でもあたいが変更されることはなさそうだけど）
                 estimatePose();
                 resampleParticles();
                 printTrajectoryOnRviz2();
-                publishScanEndpoints();
+                //publishScanEndpoints();
                 // TODO: printTrajectory
             }
 
