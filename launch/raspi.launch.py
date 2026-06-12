@@ -112,22 +112,22 @@ def generate_launch_description():
     #     ],
     # )
 
-#     static_from_odom_to_basefootprint = Node(
-#     package="tf2_ros",
-#     executable="static_transform_publisher",
-#     name="static_odom_to_basefootprint",
-#     output="screen",
-#     arguments=[
-#         "0.25",          # x  [m]
-#         "0.25",          # y  [m]
-#         "0.30",             # z  [m]
-#         "0",             # yaw   [rad]
-#         "0",             # pitch [rad]
-#         "0",             # roll  [rad]
-#         "odom",          # parent  frame
-#         "base_footprint" # child   frame
-#     ]
-# )
+    static_from_odom_to_basefootprint = Node(
+    package="tf2_ros",
+    executable="static_transform_publisher",
+    name="static_odom_to_basefootprint",
+    output="screen",
+    arguments=[
+        "0.25",          # x  [m]
+        "0.25",          # y  [m]
+        "0.30",             # z  [m]
+        "0",             # yaw   [rad]
+        "0",             # pitch [rad]
+        "0",             # roll  [rad]
+        "odom",          # parent  frame
+        "base_footprint" # child   frame
+    ]
+)
 
     mcl_node = Node(
         package="yasarobo2025_26",
@@ -246,7 +246,7 @@ def generate_launch_description():
         executable="ball_detect_node",
         output="screen",
         parameters=[{
-            "eps": 0.020,
+            "eps": 0.50,
             "min_pts": 5,
             "wall_threshold": 0.0,
             "diff_threshold": 1e-8,
