@@ -30,7 +30,7 @@ namespace raspi {
                 this->get_parameter("max_linear_acceleration", max_linear_acceleration);
                 this->get_parameter("max_angular_acceleration", max_angular_acceleration);
                 fd_vel_ = open_serial("/dev/serial/by-path/pci-0000:00:14.0-usb-0:3:1.1");
-                r_ = 0.14;
+                r_ = 0.125;
                 auto feedbackQ = rclcpp::QoS(rclcpp::KeepLast(10));
                 pub_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel_feedback", feedbackQ);
                 receive_timer_ = this->create_wall_timer(
@@ -208,7 +208,7 @@ namespace raspi {
 
                         // caculate x, y, theta
                         // TODO: 時間付きで渡してあげたい気持ち
-                        RCLCPP_INFO(this->get_logger(), "feedback:%f %f %f ", cmd_feedback[0], cmd_feedback[1], cmd_feedback[2]);
+                        //RCLCPP_INFO(this->get_logger(), "feedback:%f %f %f ", cmd_feedback[0], cmd_feedback[1], cmd_feedback[2]);
                         geometry_msgs::msg::Twist twist = inverseKinematics(cmd_feedback[0], cmd_feedback[1], cmd_feedback[2]);
                         cmd_vel_feedback_ = twist;
                         // twist.linear.x = cmd_feedback[0];

@@ -17,7 +17,7 @@ def generate_launch_description():
     x = 0.25
     y = 0.25
     z = 0.30
-    theta = math.pi/2
+    theta = 0.0
     frequency = 25.0
 
 

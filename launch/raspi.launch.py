@@ -21,7 +21,7 @@ def generate_launch_description():
     x = 0.25
     y = 0.25
     z = 0.30
-    theata = math.pi / 2
+    theata = 0.0
 
     package_dir = get_package_share_directory("yasarobo2025_26")
     urg_node2_nl_pkg = get_package_share_directory('urg_node2_nl')
