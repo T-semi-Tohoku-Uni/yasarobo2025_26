@@ -265,6 +265,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        static_from_odom_to_basefootprint,
         node_robot_state_publisher,
         map_server_cmd,
         start_lifecycle_manager_cmd,
@@ -281,6 +282,6 @@ def generate_launch_description():
         #bt_node,
         #rotate_node,
         #ball_path_node,
-       # detect_node,
+        detect_node,
         urg_node_rear
     ])
